@@ -1,0 +1,351 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model roles {
+  rol_id              Int       @id @default(autoincrement())
+  cargo               String?   @db.VarChar(100)
+  descripcion         String?   @db.VarChar(150)
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  empleados empleados[]
+}
+
+model empleados {
+  empleado_id         Int       @id @default(autoincrement())
+  nombres             String    @db.VarChar(100)
+  apellidos           String    @db.VarChar(100)
+  cedula              String    @db.VarChar(25)
+  rol_id              Int
+  fecha_nacimiento    DateTime  @db.Date
+  fecha_contratacion  DateTime  @db.Date
+  direccion           String?   @db.VarChar(150)
+  pais                String?   @db.VarChar(50)
+  telefono            String?   @db.VarChar(15)
+  correo              String?   @db.VarChar(100)
+  reportes            Int?
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  roles       roles       @relation(fields: [rol_id], references: [rol_id])
+  jefe        empleados?  @relation("EmpleadoJefe", fields: [reportes], references: [empleado_id])
+  subalternos empleados[] @relation("EmpleadoJefe")
+
+  detalles_empleados detalles_empleados[]
+  detalles_vehiculos detalles_vehiculos[]
+  usuarios           usuarios[]
+  compras            compras[]
+}
+
+model clientes {
+  cliente_id          String    @id @db.Char(5)
+  nombre_empresa      String    @db.VarChar(100)
+  nombre_contacto     String?   @db.VarChar(100)
+  cargo_contacto      String?   @db.VarChar(50)
+  direccion           String?   @db.VarChar(150)
+  ciudad              String?   @db.VarChar(100)
+  pais                String?   @db.VarChar(50)
+  telefono            String?   @db.VarChar(20)
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  proyectos proyectos[]
+}
+
+model categorias_proveedor {
+  categoria_proveedor_id Int       @id @default(autoincrement())
+  nombre_categoria       String    @db.VarChar(100)
+  descripcion            String?   @db.VarChar(150)
+  fecha_creacion         DateTime? @default(now())
+  fecha_actualizacion    DateTime?
+  fecha_eliminacion      DateTime?
+
+  proveedores proveedores[]
+}
+
+model proveedores {
+  proveedor_id           Int       @id @default(autoincrement())
+  categoria_proveedor_id Int
+  nombre_empresa         String    @db.VarChar(100)
+  nombre_contacto        String?   @db.VarChar(100)
+  cargo_contacto         String?   @db.VarChar(50)
+  direccion              String?   @db.VarChar(150)
+  ciudad                 String?   @db.VarChar(100)
+  pais                   String?   @db.VarChar(50)
+  telefono               String?   @db.VarChar(15)
+  correo                 String?   @db.VarChar(100)
+  fecha_creacion         DateTime? @default(now())
+  fecha_actualizacion    DateTime?
+  fecha_eliminacion      DateTime?
+
+  categorias_proveedor categorias_proveedor @relation(fields: [categoria_proveedor_id], references: [categoria_proveedor_id])
+  maquinarias          maquinarias[]
+  vehiculos            vehiculos[]
+  compras              compras[]
+}
+
+model proyectos {
+  proyecto_id         Int       @id @default(autoincrement())
+  cliente_id          String
+  nombre_proyecto     String    @db.VarChar(100)
+  descripcion         String?   @db.VarChar(150)
+  ubicacion           String?   @db.VarChar(100)
+  fecha_inicio        DateTime  @db.Date
+  fecha_fin           DateTime? @db.Date
+  tiempo_total_dias   Int?      @ignore
+  presupuesto_total   Decimal   @db.Decimal(18, 2)
+  estado              String    @db.VarChar(50)
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  clientes             clientes               @relation(fields: [cliente_id], references: [cliente_id])
+  detalles_empleados   detalles_empleados[]
+  avaluos              avaluos[]
+  detalles_maquinarias detalles_maquinarias[]
+}
+
+model detalles_empleados {
+  detalle_empleado_id  Int       @id @default(autoincrement())
+  empleado_id          Int
+  proyecto_id          Int
+  fecha_de_proyecto    DateTime? @db.Date
+  fecha_creacion       DateTime? @default(now())
+  fecha_actualizacion  DateTime?
+  fecha_eliminacion    DateTime?
+
+  empleados empleados @relation(fields: [empleado_id], references: [empleado_id])
+  proyectos proyectos @relation(fields: [proyecto_id], references: [proyecto_id])
+
+  @@index([empleado_id])
+  @@index([proyecto_id])
+}
+
+model categorias {
+  categoria_id        Int       @id @default(autoincrement())
+  nombre_categoria    String    @db.VarChar(100)
+  descripcion         String    @db.VarChar(150)
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  productos productos[]
+}
+
+model productos {
+  producto_id         Int       @id @default(autoincrement())
+  nombre_producto     String    @db.VarChar(100)
+  categoria_id        Int?
+  descripcion         String?   @db.VarChar(150)
+  unidad_de_medida    String    @db.VarChar(100)
+  cantidad_en_stock   Int
+  precio_unitario     Decimal   @db.Decimal(18, 2)
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  categorias         categorias?          @relation(fields: [categoria_id], references: [categoria_id])
+  detalles_servicios detalles_servicios[]
+  detalles_compras   detalles_compras[]
+}
+
+model avaluos {
+  avaluo_id           Int       @id @default(autoincrement())
+  proyecto_id         Int
+  descripcion         String?   @db.VarChar(200)
+  monto_ejecutado     Decimal   @db.Decimal(18, 2)
+  fecha_inicio        DateTime
+  fecha_fin           DateTime
+  tiempo_total_dias   Int?      @ignore
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  proyectos         proyectos           @relation(fields: [proyecto_id], references: [proyecto_id])
+  avaluos_servicios avaluos_servicios[]
+}
+
+model servicios {
+  servicio_id         Int       @id @default(autoincrement())
+  nombre_servicio     String    @db.VarChar(100)
+  descripcion         String?   @db.VarChar(200)
+  precio_unitario     Decimal   @db.Decimal(18, 2)
+  cantidad            Int
+  total               Decimal?  @ignore
+  fecha_inicio        DateTime? @db.Date
+  fecha_fin           DateTime? @db.Date
+  tiempo_total_dias   Int?      @ignore
+  unidad_de_medida    String    @db.VarChar(50)
+  estado              String?   @db.VarChar(30)
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  detalles_servicios detalles_servicios[]
+  avaluos_servicios  avaluos_servicios[]
+}
+
+model detalles_servicios {
+  detalle_servicio_id  Int       @id @default(autoincrement())
+  servicio_id          Int
+  producto_id          Int
+  descripcion          String?   @db.VarChar(200)
+  cantidad             Int
+  unidad_de_medida     String    @db.VarChar(50)
+  precio_unitario      Decimal   @db.Decimal(18, 2)
+  subtotal             Decimal?   @ignore   
+  estado               String?   @db.VarChar(30)
+  fecha_uso            DateTime?
+  observaciones        String?   @db.VarChar(200)
+  fecha_creacion       DateTime  @default(now())
+  fecha_actualizacion  DateTime?
+  fecha_eliminacion    DateTime?
+
+  servicio_id_servicios servicios @relation(fields: [servicio_id], references: [servicio_id])
+  producto_id_productos productos @relation(fields: [producto_id], references: [producto_id])
+
+  @@map("detalles_servicios")
+}
+
+model maquinarias {
+  maquinaria_id       Int       @id @default(autoincrement())
+  proveedor_id        Int?
+  nombre_maquinaria   String    @db.VarChar(100)
+  marca               String?   @db.VarChar(50)
+  modelo              String?   @db.VarChar(50)
+  precio_por_hora     Decimal   @db.Decimal(18, 2)
+  descripcion         String?   @db.VarChar(200)
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  proveedores          proveedores?           @relation(fields: [proveedor_id], references: [proveedor_id])
+  detalles_maquinarias detalles_maquinarias[]
+}
+
+model detalles_maquinarias {
+  detalle_maquinaria_id Int       @id @default(autoincrement())
+  proyecto_id           Int?
+  maquinaria_id         Int?
+  horas_utilizadas      Int?
+  fecha_inicio_renta    DateTime  @db.Date
+  fecha_fin_renta       DateTime? @db.Date
+  estado                String?   @db.VarChar(30)
+  fecha_creacion        DateTime? @default(now())
+  fecha_actualizacion   DateTime?
+  fecha_eliminacion     DateTime?
+
+  proyectos   proyectos?   @relation(fields: [proyecto_id], references: [proyecto_id])
+  maquinarias maquinarias? @relation(fields: [maquinaria_id], references: [maquinaria_id])
+
+  @@index([proyecto_id])
+  @@index([maquinaria_id])
+}
+
+model vehiculos {
+  vehiculo_id         Int       @id @default(autoincrement())
+  proveedor_id        Int?
+  marca               String    @db.VarChar(50)
+  modelo              String    @db.VarChar(50)
+  anio                Int
+  placa               String    @unique @db.VarChar(15)
+  tipo_de_vehiculo    String?   @db.VarChar(30)
+  tipo_de_combustible String?   @db.VarChar(40)
+  estado              String?   @db.VarChar(20)
+  fecha_registro      DateTime? @db.Date
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  proveedores        proveedores?         @relation(fields: [proveedor_id], references: [proveedor_id])
+  detalles_vehiculos detalles_vehiculos[]
+}
+
+model detalles_vehiculos {
+  detalle_vehiculo_id  Int       @default(autoincrement())
+  empleado_id          Int
+  vehiculo_id          Int
+  fecha_asignacion     DateTime  @db.Date
+  fecha_fin_asignacion DateTime? @db.Date
+  descripcion          String?   @db.VarChar(100)
+  fecha_creacion       DateTime? @default(now())
+  fecha_actualizacion  DateTime?
+  fecha_eliminacion    DateTime?
+
+  empleados empleados @relation(fields: [empleado_id], references: [empleado_id])
+  vehiculos vehiculos @relation(fields: [vehiculo_id], references: [vehiculo_id])
+
+  @@id([detalle_vehiculo_id, empleado_id, vehiculo_id])
+}
+
+model usuarios {
+  usuario_id          Int       @id @default(autoincrement())
+  empleado_id         Int
+  usuario             String    @db.VarChar(100)
+  contrasena          String    @db.VarChar(200)
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  empleados empleados @relation(fields: [empleado_id], references: [empleado_id])
+}
+
+model compras {
+  compra_id           Int       @id @default(autoincrement())
+  proveedor_id        Int
+  empleado_id         Int?
+  numero_factura      String    @db.VarChar(50)
+  fecha_compra        DateTime  @db.Date
+  monto_total         Decimal   @default(0) @db.Decimal(18, 2)
+  estado              String    @db.VarChar(50)
+  observaciones       String?   @db.VarChar(200)
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  proveedores      proveedores        @relation(fields: [proveedor_id], references: [proveedor_id])
+  empleados        empleados?         @relation(fields: [empleado_id], references: [empleado_id])
+  detalles_compras detalles_compras[]
+}
+
+model detalles_compras {
+  detalle_compra_id   Int       @id @default(autoincrement())
+  compra_id           Int
+  producto_id         Int
+  cantidad            Int
+  precio_unitario     Decimal   @db.Decimal(18, 2)
+  subtotal            Decimal?  @ignore
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  compras   compras   @relation(fields: [compra_id], references: [compra_id])
+  productos productos @relation(fields: [producto_id], references: [producto_id])
+}
+
+model avaluos_servicios {
+  avaluo_servicio_id  Int       @default(autoincrement())
+  avaluo_id           Int
+  servicio_id         Int
+  cantidad            Int
+  precio_unitario     Decimal   @db.Decimal(18, 2)
+  total               Decimal?  @ignore
+  observaciones       String?   @db.VarChar(200)
+  fecha_creacion      DateTime? @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  avaluos   avaluos   @relation(fields: [avaluo_id], references: [avaluo_id])
+  servicios servicios @relation(fields: [servicio_id], references: [servicio_id])
+
+  @@id([avaluo_servicio_id, avaluo_id, servicio_id])
+}
