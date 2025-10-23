@@ -1,5 +1,0 @@
-@import "tailwindcss";
-/* Tus estilos opcionales debajo.
-   Evita el starter CSS de Vite que centra el body */
-:root { font-family: system-ui, Avenir, Helvetica, Arial, sans-serif; }
-body { margin: 0; }
