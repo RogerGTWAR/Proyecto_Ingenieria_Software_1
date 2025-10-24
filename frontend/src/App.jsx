@@ -7,10 +7,14 @@ import VehiculosPage from './pages/VehiculosPage.jsx'
 import ServiciosPage from './pages/ServiciosPage.jsx'
 import EmpleadosPage from './pages/EmpleadosPage.jsx'
 import ComprasPage from './pages/ComprasPage.jsx'
+import LoginPage from './pages/LoginPage.jsx'
+import SignupPage from './pages/SignupPage.jsx'
 
 function App() {
   return (
     <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<DashboardPage />} />
         <Route path="proyectos" element={<ProyectosPage />} />
