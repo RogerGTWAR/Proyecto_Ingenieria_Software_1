@@ -1,8 +1,20 @@
+import { useState } from 'react';
 import DataTable from '../components/DataTable';
 import ButtonList from '../components/ButtonList';
+import Modal from '../components/Modal';
 import { mockDb } from '../../data/mockDb';
 
 function InventarioPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    categoriaId: '',
+    nombreProducto: '',
+    descripcion: '',
+    unidadDeMedida: '',
+    cantidadEnStock: 0,
+    precioUnitario: ''
+  });
+
   const tableHeaders = ['Nombre', 'Categoria', 'Stock', 'Precio'];
   const tableData = mockDb.productos.map(producto => ({
     id: producto.productoId,
@@ -25,14 +37,33 @@ function InventarioPage() {
       name: 'Añadir',
       icon: '/icons/add.svg',
       coordinate: 4,
-      action: () => console.log('Add clicked'),
+      action: () => setIsModalOpen(true),
     },
   ];
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = () => {
+    console.log('Nuevo producto:', formData);
+    // Aquí iría la lógica para guardar en la base de datos
+    setIsModalOpen(false);
+    setFormData({
+      categoriaId: '',
+      nombreProducto: '',
+      descripcion: '',
+      unidadDeMedida: '',
+      cantidadEnStock: 0,
+      precioUnitario: ''
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="p-6">
-        <div className="mb-8">
+        <div className=" ">
           <h1 className="heading-1 text-[var(--color-primary)] mb-2">
             Inventario
           </h1>
@@ -42,6 +73,99 @@ function InventarioPage() {
         </div>
         <ButtonList buttons={buttons} />
         <DataTable headers={tableHeaders} data={tableData} />
+
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title="Añadir Nuevo Producto"
+          onSubmit={handleSubmit}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block body-2 text-[var(--color-gray)] mb-1">Categoría</label>
+              <select
+                name="categoriaId"
+                value={formData.categoriaId}
+                onChange={handleInputChange}
+                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                required
+              >
+                <option value="">Seleccionar categoría</option>
+                {mockDb.categorias.map(categoria => (
+                  <option key={categoria.categoriaId} value={categoria.categoriaId}>
+                    {categoria.nombreCategoria}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block body-2 text-[var(--color-gray)] mb-1">Nombre del Producto</label>
+              <input
+                type="text"
+                name="nombreProducto"
+                value={formData.nombreProducto}
+                onChange={handleInputChange}
+                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                required
+              />
+            </div>
+            <div>
+              <label className="block body-2 text-[var(--color-gray)] mb-1">Descripción</label>
+              <textarea
+                name="descripcion"
+                value={formData.descripcion}
+                onChange={handleInputChange}
+                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                rows="3"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block body-2 text-[var(--color-gray)] mb-1">Unidad de Medida</label>
+                <select
+                  name="unidadDeMedida"
+                  value={formData.unidadDeMedida}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                  required
+                >
+                  <option value="">Seleccionar unidad</option>
+                  <option value="unidad">Unidad</option>
+                  <option value="kg">Kilogramo</option>
+                  <option value="m³">Metro cúbico</option>
+                  <option value="m²">Metro cuadrado</option>
+                  <option value="galón">Galón</option>
+                  <option value="litro">Litro</option>
+                </select>
+              </div>
+              <div>
+                <label className="block body-2 text-[var(--color-gray)] mb-1">Cantidad en Stock</label>
+                <input
+                  type="number"
+                  name="cantidadEnStock"
+                  value={formData.cantidadEnStock}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                  min="0"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block body-2 text-[var(--color-gray)] mb-1">Precio Unitario</label>
+              <input
+                type="number"
+                name="precioUnitario"
+                value={formData.precioUnitario}
+                onChange={handleInputChange}
+                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                step="0.01"
+                min="0"
+                required
+              />
+            </div>
+          </div>
+        </Modal>
       </main>
     </div>
   );

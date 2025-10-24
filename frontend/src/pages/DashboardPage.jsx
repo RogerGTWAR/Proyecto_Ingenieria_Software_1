@@ -18,7 +18,7 @@ function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="p-6">
-        <div className="mb-8">
+        <div className=" ">
           <h1 className="heading-1 text-[var(--color-primary)] mb-2">
             Dashboard Principal
           </h1>
@@ -34,7 +34,7 @@ function DashboardPage() {
         </div>
 
         {/* Dashboard Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6  ">
           <Card title="Proyectos Activos">
             <p className="body-2 text-[var(--color-gray)]">
               Total de proyectos: {mockDb.proyectos.length}

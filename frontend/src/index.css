@@ -7,7 +7,7 @@
     --color-forth: oklch(0.8122 0.0581 220.41);
     --color-fifth: oklch(0.8994 0.0206 264.46);
     --color-white: oklch(0.95 0 0);
-    --color-gray: oklch(0.7 0 0);
+    --color-gray: oklch(0.5 0 0);
     --font-heading: 'Oswald', sans-serif;
     --font-body:    'IBM Plex Sans', sans-serif;
 }
