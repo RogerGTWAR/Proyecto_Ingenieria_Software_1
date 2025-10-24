@@ -1,68 +1,206 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+@theme{
+    --color-primary: oklch(0.4651 0.1687 25.01);
+    --color-secondary: oklch(0.4401 0.1881 264.96);
+    --color-third: oklch(0.7301 0.1203 230.55);
+    --color-forth: oklch(0.8122 0.0581 220.41);
+    --color-fifth: oklch(0.8994 0.0206 264.46);
+    --color-white: oklch(0.95 0 0);
+    --color-gray: oklch(0.7 0 0);
+    --font-heading: 'Oswald', sans-serif;
+    --font-body:    'IBM Plex Sans', sans-serif;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer base {
+  @font-face {
+    font-family: 'Oswald';
+    src: url('./assets/fonts/Oswald[wght].woff2') format('woff2'),
+         url('./assets/fonts/Oswald[wght].woff') format('woff');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
   }
-  a:hover {
-    color: #747bff;
+
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('./assets/fonts/IBMPlexSans[wdth,wght].woff2') format('woff2'),
+         url('./assets/fonts/IBMPlexSans[wdth,wght].woff') format('woff');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+@layer components {
+.filter-white {
+    transition: filter 0.3s ease;
+    stroke-width: 10px;
+    filter:invert(100%) sepia(0%) saturate(7488%) hue-rotate(304deg) brightness(116%) contrast(100%);
   }
+
+  .filter-white:hover {
+    filter: invert(77%) sepia(34%) saturate(4871%) hue-rotate(167deg) brightness(97%) contrast(84%);
+  }
+
+  .filter-blue {
+    filter: invert(77%) sepia(34%) saturate(4871%) hue-rotate(167deg) brightness(97%) contrast(84%);
+  }
+  .heading-1 {
+    font-family: var(--font-heading);
+    font-size: 3rem; /* 48px */
+    font-weight: 400;
+    line-height: 1.2083; /* 58px */
+    letter-spacing: -0.01em;
+  }
+
+  .heading-2 {
+    font-family: var(--font-heading);
+    font-size: 2rem; 
+    font-weight: 400;
+    line-height: 1.2188; 
+    letter-spacing: 0.05em;
+  }
+
+  .heading-3 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem; 
+    font-weight: 400;
+    line-height: 1.2083; 
+    letter-spacing: 0.05em;
+  }
+
+  .heading-4 {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 400;
+    line-height: 1.25; 
+    letter-spacing: 0.05em;
+  }
+
+  .title-1 {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+     
+    line-height: 1.25; 
+    letter-spacing: 0.1em;
+  }
+
+  .body-1 {
+    font-family: var(--font-body);
+    font-size: 1.25rem;
+    line-height: 1.25; 
+    letter-spacing: 0;
+  }
+
+  .body-2 {
+    font-family: var(--font-body);
+    font-size: 1rem; 
+    line-height: 1.25; 
+    letter-spacing: 0;
+  }
+
+  .body-3 {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    line-height: 1.2857;
+    letter-spacing: 0;
+  }
+
+
+
+  .body-4 {
+    font-family: var(--font-body);
+    font-size: 0.75rem; 
+    line-height: 1.3333;
+    letter-spacing: 0;
+  }
+
+  @media (max-width: 768px) {
+    .heading-1 {
+      font-size: 2.25rem;
+      line-height: 1.2222;
+    }
+
+    .heading-2 {
+      font-size: 1.75rem; 
+      line-height: 1.2143;
+    }
+
+    .heading-3 {
+      font-size: 1.25rem; 
+      line-height: 1.2;
+    }
+
+    .heading-4 {
+      font-size: 1.125rem;
+      line-height: 1.2222;
+    }
+
+    .body-1 {
+      font-size: 1.125rem;
+      line-height: 1.2222;
+    }
+
+    .body-2 {
+      font-size: 0.9375rem;
+      line-height: 1.2667; 
+    }
+
+    .body-3 {
+      font-size: 0.8125rem;
+      line-height: 1.2308; 
+    }
+
+    .body-4 {
+      font-size: 0.6875rem;
+      line-height: 1.2727; 
+    }
+  }
+
+  @media (max-width: 480px) {
+    .heading-1 {
+      font-size: 2rem; 
+      line-height: 1.25; 
+    }
+
+    .heading-2 {
+      font-size: 1.5rem; 
+      line-height: 1.25; 
+    }
+
+    .heading-3 {
+      font-size: 1.125rem; 
+      line-height: 1.2222;
+    }
+
+    .heading-4 {
+      font-size: 1rem; 
+      line-height: 1.25;
+    }
+
+    .body-1 {
+      font-size: 1rem; 
+      line-height: 1.25; 
+    }
+
+    .body-2 {
+      font-size: 0.875rem; 
+      line-height: 1.2857; 
+    }
+
+    .body-3 {
+      font-size: 0.75rem;
+      line-height: 1.3333;
+    }
+
+    .body-4 {
+      font-size: 0.625rem; 
+      line-height: 1.4;
+    }
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
