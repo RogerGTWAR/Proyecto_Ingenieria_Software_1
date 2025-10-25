@@ -303,6 +303,21 @@ export const mockDb = {
       fechaActualizacion: timestamps.updated,
       fechaEliminacion: null,
     },
+    {
+      proyectoId: 3,
+      clienteId: 2,
+      nombreProyecto: 'Boulevard peatonal Gran Parque Central',
+      descripcion: 'Desarrollo de andenes, paisajismo y kioscos en el casco histórico de Granada.',
+      ubicacion: 'Granada, centro histórico',
+      fechaInicio: '2024-02-01',
+      fechaFin: '2024-12-20',
+      tiempoTotalDias: 324,
+      presupuestoInicial: 980000,
+      estado: 'Planificado',
+      fechaCreacion: timestamps.created,
+      fechaActualizacion: timestamps.updated,
+      fechaEliminacion: null,
+    }
   ],
   compras: [
     {

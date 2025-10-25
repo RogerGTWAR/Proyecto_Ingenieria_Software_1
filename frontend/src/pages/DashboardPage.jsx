@@ -1,4 +1,3 @@
-import ButtonList from '../components/ButtonList';
 import DataTable from '../components/DataTable';
 import Card from '../components/Card';
 import { mockDb } from '../../data/mockDb';
@@ -15,6 +14,24 @@ function DashboardPage() {
     'Presupuesto': proyecto.presupuestoInicial.toLocaleString(),
   }));
 
+  const buttons = [
+    {
+      name: 'Editar',
+      style: 'primary',
+      action: (row) => alert(`Editando: ${JSON.stringify(row)}`)
+    },
+    {
+      name: 'Eliminar',
+      style: 'secondary',
+      action: (row) => alert(`Eliminando: ${JSON.stringify(row)}`)
+    },
+    {
+      name: 'Otra acción',
+      style: '',
+      action: (row) => alert(`Otra acción: ${JSON.stringify(row)}`)
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="p-6">
@@ -30,7 +47,11 @@ function DashboardPage() {
 
         {/* Data Table Component */}
         <div className="mt-8">
-          <DataTable headers={tableHeaders} data={tableData} />
+          <DataTable
+            headers={tableHeaders}
+            data={tableData}
+            buttons={buttons}
+          />
         </div>
 
         {/* Dashboard Content */}
