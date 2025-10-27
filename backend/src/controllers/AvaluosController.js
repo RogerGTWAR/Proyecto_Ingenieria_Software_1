@@ -1,8 +1,9 @@
-//Listo
+// ✅ AvaluosController.js
 import prisma from "../database.js";
 
 export default class AvaluosController {
-static async getAll(_req, res) {
+  // 🔹 Obtener todos los avalúos
+  static async getAll(_req, res) {
     try {
       const avaluos = await prisma.$queryRawUnsafe(`
         SELECT 
@@ -27,21 +28,16 @@ static async getAll(_req, res) {
       res.json({ ok: true, data: avaluos });
     } catch (error) {
       console.error("❌ Error en getAll:", error);
-      res.status(500).json({
-        ok: false,
-        msg: "Error interno del servidor al obtener los avalúos.",
-      });
+      res.status(500).json({ ok: false, msg: "Error interno del servidor al obtener los avalúos." });
     }
   }
 
+  // 🔹 Obtener avalúo por ID
   static async getById(req, res) {
     try {
       const idNum = parseInt(req.params.id);
       if (isNaN(idNum))
-        return res.status(400).json({
-          ok: false,
-          msg: "El ID del avalúo debe ser un número válido.",
-        });
+        return res.status(400).json({ ok: false, msg: "El ID del avalúo debe ser numérico." });
 
       const [avaluo] = await prisma.$queryRawUnsafe(`
         SELECT 
@@ -64,51 +60,18 @@ static async getAll(_req, res) {
       `);
 
       if (!avaluo)
-        return res.status(404).json({
-          ok: false,
-          msg: `No se encontró el avalúo con ID: ${idNum}`,
-        });
+        return res.status(404).json({ ok: false, msg: `No se encontró el avalúo con ID: ${idNum}` });
 
-      const servicios = await prisma.avaluos_servicios.findMany({
-        where: { avaluo_id: idNum },
-        include: {
-          servicios: {
-            select: {
-              servicio_id: true,
-              nombre_servicio: true,
-              descripcion: true,
-              unidad_de_medida: true,
-            },
-          },
-        },
-      });
-
-      res.json({
-        ok: true,
-        data: {
-          ...avaluo,
-          avaluos_servicios: servicios,
-        },
-      });
+      res.json({ ok: true, data: avaluo });
     } catch (error) {
       console.error("❌ Error en getById:", error);
-      res.status(500).json({
-        ok: false,
-        msg: "Error interno del servidor al obtener el avalúo.",
-      });
+      res.status(500).json({ ok: false, msg: "Error interno al obtener el avalúo." });
     }
   }
 
-
+  // 🔹 Crear avalúo
   static async create(req, res) {
     try {
-      if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({
-          ok: false,
-          msg: "El cuerpo de la petición está vacío o mal formateado. Asegúrate de usar JSON.",
-        });
-      }
-
       const { proyecto_id, descripcion, monto_ejecutado, fecha_inicio, fecha_fin } = req.body;
 
       if (!proyecto_id || !monto_ejecutado || !fecha_inicio || !fecha_fin) {
@@ -118,95 +81,106 @@ static async getAll(_req, res) {
         });
       }
 
+      // ✅ Verificar proyecto válido
       const proy = await prisma.proyectos.findFirst({
-        where: { AND: [{ proyecto_id: parseInt(proyecto_id) }, { fecha_eliminacion: null }] },
+        where: { proyecto_id: parseInt(proyecto_id), fecha_eliminacion: null },
       });
       if (!proy) {
-        return res
-          .status(400)
-          .json({ ok: false, msg: "El proyecto especificado no existe o fue eliminado" });
+        return res.status(400).json({ ok: false, msg: "El proyecto especificado no existe o fue eliminado." });
+      }
+
+      // ✅ Limpieza de formato numérico
+      const monto = Number(String(monto_ejecutado).replace(/,/g, "").trim());
+      if (isNaN(monto) || monto < 0) {
+        return res.status(400).json({ ok: false, msg: "El monto ejecutado debe ser un número válido." });
       }
 
       const avaluo = await prisma.avaluos.create({
         data: {
           proyecto_id: parseInt(proyecto_id),
           descripcion: descripcion?.trim() ?? null,
-          monto_ejecutado: parseFloat(monto_ejecutado),
+          monto_ejecutado: monto,
           fecha_inicio: new Date(fecha_inicio),
           fecha_fin: new Date(fecha_fin),
         },
       });
 
-      res.status(201).json({ ok: true, msg: "Avalúo creado correctamente", data: avaluo });
+      res.status(201).json({ ok: true, msg: "Avalúo creado correctamente.", data: avaluo });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ ok: false, msg: "Server error, something went wrong" });
+      console.error("❌ Error en create:", error);
+      res.status(500).json({ ok: false, msg: "Error interno del servidor al crear el avalúo." });
     }
   }
 
+  // 🔹 Actualizar avalúo
   static async update(req, res) {
     const idNum = parseInt(req.params.id);
     if (isNaN(idNum))
-      return res.status(400).json({ ok: false, msg: "El ID del avalúo debe ser un número" });
+      return res.status(400).json({ ok: false, msg: "El ID debe ser numérico." });
 
     try {
       const old = await prisma.avaluos.findUnique({ where: { avaluo_id: idNum } });
       if (!old || old.fecha_eliminacion !== null)
-        return res.status(404).json({ ok: false, msg: "No se encontró el avalúo a modificar" });
+        return res.status(404).json({ ok: false, msg: "No se encontró el avalúo a modificar." });
 
       const { proyecto_id, descripcion, monto_ejecutado, fecha_inicio, fecha_fin } = req.body;
 
       let proyectoId = old.proyecto_id;
       if (proyecto_id) {
         const proy = await prisma.proyectos.findFirst({
-          where: { AND: [{ proyecto_id: parseInt(proyecto_id) }, { fecha_eliminacion: null }] },
+          where: { proyecto_id: parseInt(proyecto_id), fecha_eliminacion: null },
         });
         if (!proy)
-          return res.status(400).json({ ok: false, msg: "El proyecto especificado no existe" });
+          return res.status(400).json({ ok: false, msg: "El proyecto especificado no existe." });
         proyectoId = parseInt(proyecto_id);
       }
+
+      const monto =
+        monto_ejecutado != null
+          ? Number(String(monto_ejecutado).replace(/,/g, "").trim())
+          : old.monto_ejecutado;
 
       const avaluo = await prisma.avaluos.update({
         where: { avaluo_id: idNum },
         data: {
           proyecto_id: proyectoId,
           descripcion: descripcion?.trim() ?? old.descripcion,
-          monto_ejecutado:
-            monto_ejecutado != null ? parseFloat(monto_ejecutado) : old.monto_ejecutado,
+          monto_ejecutado: monto,
           fecha_inicio: fecha_inicio ? new Date(fecha_inicio) : old.fecha_inicio,
           fecha_fin: fecha_fin ? new Date(fecha_fin) : old.fecha_fin,
           fecha_actualizacion: new Date(),
         },
       });
 
-      res.json({ ok: true, msg: "Avalúo actualizado correctamente", data: avaluo });
+      res.json({ ok: true, msg: "Avalúo actualizado correctamente.", data: avaluo });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ ok: false, msg: "Server error, something went wrong" });
+      console.error("❌ Error en update:", error);
+      res.status(500).json({ ok: false, msg: "Error interno al actualizar el avalúo." });
     }
   }
 
+  // 🔹 Eliminar avalúo
   static async delete(req, res) {
     const idNum = parseInt(req.params.id);
     if (isNaN(idNum))
-      return res.status(400).json({ ok: false, msg: "El ID del avalúo debe ser un número" });
+      return res.status(400).json({ ok: false, msg: "El ID debe ser numérico." });
 
     try {
       const existe = await prisma.avaluos.findFirst({
-        where: { AND: [{ avaluo_id: idNum }, { fecha_eliminacion: null }] },
+        where: { avaluo_id: idNum, fecha_eliminacion: null },
       });
       if (!existe)
-        return res.status(404).json({ ok: false, msg: "No se encontró el avalúo a eliminar" });
+        return res.status(404).json({ ok: false, msg: "No se encontró el avalúo a eliminar." });
 
-      const { avaluo_id } = await prisma.avaluos.update({
+      await prisma.avaluos.update({
         where: { avaluo_id: idNum },
         data: { fecha_eliminacion: new Date() },
       });
 
-      res.json({ ok: true, msg: "Avalúo eliminado correctamente", id: avaluo_id });
+      res.json({ ok: true, msg: "Avalúo eliminado correctamente." });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ ok: false, msg: "Server error, something went wrong" });
+      console.error("❌ Error en delete:", error);
+      res.status(500).json({ ok: false, msg: "Error interno al eliminar el avalúo." });
     }
   }
 }
