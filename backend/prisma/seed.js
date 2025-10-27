@@ -41,6 +41,68 @@ async function main() {
     skipDuplicates: true,
   });
 
+  // === 4️⃣ PROVEEDORES ===
+  await prisma.proveedores.createMany({
+    data: [
+      {
+        categoria_proveedor_id: 1,
+        nombre_empresa: "Casa Pellas S.A.",
+        nombre_contacto: "Roberto Gutiérrez",
+        cargo_contacto: "Gerente de Ventas",
+        direccion: "Carretera Norte, Km 4½",
+        ciudad: "Managua",
+        pais: "Nicaragua",
+        telefono: "+505 2255 6789",
+        correo: "contacto@casapellas.com",
+      },
+      {
+        categoria_proveedor_id: 2,
+        nombre_empresa: "Renta Pura S.A.",
+        nombre_contacto: "Pedro López",
+        cargo_contacto: "Encargado de Logística",
+        direccion: "Km 8 Carretera León",
+        ciudad: "León",
+        pais: "Nicaragua",
+        telefono: "+505 2311 7654",
+        correo: "info@rentapura.com",
+      },
+      {
+        categoria_proveedor_id: 2,
+        nombre_empresa: "Nicaragua Machinery Company (NIMAC)",
+        nombre_contacto: "Luis Mejía",
+        cargo_contacto: "Gerente General",
+        direccion: "Carretera Norte, Km 7",
+        ciudad: "Managua",
+        pais: "Nicaragua",
+        telefono: "+505 2283 4450",
+        correo: "ventas@nimac.com.ni",
+      },
+      {
+        categoria_proveedor_id: 4,
+        nombre_empresa: "Ferromax S.A.",
+        nombre_contacto: "Carlos Ruiz",
+        cargo_contacto: "Supervisor de Ventas",
+        direccion: "Km 6 Carretera Masaya",
+        ciudad: "Managua",
+        pais: "Nicaragua",
+        telefono: "+505 2278 2211",
+        correo: "servicio@ferromax.com",
+      },
+      {
+        categoria_proveedor_id: 1,
+        nombre_empresa: "Construni S.A.",
+        nombre_contacto: "María Morales",
+        cargo_contacto: "Administradora",
+        direccion: "Barrio San Judas",
+        ciudad: "Managua",
+        pais: "Nicaragua",
+        telefono: "+505 2245 1299",
+        correo: "ventas@construni.com",
+      },
+    ],
+    skipDuplicates: true,
+  });
+
   // === 4️⃣ CLIENTES ===
   await prisma.clientes.createMany({
     data: [
@@ -73,6 +135,23 @@ async function main() {
       { cliente_id: "C0003", nombre_proyecto: "Residencial Los Robles", descripcion: "Desarrollo habitacional de 40 viviendas.", ubicacion: "Rivas", fecha_inicio: new Date("2024-01-20"), fecha_fin: new Date("2024-12-10"), presupuesto_total: 1200000.00, estado: "Activo" },
       { cliente_id: "C0004", nombre_proyecto: "Carretera Masaya", descripcion: "Rehabilitación de 15 km de carretera.", ubicacion: "Masaya", fecha_inicio: new Date("2023-03-01"), fecha_fin: new Date("2023-11-15"), presupuesto_total: 850000.00, estado: "Completado" },
       { cliente_id: "C0005", nombre_proyecto: "Planta de Concreto León", descripcion: "Instalación de planta dosificadora de concreto.", ubicacion: "León", fecha_inicio: new Date("2024-04-10"), fecha_fin: new Date("2024-09-30"), presupuesto_total: 500000.00, estado: "Activo" },
+    ],
+    skipDuplicates: true,
+  });
+  
+  // === 5️⃣ PRODUCTOS ===
+  await prisma.productos.createMany({
+    data: [
+      { nombre_producto: "Arena Natural", categoria_id: 1, descripcion: "Arena natural para construcción.", unidad_de_medida: "m³", cantidad_en_stock: 100, precio_unitario: 270.00 },
+      { nombre_producto: "Piedrín", categoria_id: 1, descripcion: "Piedrín para mezcla y construcción.", unidad_de_medida: "m³", cantidad_en_stock: 120, precio_unitario: 700.00 },
+      { nombre_producto: "Bloque de Concreto 4\"", categoria_id: 2, descripcion: "Bloque de concreto de 4 pulgadas.", unidad_de_medida: "unidad", cantidad_en_stock: 500, precio_unitario: 210.50 },
+      { nombre_producto: "Bloque de Concreto 6\"", categoria_id: 2, descripcion: "Bloque de concreto de 6 pulgadas.", unidad_de_medida: "unidad", cantidad_en_stock: 450, precio_unitario: 240.00 },
+      { nombre_producto: "Adoquín Tipo Tráfico", categoria_id: 2, descripcion: "Adoquín para vías de tráfico pesado.", unidad_de_medida: "unidad", cantidad_en_stock: 300, precio_unitario: 150.00 },
+      { nombre_producto: "Medio Adoquín", categoria_id: 2, descripcion: "Medio adoquín para acabados.", unidad_de_medida: "unidad", cantidad_en_stock: 400, precio_unitario: 71.80 },
+      { nombre_producto: "Tubos de Concreto", categoria_id: 2, descripcion: "Tubos de concreto para drenaje.", unidad_de_medida: "unidad", cantidad_en_stock: 200, precio_unitario: 2000.00 },
+      { nombre_producto: "Losas de Concreto", categoria_id: 2, descripcion: "Losas de concreto para techos.", unidad_de_medida: "unidad", cantidad_en_stock: 100, precio_unitario: 1471.00 },
+      { nombre_producto: "Cajas de Concreto", categoria_id: 2, descripcion: "Cajas de concreto para instalaciones eléctricas.", unidad_de_medida: "unidad", cantidad_en_stock: 150, precio_unitario: 700.00 },
+      { nombre_producto: "Pintura Latex", categoria_id: 3, descripcion: "Pintura latex para interior.", unidad_de_medida: "litro", cantidad_en_stock: 250, precio_unitario: 25.00 },
     ],
     skipDuplicates: true,
   });
