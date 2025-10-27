@@ -1,215 +1,179 @@
-import { useState } from 'react';
-import DataTable from '../components/DataTable';
-import ButtonList from '../components/ButtonList';
-import Modal from '../components/Modal';
-import { mockDb } from '../../data/mockDb';
+//Listo
+import { useState } from "react";
+import ButtonList from "../components/ButtonList";
+import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
+import ServiciosCard from "../components/servicios/ServiciosCard";
+import ServiciosDetails from "../components/servicios/ServiciosDetails";
+import ServiciosForm from "../components/servicios/ServiciosForm";
+import { useServicios } from "../hooks/useServicios";
 
 function ServiciosPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    proyectoId: '',
-    nombreServicio: '',
-    descripcion: '',
-    precioUnitario: '',
-    cantidad: 1,
-    fechaInicio: '',
-    fechaFin: '',
-    unidadDeMedida: '',
-    estado: 'Programado'
-  });
+  const { items: servicios, loading, add, edit, remove, reload } = useServicios();
+  const [busqueda, setBusqueda] = useState("");
+  const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
+  const [vistaDetalle, setVistaDetalle] = useState(false);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [servicioAEditar, setServicioAEditar] = useState(null);
+  const [mostrarEliminar, setMostrarEliminar] = useState(false);
+  const [servicioAEliminar, setServicioAEliminar] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const tableHeaders = ['Proyecto', 'Nombre', 'Estado', 'Total'];
-  const tableData = mockDb.servicios.map(servicio => ({
-    id: servicio.servicioId,
-    'Proyecto': mockDb.proyectos.find(p => p.proyectoId === servicio.proyectoId)?.nombreProyecto || 'N/A',
-    'Nombre': servicio.nombreServicio,
-    'Estado': servicio.estado,
-    'Total': servicio.total.toLocaleString(),
-  }));
+  const serviciosFiltrados = servicios.filter((s) =>
+    s.nombreServicio.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
-  const buttons = [
-    {
-      id: 'filter',
-      name: 'Filtrar',
-      icon: '/icons/filter.svg',
-      coordinate: 3,
-      action: () => console.log('Filter clicked'),
-    },
-    {
-      id: 'add',
-      name: 'Añadir',
-      icon: '/icons/add.svg',
-      coordinate: 4,
-      action: () => setIsModalOpen(true),
-    },
-  ];
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const abrirFormulario = () => {
+    setServicioAEditar(null);
+    setModoEdicion(false);
+    setMostrarFormulario(true);
   };
 
-  const handleSubmit = () => {
-    console.log('Nuevo servicio:', formData);
-    // Aquí iría la lógica para guardar en la base de datos
-    setIsModalOpen(false);
-    setFormData({
-      proyectoId: '',
-      nombreServicio: '',
-      descripcion: '',
-      precioUnitario: '',
-      cantidad: 1,
-      fechaInicio: '',
-      fechaFin: '',
-      unidadDeMedida: '',
-      estado: 'Programado'
-    });
+  const editarServicio = (servicio) => {
+    setServicioAEditar(servicio);
+    setModoEdicion(true);
+    setMostrarFormulario(true);
   };
+
+  const cerrarFormulario = () => {
+    setMostrarFormulario(false);
+    setServicioAEditar(null);
+    setModoEdicion(false);
+  };
+
+  const guardarServicio = async (data) => {
+    try {
+      let actualizado = null;
+
+      if (modoEdicion && servicioAEditar) {
+        actualizado = await edit(servicioAEditar.id, data);
+
+        if (vistaDetalle && servicioSeleccionado?.id === servicioAEditar.id) {
+          setVistaDetalle(false);
+          setServicioSeleccionado(null);
+        }
+
+        setServicioAEditar(actualizado);
+      } else {
+        actualizado = await add(data);
+      }
+
+      await reload();
+      cerrarFormulario();
+      return actualizado;
+    } catch (e) {
+      console.error("Error al guardar servicio:", e);
+      alert("No se pudo guardar el servicio.");
+    }
+  };
+
+  const abrirDetalles = (servicio) => {
+    setServicioSeleccionado(servicio);
+    setVistaDetalle(true);
+  };
+
+  const cerrarDetalles = () => {
+    setVistaDetalle(false);
+    setServicioSeleccionado(null);
+  };
+
+  const abrirEliminar = (servicio) => {
+    setServicioAEliminar(servicio);
+    setMostrarEliminar(true);
+  };
+
+  const cerrarEliminar = () => {
+    setMostrarEliminar(false);
+    setServicioAEliminar(null);
+  };
+
+  const eliminarServicio = async () => {
+    if (!servicioAEliminar) return;
+    setIsDeleting(true);
+    try {
+      await remove(servicioAEliminar.id);
+      await reload();
+      setVistaDetalle(false);
+    } catch (e) {
+      console.error("Error al eliminar servicio:", e);
+      alert("Error al eliminar el servicio.");
+    } finally {
+      setIsDeleting(false);
+      cerrarEliminar();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-[var(--color-primary)] text-lg font-semibold">
+        Cargando servicios...
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="p-6">
-        <div className=" ">
-          <h1 className="heading-1 text-[var(--color-primary)] mb-2">
-            Servicios
-          </h1>
-          <p className="body-1 text-[var(--color-gray)]">
-            Gestión de servicios y contratos
-          </p>
-        </div>
-        <ButtonList buttons={buttons} />
-        <DataTable headers={tableHeaders} data={tableData} />
+    <div className="min-h-screen bg-gray-50 p-6 relative">
+      <h1 className="heading-1 text-[var(--color-primary)] mb-2">Servicios</h1>
+      <p className="body-1 text-[var(--color-gray)] mb-6">
+        Gestión de servicios ejecutados y activos
+      </p>
 
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title="Añadir Nuevo Servicio"
-          onSubmit={handleSubmit}
-        >
-          <div className="space-y-4">
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Proyecto</label>
-              <select
-                name="proyectoId"
-                value={formData.proyectoId}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              >
-                <option value="">Seleccionar proyecto</option>
-                {mockDb.proyectos.map(proyecto => (
-                  <option key={proyecto.proyectoId} value={proyecto.proyectoId}>
-                    {proyecto.nombreProyecto}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Nombre del Servicio</label>
-              <input
-                type="text"
-                name="nombreServicio"
-                value={formData.nombreServicio}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              />
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Descripción</label>
-              <textarea
-                name="descripcion"
-                value={formData.descripcion}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                rows="3"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Precio Unitario</label>
-                <input
-                  type="number"
-                  name="precioUnitario"
-                  value={formData.precioUnitario}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  step="0.01"
-                  min="0"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Cantidad</label>
-                <input
-                  type="number"
-                  name="cantidad"
-                  value={formData.cantidad}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  min="1"
-                  required
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Fecha Inicio</label>
-                <input
-                  type="date"
-                  name="fechaInicio"
-                  value={formData.fechaInicio}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Fecha Fin</label>
-                <input
-                  type="date"
-                  name="fechaFin"
-                  value={formData.fechaFin}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Unidad de Medida</label>
-              <select
-                name="unidadDeMedida"
-                value={formData.unidadDeMedida}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              >
-                <option value="">Seleccionar unidad</option>
-                <option value="visita técnica">Visita técnica</option>
-                <option value="m²">Metro cuadrado</option>
-                <option value="hora">Hora</option>
-                <option value="día">Día</option>
-                <option value="unidad">Unidad</option>
-              </select>
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Estado</label>
-              <select
-                name="estado"
-                value={formData.estado}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-              >
-                <option value="Programado">Programado</option>
-                <option value="En progreso">En progreso</option>
-                <option value="Completado">Completado</option>
-                <option value="Cancelado">Cancelado</option>
-              </select>
-            </div>
-          </div>
-        </Modal>
-      </main>
+      <ButtonList
+        buttons={[
+          {
+            id: "add",
+            name: "Añadir Servicio",
+            icon: "/icons/add.svg",
+            coordinate: 4,
+            action: abrirFormulario,
+          },
+        ]}
+      />
+
+      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6">
+        <input
+          type="text"
+          placeholder="Buscar servicio por nombre..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
+        />
+      </div>
+
+      <ServiciosCard
+        servicios={serviciosFiltrados}
+        onEdit={editarServicio}
+        onDelete={abrirEliminar}
+        onVerDetalles={abrirDetalles}
+      />
+
+      {vistaDetalle && servicioSeleccionado && (
+        <ServiciosDetails
+          servicio={servicioSeleccionado}
+          onClose={cerrarDetalles}
+          onEdit={editarServicio}
+          onDelete={abrirEliminar}
+        />
+      )}
+
+      {mostrarFormulario && (
+        <ServiciosForm
+          onSubmit={guardarServicio}
+          onClose={cerrarFormulario}
+          initialData={servicioAEditar}
+          isEdit={modoEdicion}
+        />
+      )}
+
+      {mostrarEliminar && (
+        <DeleteConfirmationModal
+          isOpen={mostrarEliminar}
+          onClose={cerrarEliminar}
+          onConfirm={eliminarServicio}
+          itemName={servicioAEliminar?.nombreServicio || ""}
+          loading={isDeleting}
+        />
+      )}
     </div>
   );
 }

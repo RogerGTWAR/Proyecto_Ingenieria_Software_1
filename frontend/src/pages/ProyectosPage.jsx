@@ -1,192 +1,185 @@
-import { useState } from 'react';
-import DataTable from '../components/DataTable';
-import ButtonList from '../components/ButtonList';
-import Modal from '../components/Modal';
-import { mockDb } from '../../data/mockDb';
+import { useState } from "react";
+import ButtonList from "../components/ButtonList";
+import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
+import ProyectosCard from "../components/proyectos/ProyectosCard";
+import ProyectosDetails from "../components/proyectos/ProyectosDetails";
+import ProyectosForm from "../components/proyectos/ProyectosForm";
+import { useProyectos } from "../hooks/useProyectos";
+import { useDetallesEmpleados } from "../hooks/useDetallesEmpleados";
 
 function ProyectosPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    clienteId: '',
-    nombreProyecto: '',
-    descripcion: '',
-    ubicacion: '',
-    fechaInicio: '',
-    fechaFin: '',
-    presupuestoInicial: '',
-    estado: 'Planificado'
-  });
+  const { items: proyectos, loading, add, edit, remove, reload } = useProyectos();
+  const { reload: reloadDetalles } = useDetallesEmpleados();
 
-  const tableHeaders = ['Nombre', 'Cliente', 'Ubicacion', 'Estado', 'Presupuesto'];
-  const buttons = [
-    {
-      id: 'filter',
-      name: 'Filtrar',
-      icon: '/icons/filter.svg',
-      coordinate: 3,
-      action: () => console.log('Filter clicked'),
-    },
-    {
-      id: 'add',
-      name: 'Añadir',
-      icon: '/icons/add.svg',
-      coordinate: 4,
-      action: () => setIsModalOpen(true),
-    },
-  ];
-  const tableData = mockDb.proyectos.map(proyecto => ({
-    id: proyecto.proyectoId,
-    'Nombre': proyecto.nombreProyecto,
-    'Cliente': mockDb.clientes.find(c => c.clienteId === proyecto.clienteId)?.nombreEmpresa || 'N/A',
-    'Ubicacion': proyecto.ubicacion,
-    'Estado': proyecto.estado,
-    'Presupuesto': proyecto.presupuestoInicial.toLocaleString(),
-  }));
+  const [busqueda, setBusqueda] = useState("");
+  const [vistaDetalle, setVistaDetalle] = useState(false);
+  const [proyectoSeleccionado, setProyectoSeleccionado] = useState(null);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [proyectoAEditar, setProyectoAEditar] = useState(null);
+
+  const [mostrarEliminar, setMostrarEliminar] = useState(false);
+  const [proyectoAEliminar, setProyectoAEliminar] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const proyectosFiltrados = (proyectos || []).filter((p) =>
+    p.nombreProyecto?.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const abrirFormulario = () => {
+    setProyectoAEditar(null);
+    setModoEdicion(false);
+    setMostrarFormulario(true);
   };
 
-  const handleSubmit = () => {
-    console.log('Nuevo proyecto:', formData);
-    // Aquí iría la lógica para guardar en la base de datos
-    setIsModalOpen(false);
-    setFormData({
-      clienteId: '',
-      nombreProyecto: '',
-      descripcion: '',
-      ubicacion: '',
-      fechaInicio: '',
-      fechaFin: '',
-      presupuestoInicial: '',
-      estado: 'Planificado'
-    });
+  const editarProyecto = (proyecto) => {
+    setProyectoAEditar(proyecto);
+    setModoEdicion(true);
+    setMostrarFormulario(true);
+    setVistaDetalle(false);
   };
+
+  const cerrarFormulario = () => {
+    setMostrarFormulario(false);
+    setProyectoAEditar(null);
+    setModoEdicion(false);
+  };
+
+  const guardarProyecto = async (data) => {
+    try {
+      let proyectoGuardado;
+
+      if (modoEdicion && proyectoAEditar) {
+        proyectoGuardado = await edit(proyectoAEditar.id, data);
+        setProyectoSeleccionado(proyectoGuardado);
+      } else {
+        proyectoGuardado = await add(data);
+      }
+
+      if (!proyectoGuardado || !proyectoGuardado.id) {
+        console.error("❌ No se pudo obtener el ID del proyecto:", proyectoGuardado);
+        alert("No se pudo obtener el ID del proyecto guardado.");
+        return null;
+      }
+
+      await reload();
+      await reloadDetalles();
+      return proyectoGuardado;
+    } catch (error) {
+      console.error("❌ Error al guardar proyecto:", error);
+      alert("No se pudo guardar el proyecto.");
+      return null;
+    }
+  };
+
+  const verDetalles = (proyecto) => {
+    setProyectoSeleccionado(proyecto);
+    setVistaDetalle(true);
+  };
+
+  const cerrarDetalles = () => {
+    setVistaDetalle(false);
+    setProyectoSeleccionado(null);
+  };
+
+  const abrirEliminar = (proyecto) => {
+    setProyectoAEliminar(proyecto);
+    setMostrarEliminar(true);
+  };
+
+  const cerrarEliminar = () => {
+    setMostrarEliminar(false);
+    setProyectoAEliminar(null);
+  };
+
+  const eliminarProyecto = async () => {
+    if (!proyectoAEliminar) return;
+    setIsDeleting(true);
+    try {
+      await remove(proyectoAEliminar.id);
+      await reload();
+      setVistaDetalle(false);
+    } catch (e) {
+      console.error("Error al eliminar proyecto:", e);
+      alert("Error al eliminar el proyecto.");
+    } finally {
+      setIsDeleting(false);
+      cerrarEliminar();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-[var(--color-primary)] text-lg font-semibold">
+        Cargando proyectos...
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="p-6">
-        <div className=" ">
-          <h1 className="heading-1 text-[var(--color-primary)] mb-2">
-            Proyectos
-          </h1>
-          <p className="body-1 text-[var(--color-gray)]">
-            Gestión de proyectos y avances
-          </p>
-        </div>
-        <ButtonList buttons={buttons} />
+    <div className="min-h-screen bg-gray-50 p-6 relative">
+      <h1 className="heading-1 text-[var(--color-primary)] mb-2">Proyectos</h1>
+      <p className="body-1 text-[var(--color-gray)] mb-6">
+        Gestión de proyectos y avances
+      </p>
 
-        <DataTable headers={tableHeaders} data={tableData} />
+      <ButtonList
+        buttons={[
+          {
+            id: "add",
+            name: "Añadir Proyecto",
+            icon: "/icons/add.svg",
+            coordinate: 4,
+            action: abrirFormulario,
+          },
+        ]}
+      />
 
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title="Añadir Nuevo Proyecto"
-          onSubmit={handleSubmit}
-        >
-          <div className="space-y-4">
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Cliente</label>
-              <select
-                name="clienteId"
-                value={formData.clienteId}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              >
-                <option value="">Seleccionar cliente</option>
-                {mockDb.clientes.map(cliente => (
-                  <option key={cliente.clienteId} value={cliente.clienteId}>
-                    {cliente.nombreEmpresa}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Nombre del Proyecto</label>
-              <input
-                type="text"
-                name="nombreProyecto"
-                value={formData.nombreProyecto}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              />
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Descripción</label>
-              <textarea
-                name="descripcion"
-                value={formData.descripcion}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                rows="3"
-              />
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Ubicación</label>
-              <input
-                type="text"
-                name="ubicacion"
-                value={formData.ubicacion}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Fecha Inicio</label>
-                <input
-                  type="date"
-                  name="fechaInicio"
-                  value={formData.fechaInicio}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Fecha Fin</label>
-                <input
-                  type="date"
-                  name="fechaFin"
-                  value={formData.fechaFin}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Presupuesto Inicial</label>
-              <input
-                type="number"
-                name="presupuestoInicial"
-                value={formData.presupuestoInicial}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              />
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Estado</label>
-              <select
-                name="estado"
-                value={formData.estado}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-              >
-                <option value="Planificado">Planificado</option>
-                <option value="En ejecución">En ejecución</option>
-                <option value="Completado">Completado</option>
-                <option value="Suspendido">Suspendido</option>
-              </select>
-            </div>
-          </div>
-        </Modal>
-      </main>
+      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6">
+        <input
+          type="text"
+          placeholder="Buscar proyecto..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
+        />
+      </div>
+
+      <ProyectosCard
+        proyectos={proyectosFiltrados}
+        onEdit={editarProyecto}
+        onDelete={abrirEliminar}
+        onVerDetalles={verDetalles}
+      />
+
+      {vistaDetalle && proyectoSeleccionado && (
+        <ProyectosDetails
+          proyecto={proyectoSeleccionado}
+          onClose={cerrarDetalles}
+          onEdit={editarProyecto}
+          onDelete={abrirEliminar}
+        />
+      )}
+
+      {mostrarFormulario && (
+        <ProyectosForm
+          onSubmit={guardarProyecto}
+          onClose={cerrarFormulario}
+          initialData={proyectoAEditar}
+          isEdit={modoEdicion}
+        />
+      )}
+
+      {mostrarEliminar && (
+        <DeleteConfirmationModal
+          isOpen={mostrarEliminar}
+          onClose={cerrarEliminar}
+          onConfirm={eliminarProyecto}
+          itemName={proyectoAEliminar?.nombreProyecto || ""}
+          loading={isDeleting}
+        />
+      )}
     </div>
   );
 }

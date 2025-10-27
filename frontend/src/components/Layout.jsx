@@ -9,11 +9,14 @@ const Layout = () => {
     switch (pathname) {
       case '/': return 'Dashboard';
       case '/proyectos': return 'Proyectos';
-      case '/inventario': return 'Inventario';
       case '/empleados': return 'Empleados';
       case '/vehiculos': return 'Vehículos';
       case '/servicios': return 'Servicios';
       case '/compras': return 'Compras';
+      case '/clientes': return 'Clientes';
+      case '/proveedores': return 'Proveedores';
+      case '/productos': return 'Inventario';
+      case '/avaluos': return 'Avalúos';
       default: return 'Dashboard';
     }
   };
