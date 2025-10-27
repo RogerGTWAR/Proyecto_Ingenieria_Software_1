@@ -61,7 +61,6 @@ app.get("/", (_req, res) => {
   res.json({
     ok: true,
     msg: "API funcionando correctamente en Render",
-    version: "1.0.0",
   });
 });
 
