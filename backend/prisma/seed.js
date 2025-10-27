@@ -101,6 +101,18 @@ async function main() {
     skipDuplicates: true,
   });
 
+  // === 9️⃣ DETALLES EMPLEADOS ===
+  await prisma.detalles_empleados.createMany({
+    data: [
+      { empleado_id: 1, proyecto_id: 1, fecha_de_proyecto: new Date("2023-01-15") },
+      { empleado_id: 2, proyecto_id: 1, fecha_de_proyecto: new Date("2023-01-20") },
+      { empleado_id: 4, proyecto_id: 2, fecha_de_proyecto: new Date("2024-02-10") },
+      { empleado_id: 5, proyecto_id: 2, fecha_de_proyecto: new Date("2024-03-01") },
+      { empleado_id: 3, proyecto_id: 3, fecha_de_proyecto: new Date("2024-03-10") },
+    ],
+    skipDuplicates: true,
+  });
+
   console.log("✅ Datos iniciales insertados correctamente 🚀");
 }
 

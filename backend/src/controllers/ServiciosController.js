@@ -1,4 +1,3 @@
-//Listo
 import prisma from "../database.js";
 
 export default class ServiciosController {
@@ -11,7 +10,7 @@ export default class ServiciosController {
           s.descripcion,
           s.precio_unitario,
           s.cantidad,
-          s.total,
+          (s.precio_unitario * s.cantidad) AS total,
           s.unidad_de_medida,
           s.estado,
           s.fecha_inicio,
@@ -28,10 +27,7 @@ export default class ServiciosController {
       res.json({ ok: true, data: servicios });
     } catch (error) {
       console.error("❌ Error en getAll:", error);
-      res.status(500).json({
-        ok: false,
-        msg: "Error interno del servidor al obtener los servicios.",
-      });
+      res.status(500).json({ ok: false, msg: "Error interno al obtener los servicios." });
     }
   }
 
@@ -39,10 +35,7 @@ export default class ServiciosController {
     try {
       const idNum = parseInt(req.params.id);
       if (isNaN(idNum))
-        return res.status(400).json({
-          ok: false,
-          msg: "El ID del servicio debe ser un número válido.",
-        });
+        return res.status(400).json({ ok: false, msg: "El ID debe ser un número válido." });
 
       const [servicio] = await prisma.$queryRawUnsafe(`
         SELECT 
@@ -51,7 +44,7 @@ export default class ServiciosController {
           s.descripcion,
           s.precio_unitario,
           s.cantidad,
-          s.total,
+          (s.precio_unitario * s.cantidad) AS total,
           s.unidad_de_medida,
           s.estado,
           s.fecha_inicio,
@@ -66,23 +59,20 @@ export default class ServiciosController {
       `);
 
       if (!servicio)
-        return res.status(404).json({
-          ok: false,
-          msg: `No se encontró el servicio con ID: ${idNum}`,
-        });
+        return res.status(404).json({ ok: false, msg: `No se encontró el servicio con ID ${idNum}` });
 
       res.json({ ok: true, data: servicio });
     } catch (error) {
       console.error("❌ Error en getById:", error);
-      res.status(500).json({
-        ok: false,
-        msg: "Error interno del servidor al obtener el servicio.",
-      });
+      res.status(500).json({ ok: false, msg: "Error interno al obtener el servicio." });
     }
   }
 
   static async create(req, res) {
     try {
+      if (!req.body || Object.keys(req.body).length === 0)
+        return res.status(400).json({ ok: false, msg: "El cuerpo de la petición está vacío o mal formateado." });
+
       const {
         nombre_servicio,
         descripcion,
@@ -94,12 +84,8 @@ export default class ServiciosController {
         fecha_fin,
       } = req.body;
 
-      if (!nombre_servicio || precio_unitario == null || cantidad == null || !unidad_de_medida) {
-        return res.status(400).json({
-          ok: false,
-          msg: "Campos obligatorios: nombre_servicio, precio_unitario, cantidad, unidad_de_medida",
-        });
-      }
+      if (!nombre_servicio || precio_unitario == null || cantidad == null || !unidad_de_medida)
+        return res.status(400).json({ ok: false, msg: "Campos obligatorios: nombre_servicio, precio_unitario, cantidad y unidad_de_medida" });
 
       const servicio = await prisma.servicios.create({
         data: {
@@ -117,14 +103,14 @@ export default class ServiciosController {
       res.status(201).json({ ok: true, msg: "Servicio creado correctamente", data: servicio });
     } catch (error) {
       console.error("❌ Error en create:", error);
-      res.status(500).json({ ok: false, msg: "Error interno del servidor al crear el servicio." });
+      res.status(500).json({ ok: false, msg: "Error interno al crear el servicio." });
     }
   }
 
   static async update(req, res) {
     const idNum = parseInt(req.params.id);
     if (isNaN(idNum))
-      return res.status(400).json({ ok: false, msg: "El ID del servicio debe ser un número" });
+      return res.status(400).json({ ok: false, msg: "El ID debe ser un número." });
 
     try {
       const old = await prisma.servicios.findUnique({ where: { servicio_id: idNum } });
@@ -161,14 +147,14 @@ export default class ServiciosController {
       res.json({ ok: true, msg: "Servicio actualizado correctamente", data: servicio });
     } catch (error) {
       console.error("❌ Error en update:", error);
-      res.status(500).json({ ok: false, msg: "Error interno del servidor al actualizar el servicio." });
+      res.status(500).json({ ok: false, msg: "Error interno al actualizar el servicio." });
     }
   }
 
   static async delete(req, res) {
     const idNum = parseInt(req.params.id);
     if (isNaN(idNum))
-      return res.status(400).json({ ok: false, msg: "El ID del servicio debe ser un número" });
+      return res.status(400).json({ ok: false, msg: "El ID debe ser un número." });
 
     try {
       const existe = await prisma.servicios.findFirst({
@@ -185,7 +171,7 @@ export default class ServiciosController {
       res.json({ ok: true, msg: "Servicio eliminado correctamente", id: servicio_id });
     } catch (error) {
       console.error("❌ Error en delete:", error);
-      res.status(500).json({ ok: false, msg: "Error interno del servidor al eliminar el servicio." });
+      res.status(500).json({ ok: false, msg: "Error interno al eliminar el servicio." });
     }
   }
 }
