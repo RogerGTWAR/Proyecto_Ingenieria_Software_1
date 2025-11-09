@@ -41,7 +41,7 @@ const ClientesForm = ({ onSubmit, onClose, initialData = {}, isEdit = false }) =
     <div className="fixed top-[100px] left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-xl p-8 shadow-md border border-gray-200"
+        className="bg-[#F9FAFB] rounded-xl p-8 shadow-md border border-gray-200"
       >
         <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-8 text-center">
           {isEdit ? "Editar Cliente" : "Añadir Nuevo Cliente"}

@@ -51,7 +51,7 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
 
   return (
     <div className="fixed inset-0 flex justify-center items-start mt-[120px] z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh]">
+      <div className="bg-[#F9FAFB] rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh]">
         <h2 className="text-2xl font-semibold text-[var(--color-primary)] mb-4 text-center">
           {vehiculo.marca} {vehiculo.modelo}
         </h2>

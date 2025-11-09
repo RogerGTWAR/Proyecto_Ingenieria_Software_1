@@ -166,7 +166,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     <div className="fixed inset-0 flex justify-center items-start mt-[120px] z-50">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative overflow-y-auto max-h-[100vh]"
+        className="bg-[#F9FAFB] rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative overflow-y-auto max-h-[100vh]"
       >
         <h2 className="text-2xl font-semibold text-[var(--color-primary)] mb-4 text-center">
           {isEdit ? "Editar Proyecto" : "Nuevo Proyecto"}

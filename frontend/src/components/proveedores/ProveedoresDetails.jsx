@@ -5,7 +5,7 @@ const ProveedoresDetails = ({ proveedor, onClose, onEdit, onDelete }) => {
 
   return (
     <div className="fixed inset-0 flex justify-center items-start mt-[120px] z-50">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-8 relative">
+      <div className="bg-[#F9FAFB] rounded-xl shadow-lg w-full max-w-lg p-8 relative">
         <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-6 text-center">
           Detalles del Proveedor
         </h2>

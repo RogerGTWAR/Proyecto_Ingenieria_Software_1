@@ -30,7 +30,7 @@ const AvaluosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     <div className="fixed inset-0 flex justify-center items-start mt-[120px] z-50">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 border border-gray-200 overflow-y-auto max-h-[90vh]"
+        className="bg-[#F9FAFB] rounded-2xl shadow-2xl w-full max-w-2xl p-8 border border-gray-200 overflow-y-auto max-h-[90vh]"
       >
         <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-8 text-center">
           {isEdit ? "Editar Avalúo" : "Nuevo Avalúo"}

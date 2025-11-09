@@ -17,7 +17,7 @@ const EmpleadosDetails = ({ empleado, onClose, onEdit, onDelete, rolNameById }) 
 
   return (
     <div className="fixed top-[100px] left-1/2 -translate-x-1/2 z-50 w-full flex justify-center">
-      <div className="bg-white rounded-2xl shadow-md border border-gray-200 w-full max-w-4xl p-10">
+      <div className="bg-[#F9FAFB] rounded-2xl shadow-md border border-gray-200 w-full max-w-4xl p-10">
         <h1 className="text-3xl font-bold text-[var(--color-primary)] text-center mb-10">
           Detalles del Empleado
         </h1>
