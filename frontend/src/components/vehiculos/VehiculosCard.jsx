@@ -1,54 +1,71 @@
 import React from "react";
 
-const ClientesCard = ({ clientes, onEdit, onDelete, onVerDetalles }) => {
-  if (!clientes.length) {
+const VehiculosCard = ({ vehiculos, onEdit, onDelete, onVerDetalles }) => {
+  if (!vehiculos.length) {
     return (
       <p className="text-gray-500 text-center mt-4 text-base">
-        No hay clientes registrados.
+        No hay vehículos registrados.
       </p>
     );
   }
 
   return (
     <div className="flex flex-wrap gap-3 justify-start">
-      {clientes.map((c) => (
+      {vehiculos.map((v) => (
         <div
-          key={c.id}
+          key={v.id}
           className="bg-[#F9FAFB] border border-gray-200 rounded-xl shadow-sm 
                      p-4 w-[280px] hover:shadow-md hover:scale-[1.01] 
                      transition-all duration-200"
         >
-          {/* --- Información del cliente --- */}
+          {/* --- Información principal del vehículo --- */}
           <h3 className="font-semibold text-[var(--color-primary)] text-[17px] mb-1">
-            {c.nombreEmpresa}
+            {v.marca} {v.modelo}
           </h3>
           <p className="text-[15px] text-gray-700 mb-1">
-            👤 {c.nombreContacto || "Sin contacto"}
+            🚘 Placa: <span className="font-medium">{v.placa}</span>
           </p>
           <p className="text-[15px] text-gray-600 mb-1">
-            Cargo: {c.cargoContacto || "—"}
+            Año: {v.anio || "—"}
           </p>
-          <p className="text-[15px] text-gray-600 flex items-center gap-1 mb-2">
-            📞 {c.telefono || "Sin teléfono"}
+          <p className="text-[15px] text-gray-600 mb-1">
+            Tipo: {v.tipo_de_vehiculo || "—"}
+          </p>
+          <p className="text-[15px] text-gray-600 mb-1">
+            Combustible: {v.tipo_de_combustible || "—"}
+          </p>
+          <p
+            className={`text-[15px] font-medium mb-1 ${
+              v.estado === "Disponible"
+                ? "text-green-600"
+                : v.estado === "En Mantenimiento"
+                ? "text-yellow-600"
+                : "text-red-600"
+            }`}
+          >
+            Estado: {v.estado || "—"}
+          </p>
+          <p className="text-[15px] text-gray-600 mb-2">
+            Proveedor: {v.proveedorNombre || "—"}
           </p>
 
           {/* --- Botones de acción --- */}
           <div className="flex justify-center gap-2 mt-3">
             <button
-              onClick={() => onVerDetalles(c)}
+              onClick={() => onVerDetalles(v)}
               className="text-white text-sm px-3 py-1 rounded-md transition hover:scale-105"
               style={{ backgroundColor: "#1A2E81" }}
             >
               Detalles
             </button>
             <button
-              onClick={() => onEdit(c)}
+              onClick={() => onEdit(v)}
               className="bg-white border border-gray-300 text-gray-800 text-sm px-3 py-1 rounded-md hover:bg-gray-100 hover:scale-105 transition"
             >
               Editar
             </button>
             <button
-              onClick={() => onDelete(c)}
+              onClick={() => onDelete(v)}
               className="bg-red-600 text-white text-sm px-3 py-1 rounded-md hover:bg-red-700 hover:scale-105 transition"
             >
               Eliminar
@@ -60,4 +77,4 @@ const ClientesCard = ({ clientes, onEdit, onDelete, onVerDetalles }) => {
   );
 };
 
-export default ClientesCard;
+export default VehiculosCard;

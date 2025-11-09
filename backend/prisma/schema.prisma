@@ -271,7 +271,7 @@ model vehiculos {
 }
 
 model detalles_vehiculos {
-  detalle_vehiculo_id  Int       @default(autoincrement())
+  detalle_vehiculo_id  Int       @id @default(autoincrement())
   empleado_id          Int
   vehiculo_id          Int
   fecha_asignacion     DateTime  @db.Date
@@ -283,8 +283,8 @@ model detalles_vehiculos {
 
   empleados empleados @relation(fields: [empleado_id], references: [empleado_id])
   vehiculos vehiculos @relation(fields: [vehiculo_id], references: [vehiculo_id])
-
-  @@id([detalle_vehiculo_id, empleado_id, vehiculo_id])
+  @@index([empleado_id])
+  @@index([vehiculo_id])
 }
 
 model usuarios {

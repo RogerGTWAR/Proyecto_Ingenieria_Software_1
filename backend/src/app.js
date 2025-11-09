@@ -34,22 +34,35 @@ app.use(cookieParser());
 
 const allowedOrigins = [
   "https://frontend-u5xi.onrender.com", 
-  "http://localhost:5173",            
+  "http://localhost:5173",
+  "http://localhost:3000"
 ];
+
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn("Bloqueado por CORS:", origin);
-        callback(new Error("No permitido por CORS"));
+      // Permitir peticiones sin origin (Postman, backend interno, etc.)
+      if (!origin) return callback(null, true);
+
+      // Permitir las de la lista blanca
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
+
+      // Permitir extensiones del navegador solo en desarrollo
+      if (origin.startsWith("chrome-extension://")) {
+        console.log("⚠️ Permitido temporalmente:", origin);
+        return callback(null, true);
+      }
+
+      console.warn("❌ Bloqueado por CORS:", origin);
+      return callback(new Error("No permitido por CORS"));
     },
     credentials: true,
   })
 );
+
 
 
 app.use(express.static("public"));

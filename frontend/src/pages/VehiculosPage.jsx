@@ -1,220 +1,187 @@
-import { useState } from 'react';
-import DataTable from '../components/DataTable';
-import ButtonList from '../components/ButtonList';
-import Modal from '../components/Modal';
-import { mockDb } from '../../data/mockDb';
+import { useState } from "react";
+import ButtonList from "../components/ButtonList";
+import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
+import VehiculosCard from "../components/vehiculos/VehiculosCard";
+import VehiculosDetails from "../components/vehiculos/VehiculosDetails";
+import VehiculosForm from "../components/vehiculos/VehiculosForm";
+import { useVehiculos } from "../hooks/useVehiculos";
+import { useDetallesVehiculos } from "../hooks/useDetallesVehiculos";
 
 function VehiculosPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    proveedorId: '',
-    marca: '',
-    modelo: '',
-    anio: '',
-    placa: '',
-    tipoDeVehiculo: '',
-    tipoDeCombustible: 'Diesel',
-    estado: 'Operativo',
-    fechaRegistro: ''
-  });
+  const { items: vehiculos, loading, add, edit, remove, reload } = useVehiculos();
+  const { reload: reloadDetalles } = useDetallesVehiculos();
 
-  const tableHeaders = ['Marca', 'Modelo', 'Placa', 'Tipo', 'Estado'];
-  const tableData = mockDb.vehiculos.map(vehiculo => ({
-    id: vehiculo.vehiculoId,
-    'Marca': vehiculo.marca,
-    'Modelo': vehiculo.modelo,
-    'Placa': vehiculo.placa,
-    'Tipo': vehiculo.tipoDeVehiculo,
-    'Estado': vehiculo.estado,
-  }));
+  const [busqueda, setBusqueda] = useState("");
+  const [vistaDetalle, setVistaDetalle] = useState(false);
+  const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
 
-  const buttons = [
-    {
-      id: 'filter',
-      name: 'Filtrar',
-      icon: '/icons/filter.svg',
-      coordinate: 3,
-      action: () => console.log('Filter clicked'),
-    },
-    {
-      id: 'add',
-      name: 'Añadir',
-      icon: '/icons/add.svg',
-      coordinate: 4,
-      action: () => setIsModalOpen(true),
-    },
-  ];
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [vehiculoAEditar, setVehiculoAEditar] = useState(null);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const [mostrarEliminar, setMostrarEliminar] = useState(false);
+  const [vehiculoAEliminar, setVehiculoAEliminar] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const vehiculosFiltrados = (vehiculos || []).filter((v) =>
+    v.placa?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    v.marca?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    v.modelo?.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const abrirFormulario = () => {
+    setVehiculoAEditar(null);
+    setModoEdicion(false);
+    setMostrarFormulario(true);
   };
 
-  const handleSubmit = () => {
-    console.log('Nuevo vehículo:', formData);
-    // Aquí iría la lógica para guardar en la base de datos
-    setIsModalOpen(false);
-    setFormData({
-      proveedorId: '',
-      marca: '',
-      modelo: '',
-      anio: '',
-      placa: '',
-      tipoDeVehiculo: '',
-      tipoDeCombustible: 'Diesel',
-      estado: 'Operativo',
-      fechaRegistro: ''
-    });
+  const editarVehiculo = (vehiculo) => {
+    setVehiculoAEditar(vehiculo);
+    setModoEdicion(true);
+    setMostrarFormulario(true);
+    setVistaDetalle(false);
   };
+
+  const cerrarFormulario = () => {
+    setMostrarFormulario(false);
+    setVehiculoAEditar(null);
+    setModoEdicion(false);
+  };
+
+  const guardarVehiculo = async (data) => {
+    try {
+      let vehiculoGuardado;
+
+      if (modoEdicion && vehiculoAEditar) {
+        vehiculoGuardado = await edit(vehiculoAEditar.id, data);
+        setVehiculoSeleccionado(vehiculoGuardado);
+      } else {
+        vehiculoGuardado = await add(data);
+      }
+
+      if (!vehiculoGuardado || !vehiculoGuardado.id) {
+        console.error("❌ No se pudo obtener el ID del vehículo:", vehiculoGuardado);
+        alert("No se pudo obtener el ID del vehículo guardado.");
+        return null;
+      }
+
+      await reload();
+      await reloadDetalles();
+      return vehiculoGuardado;
+    } catch (error) {
+      console.error("❌ Error al guardar vehículo:", error);
+      alert("No se pudo guardar el vehículo.");
+      return null;
+    }
+  };
+
+  const verDetalles = (vehiculo) => {
+    setVehiculoSeleccionado(vehiculo);
+    setVistaDetalle(true);
+  };
+
+  const cerrarDetalles = () => {
+    setVistaDetalle(false);
+    setVehiculoSeleccionado(null);
+  };
+
+  const abrirEliminar = (vehiculo) => {
+    setVehiculoAEliminar(vehiculo);
+    setMostrarEliminar(true);
+  };
+
+  const cerrarEliminar = () => {
+    setMostrarEliminar(false);
+    setVehiculoAEliminar(null);
+  };
+
+  const eliminarVehiculo = async () => {
+    if (!vehiculoAEliminar) return;
+    setIsDeleting(true);
+    try {
+      await remove(vehiculoAEliminar.id);
+      await reload();
+      setVistaDetalle(false);
+    } catch (e) {
+      console.error("Error al eliminar vehículo:", e);
+      alert("Error al eliminar el vehículo.");
+    } finally {
+      setIsDeleting(false);
+      cerrarEliminar();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-[var(--color-primary)] text-lg font-semibold">
+        Cargando vehículos...
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="p-6">
-        <div className=" ">
-          <h1 className="heading-1 text-[var(--color-primary)] mb-2">
-            Vehículos
-          </h1>
-          <p className="body-1 text-[var(--color-gray)]">
-            Gestión de flota vehicular
-          </p>
-        </div>
-        <ButtonList buttons={buttons} />
-        <DataTable headers={tableHeaders} data={tableData} />
+    <div className="min-h-screen bg-gray-50 p-6 relative">
+      <h1 className="heading-1 text-[var(--color-primary)] mb-2">Vehículos</h1>
+      <p className="body-1 text-[var(--color-gray)] mb-6">
+        Gestión y control de vehículos asignados
+      </p>
 
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title="Añadir Nuevo Vehículo"
-          onSubmit={handleSubmit}
-        >
-          <div className="space-y-4">
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Proveedor</label>
-              <select
-                name="proveedorId"
-                value={formData.proveedorId}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              >
-                <option value="">Seleccionar proveedor</option>
-                {mockDb.proveedores.map(proveedor => (
-                  <option key={proveedor.proveedorId} value={proveedor.proveedorId}>
-                    {proveedor.nombreEmpresa}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Marca</label>
-                <input
-                  type="text"
-                  name="marca"
-                  value={formData.marca}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Modelo</label>
-                <input
-                  type="text"
-                  name="modelo"
-                  value={formData.modelo}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  required
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Año</label>
-                <input
-                  type="number"
-                  name="anio"
-                  value={formData.anio}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  min="1900"
-                  max={new Date().getFullYear() + 1}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Placa</label>
-                <input
-                  type="text"
-                  name="placa"
-                  value={formData.placa}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Tipo de Vehículo</label>
-              <select
-                name="tipoDeVehiculo"
-                value={formData.tipoDeVehiculo}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              >
-                <option value="">Seleccionar tipo</option>
-                <option value="Pickup 4x4">Pickup 4x4</option>
-                <option value="Camión de volteo">Camión de volteo</option>
-                <option value="Camión mixer">Camión mixer</option>
-                <option value="Excavadora">Excavadora</option>
-                <option value="Retroexcavadora">Retroexcavadora</option>
-                <option value="Bulldozer">Bulldozer</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Tipo de Combustible</label>
-                <select
-                  name="tipoDeCombustible"
-                  value={formData.tipoDeCombustible}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                >
-                  <option value="Diesel">Diesel</option>
-                  <option value="Gasolina">Gasolina</option>
-                  <option value="Eléctrico">Eléctrico</option>
-                </select>
-              </div>
-              <div>
-                <label className="block body-2 text-[var(--color-gray)] mb-1">Estado</label>
-                <select
-                  name="estado"
-                  value={formData.estado}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                >
-                  <option value="Operativo">Operativo</option>
-                  <option value="Mantenimiento">Mantenimiento</option>
-                  <option value="Fuera de servicio">Fuera de servicio</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Fecha de Registro</label>
-              <input
-                type="date"
-                name="fechaRegistro"
-                value={formData.fechaRegistro}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              />
-            </div>
-          </div>
-        </Modal>
-      </main>
+      <ButtonList
+        buttons={[
+          {
+            id: "add",
+            name: "Añadir Vehículo",
+            icon: "/icons/add.svg",
+            coordinate: 4,
+            action: abrirFormulario,
+          },
+        ]}
+      />
+
+      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6">
+        <input
+          type="text"
+          placeholder="Buscar por placa, marca o modelo..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
+        />
+      </div>
+
+      <VehiculosCard
+        vehiculos={vehiculosFiltrados}
+        onEdit={editarVehiculo}
+        onDelete={abrirEliminar}
+        onVerDetalles={verDetalles}
+      />
+
+      {vistaDetalle && vehiculoSeleccionado && (
+        <VehiculosDetails
+          vehiculo={vehiculoSeleccionado}
+          onClose={cerrarDetalles}
+          onEdit={editarVehiculo}
+          onDelete={abrirEliminar}
+        />
+      )}
+
+      {mostrarFormulario && (
+        <VehiculosForm
+          onSubmit={guardarVehiculo}
+          onClose={cerrarFormulario}
+          initialData={vehiculoAEditar}
+          isEdit={modoEdicion}
+        />
+      )}
+
+      {mostrarEliminar && (
+        <DeleteConfirmationModal
+          isOpen={mostrarEliminar}
+          onClose={cerrarEliminar}
+          onConfirm={eliminarVehiculo}
+          itemName={vehiculoAEliminar?.placa || ""}
+          loading={isDeleting}
+        />
+      )}
     </div>
   );
 }

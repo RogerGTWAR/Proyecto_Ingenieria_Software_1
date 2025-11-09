@@ -12,7 +12,7 @@ const ProveedoresCard = ({ proveedores, onEdit, onDelete, onVerDetalles }) => {
       {proveedores.map((p) => (
         <div
           key={p.id}
-          className="bg-white border border-gray-200 rounded-xl shadow-sm 
+          className="bg-[#F9FAFB] border border-gray-200 rounded-xl shadow-sm 
                      p-4 w-[280px] hover:shadow-md hover:scale-[1.01] 
                      transition-all duration-200"
         >

@@ -1,8 +1,8 @@
-//Falta-En Revision
+//Listo
 import prisma from "../database.js";
 
 const ESTADOS_PERMITIDOS = ["Disponible", "En Mantenimiento", "No Disponible"];
-const COMBUSTIBLES_PERMITIDOS = ["Diésel", "Regular", "Gasolina Super"]; 
+const COMBUSTIBLES_PERMITIDOS = ["Diésel", "Regular", "Gasolina Super"];
 
 function isValidYear(anio) {
   const y = parseInt(anio);
@@ -17,51 +17,78 @@ export default class VehiculosController {
       const vehiculos = await prisma.vehiculos.findMany({
         where: { fecha_eliminacion: null },
         include: {
-          proveedores: { select: { proveedor_id: true, nombre_proveedor: true } }
+          proveedores: {
+            select: {
+              proveedor_id: true,
+              nombre_empresa: true, 
+            },
+          },
         },
-        orderBy: { vehiculo_id: "asc" }
+        orderBy: { vehiculo_id: "asc" },
       });
 
-      const data = vehiculos.map(v => ({
+      const data = vehiculos.map((v) => ({
         ...v,
-        proveedor: v.proveedores?.nombre_proveedor ?? null
+        proveedor: v.proveedores?.nombre_empresa ?? null,
       }));
 
       res.json({ ok: true, data });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ ok: false, msg: "Server error, something went wrong" });
+      console.error(error);
+      res
+        .status(500)
+        .json({ ok: false, msg: "Server error, something went wrong" });
     }
   }
 
   static async getById(req, res) {
     const idNum = parseInt(req.params.id);
-    if (isNaN(idNum)) {
-      return res.status(400).json({ ok: false, msg: "El id del vehículo debe ser un número" });
-    }
+    if (isNaN(idNum))
+      return res
+        .status(400)
+        .json({ ok: false, msg: "El ID del vehículo debe ser un número" });
 
     try {
-      const veh = await prisma.vehiculos.findFirst({
+      const vehiculo = await prisma.vehiculos.findFirst({
         where: { AND: [{ vehiculo_id: idNum }, { fecha_eliminacion: null }] },
         include: {
-          proveedores: { select: { proveedor_id: true, nombre_proveedor: true } }
-        }
+          proveedores: {
+            select: {
+              proveedor_id: true,
+              nombre_empresa: true,
+            },
+          },
+        },
       });
 
-      if (!veh) {
-        return res.status(404).json({ ok: false, msg: `No se encontró el vehículo con id: ${idNum}` });
-      }
+      if (!vehiculo)
+        return res
+          .status(404)
+          .json({ ok: false, msg: `No se encontró el vehículo con ID: ${idNum}` });
 
-      res.json({ ok: true, data: { ...veh, proveedor: veh.proveedores?.nombre_proveedor ?? null } });
+      res.json({
+        ok: true,
+        data: { ...vehiculo, proveedor: vehiculo.proveedores?.nombre_empresa ?? null },
+      });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ ok: false, msg: "Server Error, something went wrong" });
+      console.error(error);
+      res
+        .status(500)
+        .json({ ok: false, msg: "Server error, something went wrong" });
     }
   }
 
   static async create(req, res) {
+  try {
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        ok: false,
+        msg: "El cuerpo de la petición está vacío o mal formateado. Asegúrate de usar JSON.",
+      });
+    }
+
     const {
-      proveedor_id,       
+      proveedor_id,
       marca,
       modelo,
       anio,
@@ -69,95 +96,140 @@ export default class VehiculosController {
       tipo_de_vehiculo,
       tipo_de_combustible,
       estado,
-      fecha_registro
+      fecha_registro,
     } = req.body;
 
     if (!marca || !modelo || !placa) {
-      return res.status(400).json({ ok: false, msg: "Faltan campos obligatorios: marca, modelo y placa" });
+      return res.status(400).json({
+        ok: false,
+        msg: "Campos obligatorios: marca, modelo y placa",
+      });
     }
 
-    if (anio !== undefined && anio !== null && !isValidYear(anio)) {
-      return res.status(400).json({ ok: false, msg: "anio inválido (>= 1886 y <= año actual)" });
+    if (anio && !isValidYear(anio)) {
+      return res.status(400).json({
+        ok: false,
+        msg: "Año inválido (>=1886 y <= año actual)",
+      });
     }
 
-    if (estado !== undefined && estado !== null && !ESTADOS_PERMITIDOS.includes(estado)) {
-      return res.status(400).json({ ok: false, msg: `estado inválido. Valores permitidos: ${ESTADOS_PERMITIDOS.join(", ")}` });
+    if (estado && !ESTADOS_PERMITIDOS.includes(estado)) {
+      return res.status(400).json({
+        ok: false,
+        msg: `Estado inválido. Valores permitidos: ${ESTADOS_PERMITIDOS.join(", ")}`,
+      });
     }
 
-    if (tipo_de_combustible !== undefined && tipo_de_combustible !== null &&
-        !COMBUSTIBLES_PERMITIDOS.includes(tipo_de_combustible)) {
-      return res.status(400).json({ ok: false, msg: `tipo_de_combustible inválido. Valores permitidos: ${COMBUSTIBLES_PERMITIDOS.join(", ")}` });
+    if (
+      tipo_de_combustible &&
+      !COMBUSTIBLES_PERMITIDOS.includes(tipo_de_combustible)
+    ) {
+      return res.status(400).json({
+        ok: false,
+        msg: `Tipo de combustible inválido. Valores permitidos: ${COMBUSTIBLES_PERMITIDOS.join(
+          ", "
+        )}`,
+      });
     }
 
     let proveedorId = null;
-    if (req.body.hasOwnProperty("proveedor_id")) {
-      if (proveedor_id === null) {
-        proveedorId = null;
-      } else {
-        const parsed = parseInt(proveedor_id);
-        if (isNaN(parsed)) {
-          return res.status(400).json({ ok: false, msg: "El id del proveedor debe ser un número" });
-        }
-        const provOk = await prisma.proveedores.findFirst({
-          where: { AND: [{ proveedor_id: parsed }, { fecha_eliminacion: null }] }
+    if (proveedor_id !== undefined && proveedor_id !== null) {
+      const parsed = parseInt(proveedor_id);
+      if (isNaN(parsed)) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El ID del proveedor debe ser un número",
         });
-        if (!provOk) {
-          return res.status(400).json({ ok: false, msg: "El proveedor no existe o fue dado de baja" });
-        }
-        proveedorId = parsed;
       }
-    }
 
-    let fRegistro = null;
-    if (fecha_registro) {
-      const parsed = new Date(fecha_registro);
-      if (isNaN(parsed.getTime())) return res.status(400).json({ ok: false, msg: "fecha_registro no es válida" });
-      fRegistro = parsed;
-    }
-
-    const placaNorm = String(placa).trim().toUpperCase();
-
-    try {
-      const nuevo = await prisma.vehiculos.create({
-        data: {
-          proveedor_id: proveedorId,
-          marca: marca.trim(),
-          modelo: modelo.trim(),
-          anio: anio !== undefined && anio !== null ? parseInt(anio) : null,
-          placa: placaNorm,
-          tipo_de_vehiculo: tipo_de_vehiculo?.trim() ?? null,
-          tipo_de_combustible: tipo_de_combustible ?? null,
-          estado: estado ?? null,
-          fecha_registro: fRegistro
+      const provOk = await prisma.proveedores.findFirst({
+        where: {
+          AND: [{ proveedor_id: parsed }, { fecha_eliminacion: null }],
         },
-        include: {
-          proveedores: { select: { proveedor_id: true, nombre_proveedor: true } }
-        }
       });
 
-      res.status(201).json({
-        ok: true,
-        msg: "Vehículo creado correctamente",
-        data: { ...nuevo, proveedor: nuevo.proveedores?.nombre_proveedor ?? null }
-      });
-    } catch (error) {
-      console.log(error);
-      if (error?.code === "P2002" && error?.meta?.target?.includes("placa")) {
-        return res.status(400).json({ ok: false, msg: "La placa ya está registrada" });
+      if (!provOk) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El proveedor no existe o fue dado de baja",
+        });
       }
-      res.status(500).json({ ok: false, msg: "Server error something went wrong" });
+
+      proveedorId = parsed;
     }
+
+    const placaNorm = placa.trim().toUpperCase();
+
+    const existente = await prisma.vehiculos.findFirst({
+      where: {
+        placa: placaNorm,
+        fecha_eliminacion: null,
+      },
+    });
+
+    if (existente) {
+      return res.status(400).json({
+        ok: false,
+        msg: `Ya existe un vehículo con la placa ${placaNorm}`,
+      });
+    }
+
+    const fRegistro = fecha_registro ? new Date(fecha_registro) : null;
+
+    const nuevo = await prisma.vehiculos.create({
+      data: {
+        proveedor_id: proveedorId,
+        marca: marca.trim(),
+        modelo: modelo.trim(),
+        anio: anio ? parseInt(anio) : null,
+        placa: placaNorm,
+        tipo_de_vehiculo: tipo_de_vehiculo?.trim() ?? null,
+        tipo_de_combustible: tipo_de_combustible ?? null,
+        estado: estado ?? null,
+        fecha_registro: fRegistro,
+      },
+      include: {
+        proveedores: { select: { proveedor_id: true, nombre_empresa: true } },
+      },
+    });
+
+    return res.status(201).json({
+      ok: true,
+      msg: "Vehículo creado correctamente",
+      data: {
+        ...nuevo,
+        proveedor: nuevo.proveedores?.nombre_empresa ?? null,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    if (error?.code === "P2002" && error?.meta?.target?.includes("placa")) {
+      return res.status(400).json({
+        ok: false,
+        msg: "La placa ya está registrada",
+      });
+    }
+
+    return res
+      .status(500)
+      .json({ ok: false, msg: "Server error, something went wrong" });
   }
+}
 
   static async update(req, res) {
     const idNum = parseInt(req.params.id);
-    if (isNaN(idNum)) return res.status(400).json({ ok: false, msg: "El id del vehículo debe ser un número" });
+    if (isNaN(idNum))
+      return res
+        .status(400)
+        .json({ ok: false, msg: "El ID del vehículo debe ser un número" });
 
     try {
       const old = await prisma.vehiculos.findUnique({ where: { vehiculo_id: idNum } });
-      if (!old || old.fecha_eliminacion !== null) {
-        return res.status(404).json({ ok: false, msg: "No se encontró el vehículo que se desea modificar" });
-      }
+      if (!old || old.fecha_eliminacion !== null)
+        return res
+          .status(404)
+          .json({ ok: false, msg: "No se encontró el vehículo a modificar" });
 
       const {
         proveedor_id,
@@ -168,129 +240,116 @@ export default class VehiculosController {
         tipo_de_vehiculo,
         tipo_de_combustible,
         estado,
-        fecha_registro
+        fecha_registro,
       } = req.body;
 
       let proveedorId = old.proveedor_id;
-      if (req.body.hasOwnProperty("proveedor_id")) {
+      if (proveedor_id !== undefined) {
         if (proveedor_id === null) {
           proveedorId = null;
         } else {
           const parsed = parseInt(proveedor_id);
-          if (isNaN(parsed)) return res.status(400).json({ ok: false, msg: "El id del proveedor debe ser un número" });
+          if (isNaN(parsed))
+            return res
+              .status(400)
+              .json({ ok: false, msg: "El ID del proveedor debe ser un número" });
+
           const provOk = await prisma.proveedores.findFirst({
-            where: { AND: [{ proveedor_id: parsed }, { fecha_eliminacion: null }] }
+            where: { AND: [{ proveedor_id: parsed }, { fecha_eliminacion: null }] },
           });
-          if (!provOk) return res.status(400).json({ ok: false, msg: "El proveedor no existe o fue dado de baja" });
+          if (!provOk)
+            return res
+              .status(400)
+              .json({ ok: false, msg: "El proveedor no existe o fue dado de baja" });
           proveedorId = parsed;
         }
       }
 
-      let nuevoAnio = old.anio;
-      if (req.body.hasOwnProperty("anio")) {
-        if (anio === null) {
-          nuevoAnio = null;
-        } else {
-          if (!isValidYear(anio)) {
-            return res.status(400).json({ ok: false, msg: "anio inválido (>= 1886 y <= año actual)" });
-          }
-          nuevoAnio = parseInt(anio);
-        }
-      }
+      if (anio && !isValidYear(anio))
+        return res
+          .status(400)
+          .json({ ok: false, msg: "Año inválido (>=1886 y <= año actual)" });
 
-      let nuevoEstado = old.estado;
-      if (req.body.hasOwnProperty("estado")) {
-        if (estado !== null && !ESTADOS_PERMITIDOS.includes(estado)) {
-          return res.status(400).json({ ok: false, msg: `estado inválido. Valores permitidos: ${ESTADOS_PERMITIDOS.join(", ")}` });
-        }
-        nuevoEstado = estado; 
-      }
-
-      let nuevoCombustible = old.tipo_de_combustible;
-      if (req.body.hasOwnProperty("tipo_de_combustible")) {
-        if (tipo_de_combustible !== null && !COMBUSTIBLES_PERMITIDOS.includes(tipo_de_combustible)) {
-          return res.status(400).json({ ok: false, msg: `tipo_de_combustible inválido. Valores permitidos: ${COMBUSTIBLES_PERMITIDOS.join(", ")}` });
-        }
-        nuevoCombustible = tipo_de_combustible;
-      }
-
-      let fRegistro = old.fecha_registro;
-      if (req.body.hasOwnProperty("fecha_registro")) {
-        if (fecha_registro === null) {
-          fRegistro = null;
-        } else {
-          const parsed = new Date(fecha_registro);
-          if (isNaN(parsed.getTime())) return res.status(400).json({ ok: false, msg: "fecha_registro no es válida" });
-          fRegistro = parsed;
-        }
-      }
-
-      let nuevaPlaca = old.placa;
-      if (req.body.hasOwnProperty("placa")) {
-        if (!placa) return res.status(400).json({ ok: false, msg: "placa no puede ser vacía" });
-        nuevaPlaca = String(placa).trim().toUpperCase();
-      }
-
-      try {
-        const actualizado = await prisma.vehiculos.update({
-          where: { vehiculo_id: idNum },
-          data: {
-            proveedor_id: proveedorId,
-            marca: marca !== undefined ? marca.trim() : old.marca,
-            modelo: modelo !== undefined ? modelo.trim() : old.modelo,
-            anio: nuevoAnio,
-            placa: nuevaPlaca,
-            tipo_de_vehiculo: tipo_de_vehiculo !== undefined ? (tipo_de_vehiculo?.trim() ?? null) : old.tipo_de_vehiculo,
-            tipo_de_combustible: nuevoCombustible,
-            estado: nuevoEstado,
-            fecha_registro: fRegistro,
-            fecha_actualizacion: new Date()
-          },
-          include: {
-            proveedores: { select: { proveedor_id: true, nombre_proveedor: true } }
-          }
+      if (estado && !ESTADOS_PERMITIDOS.includes(estado))
+        return res.status(400).json({
+          ok: false,
+          msg: `Estado inválido. Valores permitidos: ${ESTADOS_PERMITIDOS.join(", ")}`,
         });
 
-        res.json({
-          ok: true,
-          msg: "Vehículo actualizado correctamente",
-          data: { ...actualizado, proveedor: actualizado.proveedores?.nombre_proveedor ?? null }
+      if (tipo_de_combustible && !COMBUSTIBLES_PERMITIDOS.includes(tipo_de_combustible))
+        return res.status(400).json({
+          ok: false,
+          msg: `Tipo de combustible inválido. Valores permitidos: ${COMBUSTIBLES_PERMITIDOS.join(", ")}`,
         });
-      } catch (error) {
-        if (error?.code === "P2002" && error?.meta?.target?.includes("placa")) {
-          return res.status(400).json({ ok: false, msg: "La placa ya está registrada" });
-        }
-        throw error;
-      }
+
+      const fRegistro = fecha_registro ? new Date(fecha_registro) : old.fecha_registro;
+      const nuevaPlaca = placa ? placa.trim().toUpperCase() : old.placa;
+
+      const actualizado = await prisma.vehiculos.update({
+        where: { vehiculo_id: idNum },
+        data: {
+          proveedor_id: proveedorId,
+          marca: marca?.trim() ?? old.marca,
+          modelo: modelo?.trim() ?? old.modelo,
+          anio: anio ? parseInt(anio) : old.anio,
+          placa: nuevaPlaca,
+          tipo_de_vehiculo: tipo_de_vehiculo?.trim() ?? old.tipo_de_vehiculo,
+          tipo_de_combustible: tipo_de_combustible ?? old.tipo_de_combustible,
+          estado: estado ?? old.estado,
+          fecha_registro: fRegistro,
+          fecha_actualizacion: new Date(),
+        },
+        include: {
+          proveedores: { select: { proveedor_id: true, nombre_empresa: true } },
+        },
+      });
+
+      res.json({
+        ok: true,
+        msg: "Vehículo actualizado correctamente",
+        data: { ...actualizado, proveedor: actualizado.proveedores?.nombre_empresa ?? null },
+      });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ ok: false, msg: "Server error something went wrong" });
+      console.error(error);
+      if (error?.code === "P2002" && error?.meta?.target?.includes("placa")) {
+        return res
+          .status(400)
+          .json({ ok: false, msg: "La placa ya está registrada" });
+      }
+      res
+        .status(500)
+        .json({ ok: false, msg: "Server error, something went wrong" });
     }
   }
 
   static async delete(req, res) {
     const idNum = parseInt(req.params.id);
-    if (isNaN(idNum)) {
-      return res.status(400).json({ ok: false, msg: "El id del vehículo debe ser un número" });
-    }
+    if (isNaN(idNum))
+      return res
+        .status(400)
+        .json({ ok: false, msg: "El ID del vehículo debe ser un número" });
 
     try {
       const existe = await prisma.vehiculos.findFirst({
-        where: { AND: [{ vehiculo_id: idNum }, { fecha_eliminacion: null }] }
+        where: { AND: [{ vehiculo_id: idNum }, { fecha_eliminacion: null }] },
       });
-      if (!existe) {
-        return res.status(404).json({ ok: false, msg: "No se encontró el vehículo que se desea eliminar" });
-      }
+
+      if (!existe)
+        return res
+          .status(404)
+          .json({ ok: false, msg: "No se encontró el vehículo a eliminar" });
 
       const { vehiculo_id } = await prisma.vehiculos.update({
         where: { vehiculo_id: idNum },
-        data: { fecha_eliminacion: new Date() }
+        data: { fecha_eliminacion: new Date() },
       });
 
-      res.json({ ok: true, msg: "Se eliminó el vehículo correctamente", id: vehiculo_id });
+      res.json({ ok: true, msg: "Vehículo eliminado correctamente", id: vehiculo_id });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ ok: false, msg: "Server error something went wrong" });
+      console.error(error);
+      res
+        .status(500)
+        .json({ ok: false, msg: "Server error, something went wrong" });
     }
   }
 }

@@ -1,4 +1,4 @@
--- Creación de tablas base
+/*-- Creación de tablas base
 CREATE TABLE roles (
   rol_id SERIAL PRIMARY KEY,
   cargo VARCHAR(100),
@@ -300,3 +300,4 @@ CREATE TABLE avaluos_servicios (
   CONSTRAINT fk_servicio_avaluo FOREIGN KEY (servicio_id)
     REFERENCES servicios (servicio_id)
 );
+*/
