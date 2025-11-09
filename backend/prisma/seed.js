@@ -204,3 +204,72 @@ main()
     await prisma.$disconnect();
   });
 */
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log("🌱 Iniciando inserción de datos iniciales...");
+ // === 7️⃣ VEHÍCULOS ===
+  await prisma.vehiculos.createMany({
+    data: [
+      { proveedor_id: 1, marca: "Toyota", modelo: "Hilux", anio: 2021, placa: "M234567", tipo_de_vehiculo: "Camioneta 4x4", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2023-03-15") },
+      { proveedor_id: 1, marca: "Nissan", modelo: "Frontier", anio: 2022, placa: "M876543", tipo_de_vehiculo: "Camioneta Doble Cabina", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2023-04-10") },
+      { proveedor_id: 2, marca: "Isuzu", modelo: "D-MAX", anio: 2020, placa: "L234501", tipo_de_vehiculo: "Pick-Up", tipo_de_combustible: "Diésel", estado: "En mantenimiento", fecha_registro: new Date("2022-10-22") },
+      { proveedor_id: 2, marca: "Mitsubishi", modelo: "L200", anio: 2023, placa: "M998877", tipo_de_vehiculo: "Camioneta", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2023-05-20") },
+      { proveedor_id: 3, marca: "Caterpillar", modelo: "420F2", anio: 2019, placa: "MAQ001", tipo_de_vehiculo: "Retroexcavadora", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2022-01-05") },
+      { proveedor_id: 3, marca: "John Deere", modelo: "310SL", anio: 2020, placa: "MAQ002", tipo_de_vehiculo: "Retroexcavadora", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2022-06-12") },
+      { proveedor_id: 2, marca: "Hino", modelo: "500 Series", anio: 2018, placa: "T345678", tipo_de_vehiculo: "Camión de carga", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2021-11-01") },
+      { proveedor_id: 2, marca: "Freightliner", modelo: "M2 106", anio: 2019, placa: "T987654", tipo_de_vehiculo: "Camión grúa", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2022-02-20") },
+      { proveedor_id: 1, marca: "Kia", modelo: "Sportage", anio: 2021, placa: "M123456", tipo_de_vehiculo: "SUV", tipo_de_combustible: "Regular", estado: "Activo", fecha_registro: new Date("2023-07-18") },
+      { proveedor_id: 1, marca: "Hyundai", modelo: "Tucson", anio: 2022, placa: "M654321", tipo_de_vehiculo: "SUV", tipo_de_combustible: "Gasolina Súper", estado: "Activo", fecha_registro: new Date("2023-08-02") },
+      { proveedor_id: 1, marca: "Suzuki", modelo: "Vitara", anio: 2020, placa: "M112233", tipo_de_vehiculo: "SUV", tipo_de_combustible: "Gasolina Súper", estado: "Activo", fecha_registro: new Date("2022-12-10") },
+      { proveedor_id: 2, marca: "Mazda", modelo: "BT-50", anio: 2023, placa: "L765432", tipo_de_vehiculo: "Pick-Up", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2024-01-05") },
+      { proveedor_id: 3, marca: "Volvo", modelo: "A25G", anio: 2018, placa: "MAQ003", tipo_de_vehiculo: "Camión articulado", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2021-09-09") },
+      { proveedor_id: 3, marca: "Komatsu", modelo: "PC200", anio: 2019, placa: "MAQ004", tipo_de_vehiculo: "Excavadora", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2021-12-22") },
+      { proveedor_id: 3, marca: "CAT", modelo: "140M", anio: 2017, placa: "MAQ005", tipo_de_vehiculo: "Motoniveladora", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2021-06-15") },
+      { proveedor_id: 2, marca: "Chevrolet", modelo: "Colorado", anio: 2021, placa: "L876123", tipo_de_vehiculo: "Pick-Up", tipo_de_combustible: "Gasolina Súper", estado: "Activo", fecha_registro: new Date("2023-09-01") },
+      { proveedor_id: 1, marca: "Ford", modelo: "Ranger", anio: 2022, placa: "M908070", tipo_de_vehiculo: "Camioneta", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2023-02-11") },
+      { proveedor_id: 2, marca: "Isuzu", modelo: "Elf 400", anio: 2019, placa: "T345210", tipo_de_vehiculo: "Camión liviano", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2022-03-30") },
+      { proveedor_id: 3, marca: "CAT", modelo: "950GC", anio: 2020, placa: "MAQ006", tipo_de_vehiculo: "Cargador frontal", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2022-08-18") },
+      { proveedor_id: 3, marca: "Volvo", modelo: "EC220DL", anio: 2021, placa: "MAQ007", tipo_de_vehiculo: "Excavadora hidráulica", tipo_de_combustible: "Diésel", estado: "Activo", fecha_registro: new Date("2023-01-30") },
+    ],
+    skipDuplicates: true,
+  });
+  // === 8️⃣ DETALLES VEHÍCULOS ===
+  await prisma.detalles_vehiculos.createMany({
+    data: [
+      { empleado_id: 1, vehiculo_id: 9, fecha_asignacion: new Date("2023-07-20"), descripcion: "Uso administrativo general" },
+      { empleado_id: 1, vehiculo_id: 10, fecha_asignacion: new Date("2023-08-10"), descripcion: "Supervisión de obras urbanas" },
+      { empleado_id: 2, vehiculo_id: 17, fecha_asignacion: new Date("2023-02-12"), descripcion: "Visitas técnicas de proyectos" },
+      { empleado_id: 3, vehiculo_id: 7, fecha_asignacion: new Date("2021-11-02"), descripcion: "Transporte de materiales contables" },
+      { empleado_id: 4, vehiculo_id: 1, fecha_asignacion: new Date("2023-03-18"), descripcion: "Inspecciones en campo" },
+      { empleado_id: 4, vehiculo_id: 2, fecha_asignacion: new Date("2023-04-15"), descripcion: "Visitas a obras en ejecución" },
+      { empleado_id: 4, vehiculo_id: 4, fecha_asignacion: new Date("2023-05-25"), descripcion: "Supervisión técnica de maquinaria" },
+      { empleado_id: 5, vehiculo_id: 5, fecha_asignacion: new Date("2022-01-06"), descripcion: "Operación de retroexcavadora" },
+      { empleado_id: 5, vehiculo_id: 6, fecha_asignacion: new Date("2022-06-15"), descripcion: "Operación de maquinaria pesada" },
+      { empleado_id: 5, vehiculo_id: 13, fecha_asignacion: new Date("2021-09-10"), descripcion: "Transporte de tierra y agregados" },
+      { empleado_id: 5, vehiculo_id: 14, fecha_asignacion: new Date("2021-12-24"), descripcion: "Excavación en zona urbana" },
+      { empleado_id: 5, vehiculo_id: 15, fecha_asignacion: new Date("2021-06-20"), descripcion: "Nivelación de terreno" },
+      { empleado_id: 5, vehiculo_id: 19, fecha_asignacion: new Date("2022-08-20"), descripcion: "Carga de materiales en obra" },
+      { empleado_id: 5, vehiculo_id: 20, fecha_asignacion: new Date("2023-01-31"), descripcion: "Excavaciones profundas" },
+      { empleado_id: 3, vehiculo_id: 8, fecha_asignacion: new Date("2022-02-25"), descripcion: "Traslado de materiales ligeros" },
+      { empleado_id: 2, vehiculo_id: 12, fecha_asignacion: new Date("2024-01-07"), descripcion: "Revisión de campo en proyectos rurales" },
+      { empleado_id: 4, vehiculo_id: 3, fecha_asignacion: new Date("2022-10-25"), descripcion: "Apoyo en supervisión de transporte" },
+      { empleado_id: 1, vehiculo_id: 11, fecha_asignacion: new Date("2022-12-15"), descripcion: "Transporte directivo" },
+      { empleado_id: 3, vehiculo_id: 16, fecha_asignacion: new Date("2023-09-02"), descripcion: "Supervisión financiera en campo" },
+      { empleado_id: 2, vehiculo_id: 18, fecha_asignacion: new Date("2022-03-31"), descripcion: "Supervisión de entregas y compras" },
+    ],
+    skipDuplicates: true,
+  });
+
+  console.log("✅ Datos iniciales insertados correctamente 🚀");
+}
+
+main()
+  .catch((e) => {
+    console.error("❌ Error ejecutando seed:", e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
