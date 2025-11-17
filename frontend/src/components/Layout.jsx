@@ -15,7 +15,7 @@ const Layout = () => {
       case '/compras': return 'Compras';
       case '/clientes': return 'Clientes';
       case '/proveedores': return 'Proveedores';
-      case '/productos': return 'Inventario';
+      case '/materiales': return 'Inventario';
       case '/avaluos': return 'Avalúos';
       default: return 'Dashboard';
     }

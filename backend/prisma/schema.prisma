@@ -138,12 +138,12 @@ model categorias {
   fecha_actualizacion DateTime?
   fecha_eliminacion   DateTime?
 
-  productos productos[]
+  materiales materiales[]
 }
 
-model productos {
-  producto_id         Int       @id @default(autoincrement())
-  nombre_producto     String    @db.VarChar(100)
+model materiales {
+  material_id         Int       @id @default(autoincrement())
+  nombre_material     String    @db.VarChar(100)
   categoria_id        Int?
   descripcion         String?   @db.VarChar(150)
   unidad_de_medida    String    @db.VarChar(100)
@@ -154,7 +154,7 @@ model productos {
   fecha_eliminacion   DateTime?
 
   categorias         categorias?          @relation(fields: [categoria_id], references: [categoria_id])
-  detalles_servicios detalles_servicios[]
+  costos_directos_servicios costos_directos_servicios[]
   detalles_compras   detalles_compras[]
 }
 
@@ -171,49 +171,75 @@ model avaluos {
   fecha_eliminacion   DateTime?
 
   proyectos         proyectos           @relation(fields: [proyecto_id], references: [proyecto_id])
-  avaluos_servicios avaluos_servicios[]
+  detalles_avaluos  detalles_avaluos     []
 }
 
 model servicios {
-  servicio_id         Int       @id @default(autoincrement())
-  nombre_servicio     String    @db.VarChar(100)
-  descripcion         String?   @db.VarChar(200)
-  precio_unitario     Decimal   @db.Decimal(18, 2)
-  cantidad            Int
-  total               Decimal?  @ignore
-  fecha_inicio        DateTime? @db.Date
-  fecha_fin           DateTime? @db.Date
-  tiempo_total_dias   Int?      @ignore
-  unidad_de_medida    String    @db.VarChar(50)
-  estado              String?   @db.VarChar(30)
-  fecha_creacion      DateTime? @default(now())
-  fecha_actualizacion DateTime?
-  fecha_eliminacion   DateTime?
+  servicio_id         Int      @id @default(autoincrement())
+  nombre_servicio     String   @db.VarChar(100)
+  descripcion         String?  @db.VarChar(200)
 
-  detalles_servicios detalles_servicios[]
-  avaluos_servicios  avaluos_servicios[]
-}
+  total_costo_directo   Decimal @db.Decimal(18, 2)
+  total_costo_indirecto Decimal @db.Decimal(18, 2)
 
-model detalles_servicios {
-  detalle_servicio_id  Int       @id @default(autoincrement())
-  servicio_id          Int
-  producto_id          Int
-  descripcion          String?   @db.VarChar(200)
-  cantidad             Int
-  unidad_de_medida     String    @db.VarChar(50)
-  precio_unitario      Decimal   @db.Decimal(18, 2)
-  subtotal             Decimal?   @ignore   
-  estado               String?   @db.VarChar(30)
-  fecha_uso            DateTime?
-  observaciones        String?   @db.VarChar(200)
-  fecha_creacion       DateTime  @default(now())
+  costo_venta          Decimal? @ignore
+
+  fecha_creacion       DateTime? @default(now())
   fecha_actualizacion  DateTime?
   fecha_eliminacion    DateTime?
 
-  servicio_id_servicios servicios @relation(fields: [servicio_id], references: [servicio_id])
-  producto_id_productos productos @relation(fields: [producto_id], references: [producto_id])
+  costos_directos_servicios  costos_directos_servicios[]
+  costos_indirectos_servicios  costos_indirectos_servicios[]
+  detalles_avaluos   detalles_avaluos     []
+}
 
-  @@map("detalles_servicios")
+model costos_directos_servicios {
+  costo_directo_id      Int       @id @default(autoincrement())
+  servicio_id           Int
+  material_id           Int
+
+  cantidad_material     Int
+  unidad_de_medida      String    @db.VarChar(50)
+  precio_unitario       Decimal   @db.Decimal(18, 2)
+
+  costo_material                    Decimal? @ignore
+  mano_obra                         Decimal? @ignore
+  equipos_transporte_herramientas   Decimal? @ignore
+  total_costo_directo               Decimal? @ignore
+
+  fecha_creacion        DateTime   @default(now())
+  fecha_actualizacion   DateTime?
+  fecha_eliminacion     DateTime?
+
+  servicio_id_servicios   servicios   @relation(fields: [servicio_id], references: [servicio_id])
+  material_id_materiales  materiales  @relation(fields: [material_id], references: [material_id])
+
+  costos_indirectos_servicios costos_indirectos_servicios[]
+
+  @@map("costos_directos_servicios")
+}
+
+model costos_indirectos_servicios {
+  costo_indirecto_id     Int       @id @default(autoincrement())
+  servicio_id            Int
+  costo_directo_id       Int
+
+  total_costo_directo    Decimal   @db.Decimal(18, 2)
+
+  administracion          Decimal? @ignore
+  operacion               Decimal? @ignore
+  utilidad                Decimal? @ignore
+  precio_unitario         Decimal? @ignore
+  total_costo_indirecto   Decimal? @ignore
+
+  fecha_creacion          DateTime   @default(now())
+  fecha_actualizacion     DateTime?
+  fecha_eliminacion       DateTime?
+
+  servicio_id_servicios    servicios                   @relation(fields: [servicio_id], references: [servicio_id])
+  costo_directo_id_costos_directos_servicios costos_directos_servicios @relation(fields: [costo_directo_id], references: [costo_directo_id])
+
+  @@map("costos_indirectos_servicios")
 }
 
 model maquinarias {
@@ -297,7 +323,9 @@ model usuarios {
   fecha_eliminacion   DateTime?
 
   empleados empleados @relation(fields: [empleado_id], references: [empleado_id])
+  permisos  permisos[]
 }
+
 
 model compras {
   compra_id           Int       @id @default(autoincrement())
@@ -320,7 +348,7 @@ model compras {
 model detalles_compras {
   detalle_compra_id   Int       @id @default(autoincrement())
   compra_id           Int
-  producto_id         Int
+  material_id         Int
   cantidad            Int
   precio_unitario     Decimal   @db.Decimal(18, 2)
   subtotal            Decimal?  @ignore
@@ -329,23 +357,62 @@ model detalles_compras {
   fecha_eliminacion   DateTime?
 
   compras   compras   @relation(fields: [compra_id], references: [compra_id])
-  productos productos @relation(fields: [producto_id], references: [producto_id])
+  materiales materiales @relation(fields: [material_id], references: [material_id])
 }
 
-model avaluos_servicios {
-  avaluo_servicio_id  Int       @default(autoincrement())
-  avaluo_id           Int
-  servicio_id         Int
-  cantidad            Int
-  precio_unitario     Decimal   @db.Decimal(18, 2)
-  total               Decimal?  @ignore
-  observaciones       String?   @db.VarChar(200)
+model detalles_avaluos {
+  detalle_avaluo_id     Int       @id @default(autoincrement())
+  avaluo_id             Int
+  servicio_id           Int
+
+  actividad             String    @db.VarChar(100)
+  unidad_de_medida      String    @db.VarChar(50)
+  cantidad              Int
+  precio_unitario       Decimal   @db.Decimal(18, 2)   
+
+  costo_venta           Decimal?  @ignore           
+  iva                   Decimal?  @ignore             
+  total_costo_venta     Decimal?  @ignore             
+
+  observaciones         String?   @db.VarChar(200)
+  fecha_creacion        DateTime? @default(now())
+  fecha_actualizacion   DateTime?
+  fecha_eliminacion     DateTime?
+
+  Avaluos   avaluos   @relation(fields: [avaluo_id], references: [avaluo_id])
+  Servicios servicios @relation(fields: [servicio_id], references: [servicio_id])
+
+    @@map("detalles_avaluos")
+
+}
+
+
+model menu {
+  id_menu       Int      @id @default(autoincrement())
+  nombre        String   @db.VarChar(100)
+  es_submenu    Boolean  @default(false)
+  url           String?  @db.VarChar(150)
+  id_menu_parent Int?
+  estado        Boolean  @default(true)
+  show          Boolean  @default(true)
+
+  parent   menu?    @relation("MenuParent", fields: [id_menu_parent], references: [id_menu])
+  children menu[]   @relation("MenuParent")
+
+  permisos permisos[]
+}
+
+model permisos {
+  permiso_id          Int       @id @default(autoincrement())
+  usuario_id          Int
+  id_menu             Int
+  estado              Boolean   @default(true)
   fecha_creacion      DateTime? @default(now())
   fecha_actualizacion DateTime?
   fecha_eliminacion   DateTime?
 
-  avaluos   avaluos   @relation(fields: [avaluo_id], references: [avaluo_id])
-  servicios servicios @relation(fields: [servicio_id], references: [servicio_id])
+  usuarios usuarios @relation(fields: [usuario_id], references: [usuario_id])
+  menu     menu     @relation(fields: [id_menu], references: [id_menu])
 
-  @@id([avaluo_servicio_id, avaluo_id, servicio_id])
+  @@unique([usuario_id, id_menu])
 }

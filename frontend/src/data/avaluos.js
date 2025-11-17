@@ -1,58 +1,63 @@
 import { api } from "./api.js";
 
-const toUI = (a) => ({
-  id: a.avaluo_id,
-  proyectoId: a.proyecto_id,
-  proyectoNombre: a.nombre_proyecto ?? "Sin proyecto",
-  estadoProyecto: a.estado ?? "—",
-  descripcion: a.descripcion ?? "",
-  montoEjecutado: a.monto_ejecutado ?? 0,
-  fechaInicio: a.fecha_inicio ? a.fecha_inicio.split("T")[0] : "",
-  fechaFin: a.fecha_fin ? a.fecha_fin.split("T")[0] : "",
-  tiempoTotalDias: a.tiempo_total_dias ?? 0,
+// Convertir backend → UI
+const toUI = (d) => ({
+  id: d.avaluo_id,
+
+  proyectoId: d.proyecto_id ?? 0,
+  descripcion: d.descripcion ?? "",
+  montoEjecutado: Number(d.monto_ejecutado ?? 0),
+
+  fechaInicio: d.fecha_inicio ?? "",
+  fechaFin: d.fecha_fin ?? "",
+  tiempoTotalDias: Number(d.tiempo_total_dias ?? 0),
+
+  fechaCreacion: d.fecha_creacion ?? "",
+  fechaActualizacion: d.fecha_actualizacion ?? "",
 });
 
+// GET
 export const fetchAvaluos = async () => {
   const { data } = await api("/avaluos");
-  return (data ?? []).map(toUI);
+  const list = Array.isArray(data.data) ? data.data : data;
+  return list.map(toUI);
 };
 
-export const createAvaluo = async (a) => {
+// POST
+export const createAvaluo = async (d) => {
   const body = {
-    proyecto_id: Number(a.proyectoId ?? a.proyecto_id),
-    descripcion: a.descripcion ?? null,
-    monto_ejecutado: parseFloat(a.montoEjecutado ?? a.monto_ejecutado),
-    fecha_inicio: a.fechaInicio ?? a.fecha_inicio,
-    fecha_fin: a.fechaFin ?? a.fecha_fin,
+    proyecto_id: Number(d.proyecto_id ?? d.proyectoId),
+    descripcion: d.descripcion ?? null,
+    fecha_inicio: d.fecha_inicio ?? d.fechaInicio,
+    fecha_fin: d.fecha_fin ?? d.fechaFin,
   };
 
-  const { data } = await api("/avaluos", {
+  const response = await api("/avaluos", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body,
   });
 
-  return toUI(data);
+  return toUI(response.data || response);
 };
 
-export const updateAvaluo = async (id, a) => {
+// PATCH
+export const updateAvaluo = async (id, d) => {
   const body = {
-    ...(a.proyectoId && { proyecto_id: Number(a.proyectoId) }),
-    ...(a.descripcion && { descripcion: a.descripcion }),
-    ...(a.montoEjecutado && { monto_ejecutado: parseFloat(a.montoEjecutado) }),
-    ...(a.fechaInicio && { fecha_inicio: a.fechaInicio }),
-    ...(a.fechaFin && { fecha_fin: a.fechaFin }),
+    proyecto_id: d.proyectoId !== undefined ? Number(d.proyectoId) : undefined,
+    descripcion: d.descripcion ?? undefined,
+    fecha_inicio: d.fechaInicio ?? undefined,
+    fecha_fin: d.fechaFin ?? undefined,
   };
 
-  const { data } = await api(`/avaluos/${id}`, {
+  const response = await api(`/avaluos/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
     body,
   });
 
-  return toUI(data);
+  return toUI(response.data || response);
 };
 
+// DELETE
 export const deleteAvaluo = async (id) => {
   await api(`/avaluos/${id}`, { method: "DELETE" });
   return true;

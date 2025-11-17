@@ -1,4 +1,6 @@
+// hooks/useAvaluos.js
 import { useEffect, useState } from "react";
+
 import {
   fetchAvaluos,
   createAvaluo,
@@ -11,13 +13,19 @@ export function useAvaluos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // -------------------------------------------------------------
+  // LOAD
+  // -------------------------------------------------------------
   const load = async () => {
     try {
       setLoading(true);
       const list = await fetchAvaluos();
       setItems(list);
+      return list;
     } catch (e) {
-      setError(e.message || "Error al cargar avalúos");
+      console.error("Error al cargar avaluos:", e);
+      setError(e.message || "Error al cargar avaluos");
+      return [];
     } finally {
       setLoading(false);
     }
@@ -27,20 +35,50 @@ export function useAvaluos() {
     load();
   }, []);
 
+  // -------------------------------------------------------------
+  // CREATE
+  // -------------------------------------------------------------
   const add = async (payload) => {
-    const created = await createAvaluo(payload);
+
+    const created = await createAvaluo({
+      proyectoId: payload.proyectoId,
+      descripcion: payload.descripcion,
+      fechaInicio: payload.fechaInicio,
+      fechaFin: payload.fechaFin,
+    });
+
     setItems((prev) => [created, ...prev]);
+    return created;
   };
 
+  // -------------------------------------------------------------
+  // UPDATE
+  // -------------------------------------------------------------
   const edit = async (id, payload) => {
     const updated = await updateAvaluo(id, payload);
-    setItems((prev) => prev.map((p) => (p.id === id ? updated : p)));
+
+    setItems((prev) =>
+      prev.map((a) => (a.id === id ? updated : a))
+    );
+
+    return updated;
   };
 
+  // -------------------------------------------------------------
+  // DELETE
+  // -------------------------------------------------------------
   const remove = async (id) => {
     await deleteAvaluo(id);
-    setItems((prev) => prev.filter((p) => p.id !== id));
+    setItems((prev) => prev.filter((a) => a.id !== id));
   };
 
-  return { items, loading, error, reload: load, add, edit, remove };
+  return {
+    items,
+    loading,
+    error,
+    reload: load,
+    add,
+    edit,
+    remove,
+  };
 }

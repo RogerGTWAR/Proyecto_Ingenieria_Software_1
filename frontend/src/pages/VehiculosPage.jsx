@@ -1,9 +1,12 @@
 import { useState } from "react";
 import ButtonList from "../components/ButtonList";
 import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
+
 import VehiculosCard from "../components/vehiculos/VehiculosCard";
+import VehiculosTable from "../components/vehiculos/VehiculosTable";
 import VehiculosDetails from "../components/vehiculos/VehiculosDetails";
 import VehiculosForm from "../components/vehiculos/VehiculosForm";
+
 import { useVehiculos } from "../hooks/useVehiculos";
 import { useDetallesVehiculos } from "../hooks/useDetallesVehiculos";
 
@@ -12,6 +15,10 @@ function VehiculosPage() {
   const { reload: reloadDetalles } = useDetallesVehiculos();
 
   const [busqueda, setBusqueda] = useState("");
+
+  // 🔘 NUEVO SWITCH
+  const [vistaTarjetas, setVistaTarjetas] = useState(true);
+
   const [vistaDetalle, setVistaDetalle] = useState(false);
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
 
@@ -59,8 +66,7 @@ function VehiculosPage() {
         vehiculoGuardado = await add(data);
       }
 
-      if (!vehiculoGuardado || !vehiculoGuardado.id) {
-        console.error("❌ No se pudo obtener el ID del vehículo:", vehiculoGuardado);
+      if (!vehiculoGuardado?.id) {
         alert("No se pudo obtener el ID del vehículo guardado.");
         return null;
       }
@@ -69,8 +75,7 @@ function VehiculosPage() {
       await reloadDetalles();
       return vehiculoGuardado;
     } catch (error) {
-      console.error("❌ Error al guardar vehículo:", error);
-      alert("No se pudo guardar el vehículo.");
+      alert("Error al guardar el vehículo.");
       return null;
     }
   };
@@ -102,9 +107,6 @@ function VehiculosPage() {
       await remove(vehiculoAEliminar.id);
       await reload();
       setVistaDetalle(false);
-    } catch (e) {
-      console.error("Error al eliminar vehículo:", e);
-      alert("Error al eliminar el vehículo.");
     } finally {
       setIsDeleting(false);
       cerrarEliminar();
@@ -121,11 +123,14 @@ function VehiculosPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 relative">
+
+      {/* TÍTULO */}
       <h1 className="heading-1 text-[var(--color-primary)] mb-2">Vehículos</h1>
       <p className="body-1 text-[var(--color-gray)] mb-6">
         Gestión y control de vehículos asignados
       </p>
 
+      {/* BOTÓN AÑADIR */}
       <ButtonList
         buttons={[
           {
@@ -138,7 +143,8 @@ function VehiculosPage() {
         ]}
       />
 
-      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6">
+      {/* BUSCADOR + SWITCH */}
+      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6 flex items-center gap-4">
         <input
           type="text"
           placeholder="Buscar por placa, marca o modelo..."
@@ -146,15 +152,36 @@ function VehiculosPage() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
         />
+
+        {/* 🔘 Switch Vista */}
+        <button
+          onClick={() => setVistaTarjetas(!vistaTarjetas)}
+          className={`px-5 py-2 rounded-lg shadow-md text-white font-medium transition ${
+            vistaTarjetas ? "bg-[#1A2E81]" : "bg-[#1A2E81]"
+          }`}
+        >
+          {vistaTarjetas ? "Vista: Tarjetas" : "Vista: Tabla"}
+        </button>
       </div>
 
-      <VehiculosCard
-        vehiculos={vehiculosFiltrados}
-        onEdit={editarVehiculo}
-        onDelete={abrirEliminar}
-        onVerDetalles={verDetalles}
-      />
+      {/* TABLA / TARJETAS */}
+      {vistaTarjetas ? (
+        <VehiculosCard
+          vehiculos={vehiculosFiltrados}
+          onEdit={editarVehiculo}
+          onDelete={abrirEliminar}
+          onVerDetalles={verDetalles}
+        />
+      ) : (
+        <VehiculosTable
+          vehiculos={vehiculosFiltrados}
+          onEdit={editarVehiculo}
+          onDelete={abrirEliminar}
+          onVerDetalles={verDetalles}
+        />
+      )}
 
+      {/* DETALLES */}
       {vistaDetalle && vehiculoSeleccionado && (
         <VehiculosDetails
           vehiculo={vehiculoSeleccionado}
@@ -164,6 +191,7 @@ function VehiculosPage() {
         />
       )}
 
+      {/* FORMULARIO */}
       {mostrarFormulario && (
         <VehiculosForm
           onSubmit={guardarVehiculo}
@@ -173,6 +201,7 @@ function VehiculosPage() {
         />
       )}
 
+      {/* MODAL ELIMINAR */}
       {mostrarEliminar && (
         <DeleteConfirmationModal
           isOpen={mostrarEliminar}

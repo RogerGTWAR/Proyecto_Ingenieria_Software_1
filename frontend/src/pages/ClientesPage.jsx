@@ -1,10 +1,14 @@
-//Listo
 import { useState } from "react";
 import ButtonList from "../components/ButtonList";
 import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
+
 import ClientesCard from "../components/clientes/ClientesCard";
+import ClientesTable from "../components/clientes/ClientesTable";
 import ClientesForm from "../components/clientes/ClientesForm";
 import ClientesDetails from "../components/clientes/ClientesDetails";
+
+import ActionFeedback from "../components/ui/ActionFeedback"; 
+
 import { useClientes } from "../hooks/useClientes";
 
 function ClientesPage() {
@@ -21,6 +25,12 @@ function ClientesPage() {
   const [mostrarEliminar, setMostrarEliminar] = useState(false);
   const [clienteAEliminar, setClienteAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [vistaTarjetas, setVistaTarjetas] = useState(true);
+
+  // 📌 Estado del feedback interactivo
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
 
   const clientesFiltrados = (clientes || []).filter((c) => {
     const q = busqueda.toLowerCase();
@@ -64,13 +74,18 @@ function ClientesPage() {
 
       if (modoEdicion && clienteAEditar) {
         const actualizado = await edit(clienteAEditar.id, datos);
+
         if (vistaDetalle && clienteSeleccionado?.id === clienteAEditar.id) {
           setClienteSeleccionado(actualizado);
         }
+
+        setFeedbackMessage("Cliente actualizado con éxito");
       } else {
         await add(datos);
+        setFeedbackMessage("Cliente creado con éxito");
       }
 
+      setFeedbackOpen(true);
       cerrarFormulario();
     } catch (error) {
       console.error("Error al guardar cliente:", error);
@@ -100,9 +115,14 @@ function ClientesPage() {
   const eliminarCliente = async () => {
     if (!clienteAEliminar) return;
     setIsDeleting(true);
+
     await remove(clienteAEliminar.id);
+
+    setFeedbackMessage("Cliente eliminado con éxito");
+    setFeedbackOpen(true);
+
     setIsDeleting(false);
-    setMostrarEliminar(false);
+    cerrarEliminar();
     cerrarDetalles();
   };
 
@@ -116,12 +136,9 @@ function ClientesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 relative">
-      <h1 className="heading-1 text-[var(--color-primary)] mb-2">
-        Clientes
-      </h1>
-      <p className="body-1 text-[var(--color-gray)] mb-6">
-        Gestión de clientes registrados
-      </p>
+
+      <h1 className="heading-1 text-[var(--color-primary)] mb-2">Clientes</h1>
+      <p className="body-1 text-[var(--color-gray)] mb-6">Gestión de clientes registrados</p>
 
       <ButtonList
         buttons={[
@@ -135,7 +152,8 @@ function ClientesPage() {
         ]}
       />
 
-      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6">
+      {/* 🔍 Buscador + Toggle */}
+      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6 flex items-center gap-4">
         <input
           type="text"
           placeholder="Buscar por empresa o contacto..."
@@ -143,14 +161,30 @@ function ClientesPage() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
         />
+
+        <button
+          onClick={() => setVistaTarjetas(!vistaTarjetas)}
+          className="px-5 py-2 rounded-lg shadow-md text-white font-medium bg-[#1A2E81]"
+        >
+          {vistaTarjetas ? "Vista: Tarjetas" : "Vista: Tabla"}
+        </button>
       </div>
 
-      <ClientesCard
-        clientes={clientesFiltrados}
-        onEdit={editarCliente}
-        onDelete={abrirEliminar}
-        onVerDetalles={verDetalles}
-      />
+      {vistaTarjetas ? (
+        <ClientesCard
+          clientes={clientesFiltrados}
+          onEdit={editarCliente}
+          onDelete={abrirEliminar}
+          onVerDetalles={verDetalles}
+        />
+      ) : (
+        <ClientesTable
+          clientes={clientesFiltrados}
+          onEdit={editarCliente}
+          onDelete={abrirEliminar}
+          onVerDetalles={verDetalles}
+        />
+      )}
 
       {vistaDetalle && (
         <ClientesDetails
@@ -179,6 +213,13 @@ function ClientesPage() {
           loading={isDeleting}
         />
       )}
+
+      {/* ⭐ FEEDBACK ANIMADO */}
+      <ActionFeedback
+        open={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+        message={feedbackMessage}
+      />
     </div>
   );
 }

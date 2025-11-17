@@ -1,15 +1,19 @@
 import { useState } from "react";
 import ButtonList from "../components/ButtonList";
 import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
+
 import ProveedoresCard from "../components/proveedores/ProveedoresCard";
+import ProveedoresTable from "../components/proveedores/ProveedoresTable";
 import ProveedoresDetails from "../components/proveedores/ProveedoresDetails";
 import ProveedoresForm from "../components/proveedores/ProveedoresForm";
+
 import { useProveedores } from "../hooks/useProveedores";
 
 function ProveedoresPage() {
   const { items: proveedores, loading, add, edit, remove, reload } = useProveedores();
 
   const [busqueda, setBusqueda] = useState("");
+  const [vistaTabla, setVistaTabla] = useState(false);     // ← NUEVO
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState(null);
   const [vistaDetalle, setVistaDetalle] = useState(false);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -118,7 +122,8 @@ function ProveedoresPage() {
         ]}
       />
 
-      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6">
+      {/* 🔍 Buscador + Switch de Vista */}
+      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6 flex items-center gap-4">
         <input
           type="text"
           placeholder="Buscar proveedor por nombre..."
@@ -126,14 +131,33 @@ function ProveedoresPage() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
         />
+
+        {/* 🔘 Botón Toggle con estilo unificado */}
+        <button
+          onClick={() => setVistaTabla(!vistaTabla)}
+          className="px-4 py-2 bg-[#1A2E81] text-white rounded-lg shadow hover:scale-105 transition"
+        >
+          {vistaTabla ? "Ver como Tarjetas" : "Ver como Tabla"}
+        </button>
       </div>
 
-      <ProveedoresCard
-        proveedores={proveedoresFiltrados}
-        onEdit={editarProveedor}
-        onDelete={abrirEliminar}
-        onVerDetalles={abrirDetalles}
-      />
+
+      {/* Vista Tabla o Tarjetas */}
+      {vistaTabla ? (
+        <ProveedoresTable
+          proveedores={proveedoresFiltrados}
+          onEdit={editarProveedor}
+          onDelete={abrirEliminar}
+          onVerDetalles={abrirDetalles}
+        />
+      ) : (
+        <ProveedoresCard
+          proveedores={proveedoresFiltrados}
+          onEdit={editarProveedor}
+          onDelete={abrirEliminar}
+          onVerDetalles={abrirDetalles}
+        />
+      )}
 
       {vistaDetalle && proveedorSeleccionado && (
         <ProveedoresDetails

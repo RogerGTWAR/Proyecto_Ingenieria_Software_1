@@ -1,6 +1,6 @@
 import React from "react";
 
-const ServiciosCard = ({ servicios, onEdit, onDelete, onVerDetalles }) => {
+export default function ServiciosCard({ servicios, onEdit, onDelete, onVerDetalles }) {
   if (!servicios.length) {
     return (
       <p className="text-gray-500 text-center mt-4 text-base">
@@ -11,71 +11,53 @@ const ServiciosCard = ({ servicios, onEdit, onDelete, onVerDetalles }) => {
 
   return (
     <div className="flex flex-wrap gap-4 justify-start">
-      {servicios.map((servicio) => (
+      {servicios.map((s) => (
         <div
-          key={servicio.id}
+          key={s.id}
           className="bg-[#F9FAFB] border border-gray-200 rounded-2xl shadow-md 
-                     p-5 w-[290px] hover:shadow-lg hover:scale-[1.02] 
+                     p-5 w-[310px] hover:shadow-lg hover:scale-[1.02] 
                      transition-all duration-200"
         >
-          {/* --- Información del servicio --- */}
           <h3 className="font-semibold text-[var(--color-primary)] text-[17px] mb-2 text-center">
-            {servicio.nombreServicio}
+            {s.nombreServicio}
           </h3>
 
-          <div className="text-[15px] text-gray-700 space-y-1 mb-2">
+          <div className="text-[15px] text-gray-700 space-y-1 mb-3">
             <p>
-              💰 <strong>Precio:</strong>{" "}
-              {servicio.precioUnitario?.toLocaleString("es-NI", {
-                style: "currency",
-                currency: "NIO",
-                minimumFractionDigits: 2,
-              })}
+              📝 <strong>Descripción:</strong> {s.descripcion || "No especificada"}
             </p>
             <p>
-              📦 <strong>Cantidad:</strong> {servicio.cantidad || "—"}
+              💵 <strong>Costo Directo:</strong>{" "}
+              C${s.totalCostoDirecto.toLocaleString("es-NI")}
             </p>
             <p>
-              💵 <strong>Total:</strong>{" "}
-              {servicio.total?.toLocaleString("es-NI", {
-                style: "currency",
-                currency: "NIO",
-                minimumFractionDigits: 2,
-              })}
+              💼 <strong>Costo Indirecto:</strong>{" "}
+              C${s.totalCostoIndirecto.toLocaleString("es-NI")}
             </p>
             <p>
-              ⚙️ <strong>Estado:</strong>{" "}
-              <span
-                className={`${
-                  servicio.estado === "Activo"
-                    ? "text-green-600 font-medium"
-                    : servicio.estado === "Pendiente"
-                    ? "text-yellow-600 font-medium"
-                    : "text-gray-600"
-                }`}
-              >
-                {servicio.estado}
+              💰 <strong>Costo de Venta:</strong>{" "}
+              <span className="text-green-700 font-bold">
+                C${s.costoVenta.toLocaleString("es-NI")}
               </span>
             </p>
           </div>
 
-          {/* --- Botones de acción --- */}
           <div className="flex justify-center gap-2 mt-3">
             <button
-              onClick={() => onVerDetalles(servicio)}
+              onClick={() => onVerDetalles(s)}
               className="bg-[var(--color-primary)] text-white text-sm px-4 py-1.5 rounded-md hover:scale-105 transition"
               style={{ backgroundColor: "#1A2E81" }}
             >
               Detalles
             </button>
             <button
-              onClick={() => onEdit(servicio)}
+              onClick={() => onEdit(s)}
               className="bg-white border border-gray-300 text-gray-800 text-sm px-4 py-1.5 rounded-md hover:bg-gray-100 hover:scale-105 transition"
             >
               Editar
             </button>
             <button
-              onClick={() => onDelete(servicio)}
+              onClick={() => onDelete(s)}
               className="bg-red-500 text-white text-sm px-4 py-1.5 rounded-md hover:bg-red-600 hover:scale-105 transition"
             >
               Eliminar
@@ -85,6 +67,4 @@ const ServiciosCard = ({ servicios, onEdit, onDelete, onVerDetalles }) => {
       ))}
     </div>
   );
-};
-
-export default ServiciosCard;
+}

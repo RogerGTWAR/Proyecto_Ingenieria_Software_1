@@ -1,24 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { useCategorias } from "../../hooks/useCategorias";
 
-const ProductosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
+const MaterialesForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   const { items: categorias } = useCategorias();
 
   const [form, setForm] = useState({
     categoria_id: "",
-    nombre_producto: "",
+    nombre_material: "",
     descripcion: "",
     unidad_de_medida: "",
     cantidad_en_stock: "",
     precio_unitario: "",
   });
 
-  // ✅ Cargar datos del producto al editar
+  // ✅ Cargar datos del material al editar
   useEffect(() => {
     if (initialData) {
       setForm({
         categoria_id: initialData.categoria_id ?? "",
-        nombre_producto: initialData.nombre_producto ?? "",
+        nombre_material: initialData.nombre_material ?? "",
         descripcion: initialData.descripcion ?? "",
         unidad_de_medida: initialData.unidad_de_medida ?? "",
         cantidad_en_stock: String(initialData.cantidad_en_stock ?? ""),
@@ -27,20 +27,22 @@ const ProductosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     }
   }, [initialData]);
 
-  // ✅ Actualizar formulario al escribir
+  // ✅ Cambios en inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ Enviar datos
+  // ✅ Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const parsedData = {
       ...form,
       cantidad_en_stock: Number(form.cantidad_en_stock),
       precio_unitario: Number(form.precio_unitario),
     };
+
     await onSubmit(parsedData);
   };
 
@@ -51,10 +53,10 @@ const ProductosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
         className="bg-[#F9FAFB] rounded-2xl shadow-2xl w-full max-w-2xl p-8 border border-gray-200 overflow-y-auto max-h-[100vh]"
       >
         <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-8 text-center">
-          {isEdit ? "Editar Producto" : "Nuevo Producto"}
+          {isEdit ? "Editar Material" : "Nuevo Material"}
         </h2>
 
-        {/* === Categoría y Nombre === */}
+        {/* === Categoría & Nombre === */}
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-gray-900 font-medium mb-1">Categoría</label>
@@ -75,11 +77,11 @@ const ProductosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           </div>
 
           <div>
-            <label className="block text-gray-900 font-medium mb-1">Nombre del Producto</label>
+            <label className="block text-gray-900 font-medium mb-1">Nombre del Material</label>
             <input
               type="text"
-              name="nombre_producto"
-              value={form.nombre_producto}
+              name="nombre_material"
+              value={form.nombre_material}
               onChange={handleChange}
               required
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
@@ -87,7 +89,7 @@ const ProductosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           </div>
         </div>
 
-        {/* === Unidad y Cantidad === */}
+        {/* === Unidad & Cantidad === */}
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-gray-900 font-medium mb-1">Unidad de Medida</label>
@@ -142,7 +144,7 @@ const ProductosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           ></textarea>
         </div>
 
-        {/* 🔘 Botones */}
+        {/* === Botones === */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"
@@ -151,6 +153,7 @@ const ProductosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           >
             {isEdit ? "Actualizar" : "Guardar"}
           </button>
+
           <button
             type="button"
             onClick={onClose}
@@ -164,4 +167,4 @@ const ProductosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   );
 };
 
-export default ProductosForm;
+export default MaterialesForm;

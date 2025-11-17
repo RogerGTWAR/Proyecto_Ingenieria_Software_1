@@ -1,79 +1,82 @@
-//Listo
 import prisma from "../database.js";
 
 export default class DetallesServiciosController {
+
   static async getAll(_req, res) {
     try {
-      const detalles = await prisma.$queryRawUnsafe(`
-        SELECT 
-          ds.detalle_servicio_id,
-          ds.servicio_id,
-          ds.producto_id,
-          ds.descripcion,
-          ds.cantidad,
-          ds.unidad_de_medida,
-          ds.precio_unitario,
-          ds.subtotal,  
-          ds.estado,
-          ds.fecha_uso,
-          ds.observaciones,
-          ds.fecha_creacion,
-          ds.fecha_actualizacion,
-          ds.fecha_eliminacion
-        FROM detalles_servicios ds
-        WHERE ds.fecha_eliminacion IS NULL
-        ORDER BY ds.detalle_servicio_id ASC
-      `);
+      const detalles = await prisma.detalles_servicios.findMany({
+        where: { fecha_eliminacion: null },
+        include: {
+          servicio_id_servicios: {
+            select: {
+              servicio_id: true,
+              nombre_servicio: true,
+              descripcion: true,
+              precio_unitario: true,
+              cantidad: true,
+              unidad_de_medida: true,
+              estado: true,
+            }
+          },
+          material_id_materiales: {
+            select: {
+              material_id: true,
+              nombre_material: true,
+              unidad_de_medida: true,
+              precio_unitario: true,
+              cantidad_en_stock: true
+            }
+          }
+        },
+        orderBy: { detalle_servicio_id: "asc" },
+      });
 
-      res.json({ ok: true, data: detalles });
+      const list = detalles.map(d => ({
+        ...d,
+        total: Number(d.precio_unitario) * Number(d.cantidad)
+      }));
+
+      res.json({ ok: true, data: list });
+
     } catch (error) {
-      console.error("❌ Error en getAll:", error);
+      console.error(error);
       res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor al obtener los detalles de servicios.",
+        msg: "Server error, something went wrong",
       });
     }
   }
 
   static async getById(req, res) {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id))
-        return res.status(400).json({ ok: false, msg: "El ID debe ser un número." });
+    const idNum = parseInt(req.params.id);
+    if (isNaN(idNum))
+      return res.status(400).json({ ok: false, msg: "El ID debe ser numérico" });
 
-      const [detalle] = await prisma.$queryRawUnsafe(`
-        SELECT 
-          ds.detalle_servicio_id,
-          ds.servicio_id,
-          ds.producto_id,
-          ds.descripcion,
-          ds.cantidad,
-          ds.unidad_de_medida,
-          ds.precio_unitario,
-          ds.subtotal,  
-          ds.estado,
-          ds.fecha_uso,
-          ds.observaciones,
-          ds.fecha_creacion,
-          ds.fecha_actualizacion,
-          ds.fecha_eliminacion
-        FROM detalles_servicios ds
-        WHERE ds.detalle_servicio_id = ${id}
-        AND ds.fecha_eliminacion IS NULL
-      `);
+    try {
+      const detalle = await prisma.detalles_servicios.findFirst({
+        where: {
+          detalle_servicio_id: idNum,
+          fecha_eliminacion: null
+        },
+        include: {
+          servicio_id_servicios: true,
+          material_id_materiales: true
+        }
+      });
 
       if (!detalle)
-        return res.status(404).json({
-          ok: false,
-          msg: `No se encontró el detalle de servicio con ID ${id}`,
-        });
+        return res.status(404).json({ ok: false, msg: "Detalle no encontrado" });
+
+      detalle.total =
+        Number(detalle.precio_unitario) * Number(detalle.cantidad);
 
       res.json({ ok: true, data: detalle });
+
     } catch (error) {
-      console.error("Error en getById:", error);
+      console.error(error);
       res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor al obtener el detalle.",
+        msg: "Server error, something went wrong",
       });
     }
   }
@@ -82,153 +85,172 @@ export default class DetallesServiciosController {
     try {
       const {
         servicio_id,
-        producto_id,
+        material_id,
         descripcion,
         cantidad,
         unidad_de_medida,
-        precio_unitario,
-        estado,
-        fecha_uso,
-        observaciones,
+        precio_unitario
       } = req.body;
 
-      if (!servicio_id || !producto_id || !cantidad || !unidad_de_medida || !precio_unitario) {
-        return res.status(400).json({
-          ok: false,
-          msg: "Campos obligatorios: servicio_id, producto_id, cantidad, unidad_de_medida y precio_unitario.",
+      if (!servicio_id || !material_id || !descripcion || !cantidad || !unidad_de_medida || !precio_unitario)
+        return res.status(400).json({ ok: false, msg: "Faltan campos requeridos." });
+
+      const servicioId = Number(servicio_id);
+      const materialId = Number(material_id);
+
+      const servOk = await prisma.servicios.findFirst({
+        where: { servicio_id: servicioId, fecha_eliminacion: null }
+      });
+
+      if (!servOk)
+        return res.status(400).json({ ok: false, msg: "El servicio indicado no existe." });
+
+      const matOk = await prisma.materiales.findFirst({
+        where: { material_id: materialId, fecha_eliminacion: null }
+      });
+
+      if (!matOk)
+        return res.status(400).json({ ok: false, msg: "El material indicado no existe." });
+
+      const previo = await prisma.detalles_servicios.findFirst({
+        where: { servicio_id: servicioId, material_id: materialId }
+      });
+
+      if (previo && previo.fecha_eliminacion !== null) {
+        const reactivado = await prisma.detalles_servicios.update({
+          where: { detalle_servicio_id: previo.detalle_servicio_id },
+          data: {
+            fecha_eliminacion: null,
+            descripcion,
+            cantidad,
+            unidad_de_medida,
+            precio_unitario: Number(precio_unitario),
+            fecha_actualizacion: new Date()
+          },
+          include: {
+            servicio_id_servicios: true,
+            material_id_materiales: true
+          }
+        });
+
+        return res.json({
+          ok: true,
+          msg: "Detalle reactivado",
+          data: {
+            ...reactivado,
+            total: Number(reactivado.cantidad) * Number(reactivado.precio_unitario)
+          }
         });
       }
 
-      const servicio = await prisma.servicios.findUnique({
-        where: { servicio_id: parseInt(servicio_id) },
-      });
-      if (!servicio)
-        return res.status(400).json({ ok: false, msg: "El servicio especificado no existe." });
+      if (previo && previo.fecha_eliminacion === null)
+        return res.json({ ok: true, msg: "El detalle ya existe", data: previo });
 
-      const producto = await prisma.productos.findUnique({
-        where: { producto_id: parseInt(producto_id) },
-      });
-      if (!producto)
-        return res.status(400).json({ ok: false, msg: "El producto especificado no existe." });
-
-      const nuevoDetalle = await prisma.detalles_servicios.create({
+      const nuevo = await prisma.detalles_servicios.create({
         data: {
-          servicio_id: parseInt(servicio_id),
-          producto_id: parseInt(producto_id),
-          descripcion: descripcion?.trim() || null,
-          cantidad: parseInt(cantidad),
-          unidad_de_medida: unidad_de_medida.trim(),
-          precio_unitario: parseFloat(precio_unitario),
-          estado: estado?.trim() || null,
-          fecha_uso: fecha_uso ? new Date(fecha_uso) : null,
-          observaciones: observaciones?.trim() || null,
+          servicio_id: servicioId,
+          material_id: materialId,
+          descripcion,
+          cantidad,
+          unidad_de_medida,
+          precio_unitario: Number(precio_unitario)
         },
+        include: {
+          servicio_id_servicios: true,
+          material_id_materiales: true
+        }
       });
 
       res.status(201).json({
         ok: true,
-        msg: "Detalle de servicio creado correctamente.",
-        data: nuevoDetalle,
+        msg: "Detalle creado correctamente",
+        data: {
+          ...nuevo,
+          total: Number(nuevo.cantidad) * Number(nuevo.precio_unitario)
+        }
       });
+
     } catch (error) {
-      console.error("❌ Error en create:", error);
-      res.status(500).json({
-        ok: false,
-        msg: "Error interno del servidor al crear el detalle de servicio.",
-      });
+      console.error("❌ Error create:", error);
+      res.status(500).json({ ok: false, msg: "Error interno al crear el detalle." });
     }
   }
 
- static async update(req, res) {
+  static async update(req, res) {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id))
-        return res.status(400).json({ ok: false, msg: "El ID debe ser un número." });
+      const id = Number(req.params.id);
 
       const existente = await prisma.detalles_servicios.findUnique({
-        where: { detalle_servicio_id: id },
+        where: { detalle_servicio_id: id }
       });
-      if (!existente || existente.fecha_eliminacion)
-        return res.status(404).json({
-          ok: false,
-          msg: "El detalle no existe o ya fue eliminado.",
-        });
+
+      if (!existente || existente.fecha_eliminacion !== null)
+        return res.status(404).json({ ok: false, msg: "El detalle no existe o ya fue eliminado" });
 
       const {
         servicio_id,
-        producto_id,
+        material_id,
         descripcion,
         cantidad,
         unidad_de_medida,
-        precio_unitario,
-        estado,
-        fecha_uso,
-        observaciones,
+        precio_unitario
       } = req.body;
 
-      await prisma.detalles_servicios.update({
+      const actualizado = await prisma.detalles_servicios.update({
         where: { detalle_servicio_id: id },
         data: {
-          servicio_id: servicio_id ? parseInt(servicio_id) : existente.servicio_id,
-          producto_id: producto_id ? parseInt(producto_id) : existente.producto_id,
-          descripcion: descripcion?.trim() ?? existente.descripcion,
-          cantidad: cantidad ? parseInt(cantidad) : existente.cantidad,
-          unidad_de_medida: unidad_de_medida?.trim() ?? existente.unidad_de_medida,
+          servicio_id: servicio_id ? Number(servicio_id) : existente.servicio_id,
+          material_id: material_id ? Number(material_id) : existente.material_id,
+          descripcion: descripcion ?? existente.descripcion,
+          cantidad: cantidad ?? existente.cantidad,
+          unidad_de_medida: unidad_de_medida ?? existente.unidad_de_medida,
           precio_unitario: precio_unitario
-            ? parseFloat(precio_unitario)
+            ? Number(precio_unitario)
             : existente.precio_unitario,
-          estado: estado?.trim() ?? existente.estado,
-          fecha_uso: fecha_uso ? new Date(fecha_uso) : existente.fecha_uso,
-          observaciones: observaciones?.trim() ?? existente.observaciones,
-          fecha_actualizacion: new Date(),
+          fecha_actualizacion: new Date()
         },
+        include: {
+          servicio_id_servicios: true,
+          material_id_materiales: true
+        }
       });
-
-      const detalle = await prisma.$queryRawUnsafe(
-        `SELECT * FROM detalles_servicios WHERE detalle_servicio_id = ${id}`
-      );
 
       res.json({
         ok: true,
-        msg: "Detalle de servicio actualizado correctamente.",
-        data: detalle[0],
+        msg: "Detalle actualizado",
+        data: {
+          ...actualizado,
+          total: Number(actualizado.cantidad) * Number(actualizado.precio_unitario)
+        }
       });
+
     } catch (error) {
-      console.error("❌ Error en update:", error);
-      res.status(500).json({
-        ok: false,
-        msg: "Error interno del servidor al actualizar el detalle.",
-      });
+      console.error("❌ Error update:", error);
+      res.status(500).json({ ok: false, msg: "Error interno al actualizar" });
     }
   }
 
   static async delete(req, res) {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id))
-        return res.status(400).json({ ok: false, msg: "El ID debe ser un número." });
 
-      const existente = await prisma.detalles_servicios.findUnique({
-        where: { detalle_servicio_id: id },
+      const existe = await prisma.detalles_servicios.findFirst({
+        where: { detalle_servicio_id: id, fecha_eliminacion: null }
       });
-      if (!existente || existente.fecha_eliminacion)
-        return res.status(404).json({
-          ok: false,
-          msg: "El detalle no existe o ya fue eliminado.",
-        });
+
+      if (!existe)
+        return res.status(404).json({ ok: false, msg: "No se encontró el detalle a eliminar" });
 
       await prisma.detalles_servicios.update({
         where: { detalle_servicio_id: id },
-        data: { fecha_eliminacion: new Date() },
+        data: { fecha_eliminacion: new Date() }
       });
 
-      res.json({ ok: true, msg: "Detalle de servicio eliminado correctamente." });
+      res.json({ ok: true, msg: "Detalle eliminado correctamente" });
+
     } catch (error) {
-      console.error("❌ Error en delete:", error);
-      res.status(500).json({
-        ok: false,
-        msg: "Error interno del servidor al eliminar el detalle.",
-      });
+      console.error("❌ Error delete:", error);
+      res.status(500).json({ ok: false, msg: "Error interno al eliminar" });
     }
   }
 }

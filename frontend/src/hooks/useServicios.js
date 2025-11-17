@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  fetchServicios,
-  createServicio,
-  updateServicio,
-  deleteServicio,
-} from "../data/servicios.js";
+import { fetchServicios, createServicio, updateServicio, deleteServicio } from "../data/servicios.js";
 
 export function useServicios() {
   const [items, setItems] = useState([]);
@@ -16,8 +11,10 @@ export function useServicios() {
       setLoading(true);
       const list = await fetchServicios();
       setItems(list);
-    } catch (e) {
-      setError(e.message || "Error al cargar servicios");
+      return list;
+    } catch (err) {
+      setError(err.message);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -30,17 +27,18 @@ export function useServicios() {
   const add = async (payload) => {
     const created = await createServicio(payload);
     setItems((prev) => [created, ...prev]);
+    return created;
   };
 
   const edit = async (id, payload) => {
     const updated = await updateServicio(id, payload);
-    setItems((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    setItems((prev) => prev.map((s) => (s.id === id ? updated : s)));
     return updated;
   };
 
   const remove = async (id) => {
     await deleteServicio(id);
-    setItems((prev) => prev.filter((p) => p.id !== id));
+    setItems((prev) => prev.filter((s) => s.id !== id));
   };
 
   return { items, loading, error, reload: load, add, edit, remove };

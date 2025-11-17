@@ -6,6 +6,7 @@ import ProyectosDetails from "../components/proyectos/ProyectosDetails";
 import ProyectosForm from "../components/proyectos/ProyectosForm";
 import { useProyectos } from "../hooks/useProyectos";
 import { useDetallesEmpleados } from "../hooks/useDetallesEmpleados";
+import ProyectosTable from "../components/proyectos/ProyectosTable";
 
 function ProyectosPage() {
   const { items: proyectos, loading, add, edit, remove, reload } = useProyectos();
@@ -22,6 +23,9 @@ function ProyectosPage() {
   const [mostrarEliminar, setMostrarEliminar] = useState(false);
   const [proyectoAEliminar, setProyectoAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // 🔘 NUEVO: control de vista (true = tarjetas, false = tabla)
+  const [vistaTarjetas, setVistaTarjetas] = useState(true);
 
   const proyectosFiltrados = (proyectos || []).filter((p) =>
     p.nombreProyecto?.toLowerCase().includes(busqueda.toLowerCase())
@@ -136,7 +140,8 @@ function ProyectosPage() {
         ]}
       />
 
-      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6">
+      {/* 🔎 Buscador */}
+      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-4 flex items-center justify-between gap-4">
         <input
           type="text"
           placeholder="Buscar proyecto..."
@@ -144,14 +149,32 @@ function ProyectosPage() {
           onChange={(e) => setBusqueda(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
         />
+
+        {/* 🔘 Switch Tabla / Tarjetas */}
+        <button
+          onClick={() => setVistaTarjetas(!vistaTarjetas)}
+          className="px-4 py-2 bg-[#1A2E81] text-white rounded-lg shadow hover:scale-105 transition"
+        >
+          {vistaTarjetas ? "Ver como Tabla" : "Ver como Tarjetas"}
+        </button>
       </div>
 
-      <ProyectosCard
-        proyectos={proyectosFiltrados}
-        onEdit={editarProyecto}
-        onDelete={abrirEliminar}
-        onVerDetalles={verDetalles}
-      />
+      {/* 📋 / 🧊 Contenido según la vista */}
+      {vistaTarjetas ? (
+        <ProyectosCard
+          proyectos={proyectosFiltrados}
+          onEdit={editarProyecto}
+          onDelete={abrirEliminar}
+          onVerDetalles={verDetalles}
+        />
+      ) : (
+        <ProyectosTable
+          proyectos={proyectosFiltrados}
+          onEdit={editarProyecto}
+          onDelete={abrirEliminar}
+          onVerDetalles={verDetalles}
+        />
+      )}
 
       {vistaDetalle && proyectoSeleccionado && (
         <ProyectosDetails

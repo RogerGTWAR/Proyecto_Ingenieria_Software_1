@@ -10,11 +10,12 @@ const Sidebar = () => {
     { id: 'empleados', link: '/empleados', label: 'Empleados', icon: "icons/employee.svg" },
     { id: 'vehiculos', link: '/vehiculos', label: 'Vehículos', icon: "icons/car.svg" },
     { id: 'compras', link: '/compras', label: 'Compras', icon: "icons/buy.svg" },
-    { id: 'servicios', link: '/servicios', label: 'Servicios', icon: "icons/tool.svg" },
     { id: 'clientes', link: '/clientes', label: 'Clientes', icon: "icons/clients.svg" },
     { id: 'proveedores', link: '/proveedores', label: 'Proveedores', icon: "icons/suppliers.svg" },
-    { id: 'inventario', link: '/productos', label: 'Inventario', icon: "icons/inventory.svg" },
+    { id: 'inventario', link: '/materiales', label: 'Inventario', icon: "icons/inventory.svg" },
     { id: 'avaluos', link: '/avaluos', label: 'Avalúos', icon: "icons/suppliers.svg" },
+    { id: 'Servicios', link: '/servicios', label: 'Servicios', icon: "icons/tool.svg" },
+    { id: 'permisos', link: '/permisos', label: 'Permisos', icon: "icons/suppliers.svg" },
   ];
 
   return (

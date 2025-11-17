@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 import AvaluoRoutes from "./routes/AvaluoRoutes.js";
-import AvaluoServicioRoutes from "./routes/AvaluoServicioRoutes.js";
+import DetalleAvaloRoutes from "./routes/DetalleAvaluoRoutes.js";
 import CategoriaRoutes from "./routes/CategoriaRoutes.js";
 import CategoriasProveedorRoutes from "./routes/CategoriasProveedorRoutes.js";
 import ClienteRoutes from "./routes/ClienteRoutes.js";
@@ -17,13 +17,15 @@ import DetalleServicioRoutes from "./routes/DetalleServicioRoutes.js";
 import DetalleVehiculoRoutes from "./routes/DetalleVehiculoRoutes.js";
 import EmpleadoRoutes from "./routes/EmpleadoRoutes.js";
 import MaquinariaRoutes from "./routes/MaquinariaRoutes.js";
-import ProductoRoutes from "./routes/ProductoRoutes.js";
+import MaterialRoutes from "./routes/MaterialRoutes.js";
 import ProveedorRoutes from "./routes/ProveedorRoutes.js";
 import ProyectoRoutes from "./routes/ProyectoRoutes.js";
 import RolRoutes from "./routes/RolRoutes.js";
 import ServicioRoutes from "./routes/ServicioRoutes.js";
 import VehiculoRoutes from "./routes/VehiculoRoutes.js";
-
+import CostosDirectosRoutes from "./routes/CostosDirectosRoutes.js";
+import CostosIndirectosRoutes from "./routes/CostosIndirectosRoutes.js";
+import PermisosRoutes from "./routes/PermisoRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -78,7 +80,7 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api/avaluos", AvaluoRoutes);
-app.use("/api/avaluo_servicios", AvaluoServicioRoutes);
+app.use("/api/detalle_avaluos", DetalleAvaloRoutes);
 app.use("/api/categorias", CategoriaRoutes);
 app.use("/api/categorias_proveedores", CategoriasProveedorRoutes);
 app.use("/api/clientes", ClienteRoutes);
@@ -90,12 +92,15 @@ app.use("/api/detalle_servicios", DetalleServicioRoutes);
 app.use("/api/detalle_vehiculos", DetalleVehiculoRoutes);
 app.use("/api/empleados", EmpleadoRoutes);
 app.use("/api/maquinarias", MaquinariaRoutes);
-app.use("/api/productos", ProductoRoutes);
+app.use("/api/materiales", MaterialRoutes);
 app.use("/api/proveedores", ProveedorRoutes);
 app.use("/api/proyectos", ProyectoRoutes);
 app.use("/api/roles", RolRoutes);
 app.use("/api/servicios", ServicioRoutes);
 app.use("/api/vehiculos", VehiculoRoutes);
+app.use("/api/costos_directos", CostosDirectosRoutes);
+app.use("/api/costos_indirectos", CostosIndirectosRoutes);
+app.use("/api/permisos", PermisosRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

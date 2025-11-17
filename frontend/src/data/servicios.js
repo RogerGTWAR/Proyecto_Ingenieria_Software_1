@@ -4,61 +4,56 @@ const toUI = (s) => ({
   id: s.servicio_id,
   nombreServicio: s.nombre_servicio,
   descripcion: s.descripcion ?? "",
-  precioUnitario: parseFloat(s.precio_unitario ?? 0),
-  cantidad: parseInt(s.cantidad ?? 0),
-  total: parseFloat(s.total ?? 0),
-  fechaInicio: s.fecha_inicio ? s.fecha_inicio.split("T")[0] : "",
-  fechaFin: s.fecha_fin ? s.fecha_fin.split("T")[0] : "",
-  tiempoTotalDias: s.tiempo_total_dias ?? 0,
-  unidadDeMedida: s.unidad_de_medida ?? "",
-  estado: s.estado ?? "Activo",
+  totalCostoDirecto: Number(s.total_costo_directo ?? 0),
+  totalCostoIndirecto: Number(s.total_costo_indirecto ?? 0),
+  costoVenta: Number(s.costo_venta ?? 0),
+  fechaCreacion: s.fecha_creacion,
+  fechaActualizacion: s.fecha_actualizacion,
 });
 
+// GET
 export const fetchServicios = async () => {
   const { data } = await api("/servicios");
-  return (data ?? []).map(toUI);
+  const list = Array.isArray(data.data) ? data.data : data;
+  return list.map(toUI);
 };
 
-export const createServicio = async (s) => {
+// POST — CORRECTO FINAL
+export const createServicio = async (data) => {
   const body = {
-    nombre_servicio: s.nombreServicio,
-    descripcion: s.descripcion,
-    precio_unitario: parseFloat(s.precioUnitario),
-    cantidad: parseInt(s.cantidad),
-    unidad_de_medida: s.unidadDeMedida,
-    estado: s.estado,
-    fecha_inicio: s.fechaInicio,
-    fecha_fin: s.fechaFin,
+    nombre_servicio: data.nombreServicio,
+    descripcion: data.descripcion ?? null,
+    total_costo_directo: Number(data.totalCostoDirecto ?? 0),
+    total_costo_indirecto: Number(data.totalCostoIndirecto ?? 0),
   };
 
-  const { data } = await api("/servicios", {
+  const result = await api("/servicios", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body,
   });
 
-  return toUI(data);
+  return toUI(result.data || result);
 };
 
-export const updateServicio = async (id, s) => {
+// PATCH — CORRECTO
+export const updateServicio = async (id, data) => {
   const body = {
-    nombre_servicio: s.nombreServicio,
-    descripcion: s.descripcion,
-    precio_unitario: parseFloat(s.precioUnitario),
-    cantidad: parseInt(s.cantidad),
-    unidad_de_medida: s.unidadDeMedida,
-    estado: s.estado,
-    fecha_inicio: s.fechaInicio,
-    fecha_fin: s.fechaFin,
+    ...(data.nombreServicio && { nombre_servicio: data.nombreServicio }),
+    ...(data.descripcion !== undefined && { descripcion: data.descripcion }),
+    ...(data.totalCostoDirecto !== undefined && {
+      total_costo_directo: Number(data.totalCostoDirecto),
+    }),
+    ...(data.totalCostoIndirecto !== undefined && {
+      total_costo_indirecto: Number(data.totalCostoIndirecto),
+    }),
   };
 
-  const { data } = await api(`/servicios/${id}`, {
+  const result = await api(`/servicios/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
     body,
   });
 
-  return toUI(data);
+  return toUI(result.data || result);
 };
 
 export const deleteServicio = async (id) => {
