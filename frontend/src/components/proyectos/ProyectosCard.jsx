@@ -25,19 +25,19 @@ const ProyectosCard = ({ proyectos, onEdit, onDelete, onVerDetalles }) => {
 
           <div className="text-[15px] text-gray-700 space-y-1 mb-2">
             <p>
-              👤 <strong>Cliente:</strong> {p.clienteNombre || "Sin asignar"}
+              <strong>Cliente:</strong> {p.clienteNombre || "Sin asignar"}
             </p>
             <p>
-              📍 <strong>Ubicación:</strong> {p.ubicacion || "No especificada"}
+              <strong>Ubicación:</strong> {p.ubicacion || "No especificada"}
             </p>
             <p>
-              💰 <strong>Presupuesto:</strong>{" "}
+              <strong>Presupuesto:</strong>{" "}
               {p.presupuestoTotal
                 ? `C$${p.presupuestoTotal.toLocaleString("es-NI")}`
                 : "—"}
             </p>
             <p>
-              ⚙️ <strong>Estado:</strong>{" "}
+              <strong>Estado:</strong>{" "}
               <span
                 className={`${
                   p.estado === "Activo"

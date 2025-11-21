@@ -10,12 +10,17 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     items: detalles,
     add: addDetalle,
     edit: editDetalle,
-    remove: removeDetalle,   
+    remove: removeDetalle,
     reload: reloadDetalles,
   } = useDetallesAvaluos();
 
   // ===========================
-  // FORMULARIO AVALÚO
+  // ERRORES
+  // ===========================
+  const [errors, setErrors] = useState({});
+
+  // ===========================
+  // FORM AVALÚO
   // ===========================
   const [form, setForm] = useState({
     id: "",
@@ -25,17 +30,13 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     fechaFin: "",
   });
 
-  // ===========================
-  // DETALLES DEL AVALÚO
-  // ===========================
   const [detallesAvaluos, setDetallesAvaluos] = useState([]);
 
   // ===========================
-  // CARGA DE INITIAL DATA
+  // CARGAR INITIAL DATA
   // ===========================
   useEffect(() => {
     if (initialData) {
-
       const formatDate = (fecha) => {
         if (!fecha) return "";
         return new Date(fecha).toISOString().split("T")[0];
@@ -68,11 +69,50 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
   }, [initialData, detalles]);
 
   // ===========================
-  // CAMBIO DE INPUTS
+  // HANDLE CHANGE
   // ===========================
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
+
+    // limpiar error de ese campo
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  // ===========================
+  // VALIDACIONES
+  // ===========================
+  const validate = () => {
+    const newErrors = {};
+    const fechaMin = new Date("2000-01-01");
+    const fechaMax = new Date("2040-12-31");
+
+    // fechaInicio
+    if (!form.fechaInicio) {
+      newErrors.fechaInicio = "Debe seleccionar la fecha de inicio.";
+    } else {
+      const fi = new Date(form.fechaInicio);
+      if (fi < fechaMin || fi > fechaMax) {
+        newErrors.fechaInicio = "La fecha debe estar entre 2000 y 2040.";
+      }
+    }
+
+    // fechaFin
+    if (!form.fechaFin) {
+      newErrors.fechaFin = "Debe seleccionar la fecha fin.";
+    } else {
+      const ff = new Date(form.fechaFin);
+
+      if (ff < fechaMin || ff > fechaMax) {
+        newErrors.fechaFin = "La fecha debe estar entre 2000 y 2040.";
+      }
+
+      if (form.fechaInicio && ff < new Date(form.fechaInicio)) {
+        newErrors.fechaFin = "La fecha fin no puede ser menor que la fecha inicio.";
+      }
+    }
+
+    return newErrors;
   };
 
   // ===========================
@@ -130,13 +170,11 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
   // QUITAR DETALLE
   // ===========================
   const quitarDetalle = async (detalle) => {
-    // Si el detalle ya existe en la BD → eliminarlo con el hook
     if (detalle.id) {
-      await removeDetalle(detalle.id);   // 🔥 Soft-delete del backend
-      await reloadDetalles();            // Recargar lista
+      await removeDetalle(detalle.id);
+      await reloadDetalles();
     }
 
-    // Quitar del estado del formulario
     setDetallesAvaluos((prev) =>
       prev.filter((d) => d.servicioId !== detalle.servicioId)
     );
@@ -148,12 +186,19 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // correr validaciones
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return; // detener guardado
+    }
+
     const totalAvaluo = detallesAvaluos.reduce(
       (acc, d) => acc + Number(d.total),
       0
     );
 
-    // GUARDAR AVALÚO
+    // guardar avalúo
     const avaluoGuardado = await onSubmit({
       id: form.id,
       proyectoId: form.proyectoId,
@@ -167,7 +212,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
 
     const avaluoId = avaluoGuardado.id;
 
-    // GUARDAR DETALLES
+    // guardar detalles
     for (const d of detallesAvaluos) {
       const payload = {
         avaluoId,
@@ -186,7 +231,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
   };
 
   // ===========================
-  // UI
+  // UI COMPLETA (sin eliminar nada)
   // ===========================
   return (
     <div className="fixed inset-0 flex justify-center items-start mt-[40px] z-50">
@@ -228,6 +273,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
             />
           </div>
 
+          {/* === FECHA INICIO === */}
           <div>
             <label className="font-medium text-gray-800 text-sm">
               Fecha Inicio
@@ -237,11 +283,14 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
               name="fechaInicio"
               value={form.fechaInicio}
               onChange={handleChange}
-              required
               className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#1A2E81]"
             />
+            {errors.fechaInicio && (
+              <p className="text-red-600 text-sm mt-1">{errors.fechaInicio}</p>
+            )}
           </div>
 
+          {/* === FECHA FIN === */}
           <div>
             <label className="font-medium text-gray-800 text-sm">
               Fecha Fin
@@ -251,9 +300,11 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
               name="fechaFin"
               value={form.fechaFin}
               onChange={handleChange}
-              required
               className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#1A2E81]"
             />
+            {errors.fechaFin && (
+              <p className="text-red-600 text-sm mt-1">{errors.fechaFin}</p>
+            )}
           </div>
         </div>
 
@@ -355,6 +406,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
           </div>
         )}
 
+        {/* BOTONES */}
         <div className="flex justify-center gap-6 mt-12">
           <button
             type="submit"

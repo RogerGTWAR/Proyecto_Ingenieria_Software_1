@@ -25,17 +25,17 @@ const MaterialesCard = ({ materiales, onEdit, onDelete, onVerDetalles }) => {
 
           <div className="text-[15px] text-gray-700 space-y-1 mb-2">
             <p>
-              🏷️ <strong>Categoría:</strong>{" "}
+              <strong>Categoría:</strong>{" "}
               {material.categoriaNombre || "Sin categoría"}
             </p>
             <p>
-              📦 <strong>Unidad:</strong> {material.unidad_de_medida || "—"}
+              <strong>Unidad:</strong> {material.unidad_de_medida || "—"}
             </p>
             <p>
-              🔢 <strong>Stock:</strong> {material.cantidad_en_stock ?? 0}
+              <strong>Stock:</strong> {material.cantidad_en_stock ?? 0}
             </p>
             <p>
-              💰 <strong>Precio:</strong>{" "}
+              <strong>Precio:</strong>{" "}
               {material.precio_unitario
                 ? Number(material.precio_unitario).toLocaleString("es-NI", {
                     style: "currency",

@@ -12,7 +12,6 @@ export default function AvaluosCard({ avaluos, onEdit, onDelete, onVerDetalles }
     );
   }
 
-  // Mapa seguro por id
   const proyectosMap = Object.fromEntries(
     proyectos.map((p) => [Number(p.id), p])
   );
@@ -37,20 +36,20 @@ export default function AvaluosCard({ avaluos, onEdit, onDelete, onVerDetalles }
             {/* INFO */}
             <div className="text-[15px] text-gray-700 space-y-1 mb-3">
               <p>
-                📁 <strong>Proyecto:</strong>{" "}
+                <strong>Proyecto:</strong>{" "}
                 {proyecto?.nombreProyecto || `Proyecto ${a.proyectoId}`}
               </p>
 
               <p>
-                💰 <strong>Monto Ejecutado:</strong>{" "}
+              <strong>Monto Ejecutado:</strong>{" "}
                 <span className="text-green-700 font-bold">
                   C${a.montoEjecutado.toLocaleString("es-NI")}
                 </span>
               </p>
 
-              <p>📅 <strong>Inicio:</strong> {a.fechaInicio || "—"}</p>
-              <p>📅 <strong>Fin:</strong> {a.fechaFin || "—"}</p>
-              <p>⏳ <strong>Días:</strong> {a.tiempoTotalDias || 0}</p>
+              <p><strong>Inicio:</strong> {a.fechaInicio || "—"}</p>
+              <p><strong>Fin:</strong> {a.fechaFin || "—"}</p>
+              <p><strong>Días:</strong> {a.tiempoTotalDias || 0}</p>
             </div>
 
             {/* BOTONES */}

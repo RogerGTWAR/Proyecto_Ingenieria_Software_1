@@ -15,6 +15,8 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
     rolId: "",
   });
 
+  const [errors, setErrors] = useState({});
+
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -39,11 +41,56 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const newErrors = {};
+
+    const cedulaRegex = /^[0-9]{13}[A-Za-z]$/;
+    if (!cedulaRegex.test(formData.cedula)) {
+      newErrors.cedula =
+        "La cédula debe tener el formato 2410102061000L (13 dígitos más una letra).";
+    }
+
+    if (!formData.telefono || formData.telefono.trim().length < 8) {
+      newErrors.telefono = "El teléfono debe tener al menos 8 dígitos.";
+    }
+
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(formData.correo)) {
+      newErrors.correo = "Ingrese un correo válido. Debe incluir @.";
+    }
+
+    if (!formData.fecha_nacimiento) {
+      newErrors.fecha_nacimiento = "Debe ingresar la fecha de nacimiento.";
+    } else {
+      const nacimiento = new Date(formData.fecha_nacimiento);
+      if (nacimiento < new Date("1970-01-01") || nacimiento > new Date("2020-12-31")) {
+        newErrors.fecha_nacimiento =
+          "La fecha de nacimiento debe estar entre 1970 y 2020.";
+      }
+    }
+
+    if (!formData.fecha_contratacion) {
+      newErrors.fecha_contratacion = "Debe ingresar la fecha de contratación.";
+    } else {
+      const contratacion = new Date(formData.fecha_contratacion);
+      if (contratacion < new Date("2000-01-01") || contratacion > new Date("2030-12-31")) {
+        newErrors.fecha_contratacion =
+          "La fecha de contratación debe estar entre 2000 y 2030.";
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     onSubmit(formData);
   };
 
@@ -58,8 +105,9 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Columna izquierda */}
+
           <div className="space-y-4">
+
             <div>
               <label className="block text-gray-900 font-medium mb-1">Nombres</label>
               <input
@@ -68,7 +116,7 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
                 value={formData.nombres}
                 onChange={handleChange}
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
             </div>
 
@@ -80,7 +128,7 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
                 value={formData.apellidos}
                 onChange={handleChange}
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
             </div>
 
@@ -91,8 +139,11 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
                 name="cedula"
                 value={formData.cedula}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
+              {errors.cedula && (
+                <p className="text-red-600 text-sm mt-1">{errors.cedula}</p>
+              )}
             </div>
 
             <div>
@@ -102,8 +153,11 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
                 name="correo"
                 value={formData.correo}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
+              {errors.correo && (
+                <p className="text-red-600 text-sm mt-1">{errors.correo}</p>
+              )}
             </div>
 
             <div>
@@ -113,13 +167,16 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
+              {errors.telefono && (
+                <p className="text-red-600 text-sm mt-1">{errors.telefono}</p>
+              )}
             </div>
           </div>
 
-          {/* Columna derecha */}
           <div className="space-y-4">
+
             <div>
               <label className="block text-gray-900 font-medium mb-1">País</label>
               <input
@@ -127,7 +184,7 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
                 name="pais"
                 value={formData.pais}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
             </div>
 
@@ -138,7 +195,7 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
                 name="direccion"
                 value={formData.direccion}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
             </div>
 
@@ -149,8 +206,11 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
                 name="fecha_nacimiento"
                 value={formData.fecha_nacimiento}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
+              {errors.fecha_nacimiento && (
+                <p className="text-red-600 text-sm mt-1">{errors.fecha_nacimiento}</p>
+              )}
             </div>
 
             <div>
@@ -160,8 +220,11 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
                 name="fecha_contratacion"
                 value={formData.fecha_contratacion}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
+              {errors.fecha_contratacion && (
+                <p className="text-red-600 text-sm mt-1">{errors.fecha_contratacion}</p>
+              )}
             </div>
 
             <div>
@@ -171,7 +234,7 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
                 value={formData.rolId}
                 onChange={handleChange}
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
               >
                 <option value="">Seleccione un rol</option>
                 {roles.map((rol) => (
@@ -184,7 +247,6 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
           </div>
         </div>
 
-        {/* 🔘 Botones */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"
@@ -193,6 +255,7 @@ const EmpleadosForm = ({ onSubmit, onClose, initialData = {}, isEdit = false, ro
           >
             {isEdit ? "Actualizar" : "Guardar"}
           </button>
+
           <button
             type="button"
             onClick={onClose}

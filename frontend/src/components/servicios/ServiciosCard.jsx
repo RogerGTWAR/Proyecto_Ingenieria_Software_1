@@ -24,18 +24,18 @@ export default function ServiciosCard({ servicios, onEdit, onDelete, onVerDetall
 
           <div className="text-[15px] text-gray-700 space-y-1 mb-3">
             <p>
-              📝 <strong>Descripción:</strong> {s.descripcion || "No especificada"}
+              <strong>Descripción:</strong> {s.descripcion || "No especificada"}
             </p>
             <p>
-              💵 <strong>Costo Directo:</strong>{" "}
+              <strong>Costo Directo:</strong>{" "}
               C${s.totalCostoDirecto.toLocaleString("es-NI")}
             </p>
             <p>
-              💼 <strong>Costo Indirecto:</strong>{" "}
+              <strong>Costo Indirecto:</strong>{" "}
               C${s.totalCostoIndirecto.toLocaleString("es-NI")}
             </p>
             <p>
-              💰 <strong>Costo de Venta:</strong>{" "}
+              <strong>Costo de Venta:</strong>{" "}
               <span className="text-green-700 font-bold">
                 C${s.costoVenta.toLocaleString("es-NI")}
               </span>

@@ -3,11 +3,12 @@ import { useProveedores } from "../../hooks/useProveedores";
 import { useEmpleados } from "../../hooks/useEmpleados";
 import { useDetallesVehiculos } from "../../hooks/useDetallesVehiculos";
 
-//Corregir detalleVehiculo
 const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   const { items: proveedores } = useProveedores();
   const { items: empleados } = useEmpleados();
   const { add, reload, items: detalles } = useDetallesVehiculos();
+
+  const [errors, setErrors] = useState({});
 
   const [form, setForm] = useState({
     proveedor_id: "",
@@ -28,7 +29,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   const [fechaFin, setFechaFin] = useState("");
   const [descripcionAsignacion, setDescripcionAsignacion] = useState("");
 
-  // ✅ Cargar datos al editar vehículo
   useEffect(() => {
     if (initialData && detalles.length > 0) {
       setForm(initialData);
@@ -37,10 +37,7 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
         .filter((d) => Number(d.vehiculoId) === Number(initialData.id))
         .map((d) => ({
           id: d.empleadoId,
-          nombre:
-            d.empleadoNombre && d.empleadoNombre !== "—"
-              ? d.empleadoNombre
-              : `Empleado #${d.empleadoId}`,
+          nombre: d.empleadoNombre ?? `Empleado #${d.empleadoId}`,
           fecha_inicio: d.fechaAsignacion || "",
           fecha_fin: d.fechaFinAsignacion || "",
           descripcion: d.descripcion || "Sin descripción",
@@ -50,28 +47,62 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     }
   }, [initialData, detalles]);
 
-  // 🟢 Cambios de formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // 🟢 Buscar empleados
   const handleBuscar = (e) => setBusqueda(e.target.value);
 
-  // 🟢 Asignar empleado a vehículo
-  const handleAsignarEmpleado = () => {
-    if (!empleadoSeleccionado) return alert("Seleccione un empleado.");
-    if (!fechaInicio) return alert("Debe seleccionar la fecha de inicio.");
+  const validateEmpleadoAsignado = () => {
+    const newErrors = {};
 
-    const empleado = empleados.find(
-      (e) => e.id === Number(empleadoSeleccionado)
-    );
+    if (!empleadoSeleccionado) {
+      newErrors.asignar = "Debe seleccionar un empleado.";
+      return newErrors;
+    }
+
+    // Validar fechas
+    const inicio = fechaInicio ? new Date(fechaInicio) : null;
+    const fin = fechaFin ? new Date(fechaFin) : null;
+    const min = new Date("2000-01-01");
+    const max = new Date("2040-12-31");
+
+    if (!fechaInicio) {
+      newErrors.fechaInicio = "Debe seleccionar una fecha de inicio.";
+    } else if (inicio < min || inicio > max) {
+      newErrors.fechaInicio = "Debe estar entre 2000 y 2040.";
+    }
+
+    if (fechaFin) {
+      if (fin < min || fin > max) {
+        newErrors.fechaFin = "Debe estar entre 2000 y 2040.";
+      }
+      if (inicio && fin < inicio) {
+        newErrors.fechaFin = "La fecha fin no puede ser menor que la fecha inicio.";
+      }
+    }
+
+    return newErrors;
+  };
+
+  const handleAsignarEmpleado = () => {
+    const newErrors = validateEmpleadoAsignado();
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...newErrors }));
+      return;
+    }
+
+    const empleado = empleados.find((e) => e.id === Number(empleadoSeleccionado));
     if (!empleado) return;
 
     const yaAsignado = empleadosAsignados.some((e) => e.id === empleado.id);
-    if (yaAsignado)
-      return alert("Este empleado ya está asignado a este vehículo.");
+    if (yaAsignado) {
+      setErrors((prev) => ({ ...prev, asignar: "Este empleado ya está asignado." }));
+      return;
+    }
 
     setEmpleadosAsignados((prev) => [
       ...prev,
@@ -79,7 +110,7 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
         id: empleado.id,
         nombre: `${empleado.nombres} ${empleado.apellidos}`,
         fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin || "",
+        fecha_fin: fechaFin,
         descripcion: descripcionAsignacion || "Sin descripción",
       },
     ]);
@@ -91,78 +122,54 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     setDescripcionAsignacion("");
   };
 
-  const handleQuitarEmpleado = async (id) => {
-    try {
-      const detalleExistente = detalles.find(
-        (d) =>
-          Number(d.empleadoId ?? d.empleado_id) === Number(id) &&
-          Number(d.vehiculoId ?? d.vehiculo_id) === Number(form.id)
-      );
+  const empleadosFiltrados = empleados.filter((e) =>
+    `${e.nombres} ${e.apellidos}`.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
-      if (detalleExistente) {
-        const detalleId =
-          detalleExistente.id ??
-          detalleExistente.detalle_vehiculo_id ??
-          detalleExistente.detalleId;
+  const validateForm = () => {
+    const newErrors = {};
 
-        if (!detalleId) {
-          console.warn("⚠️ No se encontró el ID del detalle para eliminar.");
-          return;
-        }
+    if (!form.proveedor_id) newErrors.proveedor_id = "Debe seleccionar un proveedor.";
+    if (!form.estado) newErrors.estado = "Debe seleccionar un estado.";
+    if (!form.marca.trim()) newErrors.marca = "La marca es obligatoria.";
+    if (!form.modelo.trim()) newErrors.modelo = "El modelo es obligatorio.";
+    if (!form.placa.trim()) newErrors.placa = "La placa es obligatoria.";
+    if (!form.tipo_de_combustible) newErrors.tipo_de_combustible = "Seleccione un tipo de combustible.";
 
-
-        // Llamar al hook remove() con el ID correcto
-        await remove(detalleId);
-
-        // Recargar la lista desde el backend
-        await reload();
-
-        // Actualizar estado local para reflejar los cambios
-        setEmpleadosAsignados((prev) => prev.filter((e) => e.id !== id));
-      } else {
-        console.warn(
-          `⚠️ No se encontró asignación activa para el empleado ${id} y vehículo ${form.id}`
-        );
-      }
-    } catch (error) {
-      console.error("❌ Error al eliminar detalle:", error);
+    // Año
+    if (!form.anio) {
+      newErrors.anio = "El año es obligatorio.";
+    } else if (Number(form.anio) < 2000 || Number(form.anio) > 2040) {
+      newErrors.anio = "El año debe estar entre 2000 y 2040.";
     }
+
+    return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      const vehiculoData = {
-        proveedor_id: Number(form.proveedor_id) || null,
-        marca: form.marca.trim(),
-        modelo: form.modelo.trim(),
-        anio: Number(form.anio) || null,
-        placa: form.placa.trim(),
-        tipo_de_vehiculo: form.tipo_de_vehiculo || null,
-        tipo_de_combustible: form.tipo_de_combustible || null,
-        estado: form.estado,
-        fecha_registro:
-          form.fecha_registro || new Date().toISOString().split("T")[0],
-      };
+    const newErrors = validateForm();
 
-      const vehiculoGuardado = await onSubmit(vehiculoData);
+    if (empleadosAsignados.length === 0) {
+      newErrors.asignacion = "Debe asignar al menos un empleado.";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      const vehiculoGuardado = await onSubmit(form);
       const vehiculoId = Number(vehiculoGuardado?.id);
-      if (!vehiculoId) {
-        alert("No se pudo obtener el ID del vehículo guardado.");
-        return;
-      }
 
       for (const emp of empleadosAsignados) {
         await add({
           empleado_id: emp.id,
           vehiculo_id: vehiculoId,
-          fecha_asignacion: emp.fecha_inicio
-            ? new Date(emp.fecha_inicio).toISOString()
-            : new Date().toISOString(),
-          fecha_fin_asignacion: emp.fecha_fin
-            ? new Date(emp.fecha_fin).toISOString()
-            : null,
+          fecha_asignacion: emp.fecha_inicio,
+          fecha_fin_asignacion: emp.fecha_fin || null,
           descripcion: emp.descripcion,
         });
       }
@@ -170,16 +177,9 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       await reload();
       onClose();
     } catch (error) {
-      console.error("❌ Error al guardar vehículo:", error);
-      alert("Error al guardar el vehículo.");
+      console.error("Error al guardar:", error);
     }
   };
-
-  const empleadosFiltrados = empleados.filter((e) =>
-    `${e.nombres} ${e.apellidos}`
-      .toLowerCase()
-      .includes(busqueda.toLowerCase())
-  );
 
   return (
     <div className="fixed inset-0 flex justify-center items-start mt-[120px] z-50">
@@ -187,258 +187,256 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
         onSubmit={handleSubmit}
         className="bg-[#F9FAFB] rounded-2xl shadow-2xl w-full max-w-2xl p-8 border border-gray-200 overflow-y-auto max-h-[100vh]"
       >
-        <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-8 text-center">
+
+        <h2 className="text-2xl font-bold text-center mb-8">
           {isEdit ? "Editar Vehículo" : "Nuevo Vehículo"}
         </h2>
 
-        {/* === Proveedor y Estado === */}
+        {/* Proveedor / Estado */}
         <div className="grid grid-cols-2 gap-6 mb-6">
+
+          {/* PROVEEDOR */}
           <div>
-            <label className="block text-gray-900 font-medium mb-1">
-              Proveedor
-            </label>
+            <label className="font-medium text-gray-900">Proveedor</label>
             <select
               name="proveedor_id"
               value={form.proveedor_id}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--color-primary)]"
-              required
+              className="w-full border border-gray-300 rounded-lg p-2"
             >
-              <option value="">Seleccione un proveedor</option>
+              <option value="">Seleccione...</option>
               {proveedores.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre_empresa}
-                </option>
+                <option key={p.id} value={p.id}>{p.nombre_empresa}</option>
               ))}
             </select>
+            {errors.proveedor_id && <p className="text-red-600 text-sm">{errors.proveedor_id}</p>}
           </div>
 
+          {/* ESTADO */}
           <div>
-            <label className="block text-gray-900 font-medium mb-1">
-              Estado
-            </label>
+            <label className="font-medium text-gray-900">Estado</label>
             <select
               name="estado"
               value={form.estado}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-lg p-2"
             >
               <option>Disponible</option>
-              <option>En Mantenimiento</option>
               <option>No Disponible</option>
+              <option>En Mantenimiento</option>
             </select>
+            {errors.estado && <p className="text-red-600 text-sm">{errors.estado}</p>}
           </div>
+
         </div>
 
-        {/* === Marca, Modelo, Año, Placa, Tipo === */}
+        {/* Marca / Modelo */}
         <div className="grid grid-cols-2 gap-6 mb-6">
+
+          {/* MARCA */}
           <div>
-            <label className="block text-gray-900 font-medium mb-1">Marca</label>
+            <label className="font-medium text-gray-900">Marca</label>
             <input
               type="text"
               name="marca"
               value={form.marca}
               onChange={handleChange}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-lg p-2"
             />
+            {errors.marca && <p className="text-red-600 text-sm">{errors.marca}</p>}
           </div>
+
+          {/* MODELO */}
           <div>
-            <label className="block text-gray-900 font-medium mb-1">Modelo</label>
+            <label className="font-medium text-gray-900">Modelo</label>
             <input
               type="text"
               name="modelo"
               value={form.modelo}
               onChange={handleChange}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-lg p-2"
             />
+            {errors.modelo && <p className="text-red-600 text-sm">{errors.modelo}</p>}
           </div>
+
         </div>
 
+        {/* Año / Placa / Tipo */}
         <div className="grid grid-cols-3 gap-6 mb-6">
+
+          {/* AÑO */}
           <div>
-            <label className="block text-gray-900 font-medium mb-1">Año</label>
+            <label className="font-medium text-gray-900">Año</label>
             <input
               type="number"
               name="anio"
               value={form.anio}
               onChange={handleChange}
-              min="1886"
-              max={new Date().getFullYear()}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-lg p-2"
             />
+            {errors.anio && <p className="text-red-600 text-sm">{errors.anio}</p>}
           </div>
 
+          {/* PLACA */}
           <div>
-            <label className="block text-gray-900 font-medium mb-1">Placa</label>
+            <label className="font-medium text-gray-900">Placa</label>
             <input
               type="text"
               name="placa"
               value={form.placa}
               onChange={handleChange}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-lg p-2"
             />
+            {errors.placa && <p className="text-red-600 text-sm">{errors.placa}</p>}
           </div>
 
+          {/* COMBUSTIBLE */}
           <div>
-            <label className="block text-gray-900 font-medium mb-1">Tipo</label>
-            <input
-              type="text"
-              name="tipo_de_vehiculo"
-              value={form.tipo_de_vehiculo}
+            <label className="font-medium text-gray-900">Combustible</label>
+            <select
+              name="tipo_de_combustible"
+              value={form.tipo_de_combustible}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--color-primary)]"
-            />
+              className="w-full border border-gray-300 rounded-lg p-2"
+            >
+              <option value="">Seleccione...</option>
+              <option value="Diésel">Diésel</option>
+              <option value="Regular">Regular</option>
+              <option value="Gasolina Super">Gasolina Super</option>
+            </select>
+            {errors.tipo_de_combustible && (
+              <p className="text-red-600 text-sm">{errors.tipo_de_combustible}</p>
+            )}
           </div>
+
         </div>
 
-        {/* === Combustible === */}
-        <div className="mb-8">
-          <label className="block text-gray-900 font-medium mb-1">
-            Combustible
-          </label>
-          <select
-            name="tipo_de_combustible"
-            value={form.tipo_de_combustible}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--color-primary)]"
-          >
-            <option value="">Seleccione...</option>
-            <option value="Diésel">Diésel</option>
-            <option value="Regular">Regular</option>
-            <option value="Gasolina Super">Gasolina Super</option>
-          </select>
-        </div>
+        {/* === ASIGNAR EMPLEADOS === */}
+        <div className="border-t pt-6 mt-6">
 
-        {/* === Empleados Asignados === */}
-        <div className="border-t border-gray-300 mt-4 pt-6">
-          <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-4">
-            Empleados Asignados
+          <h3 className="text-lg font-semibold mb-3">
+            Empleados asignados al vehículo
           </h3>
 
-          <div className="flex flex-col gap-3 mb-4">
-            <input
-              type="text"
-              placeholder="Buscar empleado..."
-              value={busqueda}
-              onChange={handleBuscar}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--color-primary)]"
-            />
+          {/* Buscar */}
+          <input
+            type="text"
+            placeholder="Buscar empleado..."
+            value={busqueda}
+            onChange={handleBuscar}
+            className="w-full border border-gray-300 rounded-lg p-2 mb-3"
+          />
 
-            {busqueda && (
-              <select
-                value={empleadoSeleccionado}
-                onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--color-primary)]"
-              >
-                <option value="">Seleccionar...</option>
-                {empleadosFiltrados.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.nombres} {e.apellidos}
-                  </option>
-                ))}
-              </select>
-            )}
+          {busqueda && (
+            <select
+              value={empleadoSeleccionado}
+              onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-2 mb-3"
+            >
+              <option value="">Seleccione...</option>
+              {empleadosFiltrados.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.nombres} {e.apellidos}
+                </option>
+              ))}
+            </select>
+          )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-gray-900 text-sm mb-1">
-                  Fecha de inicio
-                </label>
-                <input
-                  type="date"
-                  value={fechaInicio}
-                  onChange={(e) => setFechaInicio(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-900 text-sm mb-1">
-                  Fecha de fin
-                </label>
-                <input
-                  type="date"
-                  value={fechaFin}
-                  onChange={(e) => setFechaFin(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                />
-              </div>
+          {errors.asignar && <p className="text-red-600 text-sm">{errors.asignar}</p>}
+
+          {/* Fechas */}
+          <div className="grid grid-cols-2 gap-4 mb-2 mt-3">
+
+            <div>
+              <label className="text-sm text-gray-900">Fecha inicio</label>
+              <input
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg p-2"
+              />
+              {errors.fechaInicio && (
+                <p className="text-red-600 text-sm">{errors.fechaInicio}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-gray-900 text-sm mb-1">
-                Descripción
-              </label>
-              <textarea
-                rows="2"
-                value={descripcionAsignacion}
-                onChange={(e) => setDescripcionAsignacion(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                placeholder="Ej: Asignación temporal para mantenimiento"
-              ></textarea>
+              <label className="text-sm text-gray-900">Fecha fin</label>
+              <input
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg p-2"
+              />
+              {errors.fechaFin && (
+                <p className="text-red-600 text-sm">{errors.fechaFin}</p>
+              )}
             </div>
 
-            <button
-              type="button"
-              onClick={handleAsignarEmpleado}
-              className="text-white font-medium px-4 py-2 rounded-md transition hover:scale-105"
-              style={{ backgroundColor: "#1A2E81" }}
-            >
-              Asignar
-            </button>
           </div>
 
-          {/* Lista de asignaciones */}
-          {empleadosAsignados.length > 0 ? (
-            <ul className="divide-y divide-gray-200">
-              {empleadosAsignados.map((e) => (
-                <li key={e.id} className="py-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-gray-900">{e.nombre}</p>
-                      <p className="text-sm text-gray-600">
-                        Inicio: {e.fecha_inicio || "—"} | Fin:{" "}
-                        {e.fecha_fin || "—"}
-                      </p>
-                      <p className="text-xs text-gray-500 italic">
-                        {e.descripcion}
-                      </p>
+          {/* Descripción */}
+          <textarea
+            rows="2"
+            placeholder="Descripción..."
+            value={descripcionAsignacion}
+            onChange={(e) => setDescripcionAsignacion(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg p-2"
+          ></textarea>
+
+          <button
+            type="button"
+            onClick={handleAsignarEmpleado}
+            className="mt-3 px-4 py-2 rounded-md text-white font-medium"
+            style={{ backgroundColor: "#1A2E81" }}
+          >
+            Asignar
+          </button>
+
+          {/* LISTA */}
+          <div className="mt-4">
+            {empleadosAsignados.length > 0 ? (
+              <ul className="divide-y divide-gray-200">
+                {empleadosAsignados.map((e) => (
+                  <li key={e.id} className="py-3">
+                    <div className="flex justify-between">
+                      <div>
+                        <p className="font-medium">{e.nombre}</p>
+                        <p className="text-sm text-gray-600">
+                          Inicio: {e.fecha_inicio} / Fin: {e.fecha_fin || "—"}
+                        </p>
+                        <p className="text-xs text-gray-400 italic">{e.descripcion}</p>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleQuitarEmpleado(e.id)}
-                      className="text-red-600 text-sm hover:underline"
-                    >
-                      Quitar
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500 italic">No hay empleados asignados.</p>
-          )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500 italic">No hay empleados asignados.</p>
+            )}
+          </div>
+
         </div>
 
-        {/* === Botones === */}
+        {/* BOTONES */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"
-            className="text-white text-base font-medium px-7 py-3 rounded-md transition hover:scale-105"
-            style={{ backgroundColor: "#1A2E81", minWidth: "130px" }}
+            className="px-7 py-3 rounded-md text-white"
+            style={{ backgroundColor: "#1A2E81" }}
           >
             {isEdit ? "Actualizar" : "Guardar"}
           </button>
+
           <button
             type="button"
             onClick={onClose}
-            className="bg-gray-300 text-gray-900 text-base font-medium px-7 py-3 rounded-md hover:bg-gray-400 transition-all"
+            className="bg-gray-300 px-7 py-3 rounded-md"
           >
             Cancelar
           </button>
         </div>
+
       </form>
     </div>
   );

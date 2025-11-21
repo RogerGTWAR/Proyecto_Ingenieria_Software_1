@@ -14,7 +14,6 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
     load();
   }, [vehiculo]);
 
-  // 🔹 Detecta automáticamente camelCase o snake_case
   const empleadosAsignados = useMemo(() => {
     if (!vehiculo?.id) return [];
 
@@ -41,7 +40,6 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
       .filter(Boolean);
   }, [detalles, empleados, vehiculo]);
 
-  // 🔍 Detección flexible del proveedor
   const proveedorNombre =
     vehiculo.proveedorNombre ||
     vehiculo.proveedor ||
@@ -86,7 +84,7 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
           </p>
         </div>
 
-        {/* 👷 Empleados asignados */}
+        {/* Empleados asignados */}
         <h3 className="text-lg font-semibold text-[var(--color-primary)] mt-6 mb-2">
           Empleados Asignados
         </h3>
@@ -121,7 +119,7 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
           </p>
         )}
 
-        {/* 🔘 Botones */}
+        {/* Botones */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             onClick={() => onEdit(vehiculo)}

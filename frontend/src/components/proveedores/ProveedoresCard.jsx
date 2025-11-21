@@ -24,7 +24,7 @@ const ProveedoresCard = ({ proveedores, onEdit, onDelete, onVerDetalles }) => {
             {p.ciudad}, {p.pais}
           </p>
           <p className="text-[15px] text-gray-600 flex items-center gap-1 mb-2">
-            📞 {p.telefono || "Sin teléfono"}
+             {p.telefono || "Sin teléfono"}
           </p>
 
           <div className="flex justify-center gap-2 mt-3">

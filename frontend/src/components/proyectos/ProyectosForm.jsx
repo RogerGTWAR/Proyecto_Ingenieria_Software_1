@@ -8,6 +8,8 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   const { items: empleados } = useEmpleados();
   const { items: detalles, add, edit, remove, reload } = useDetallesEmpleados();
 
+  const [errors, setErrors] = useState({});
+
   const [form, setForm] = useState({
     id: "",
     clienteId: "",
@@ -58,12 +60,20 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleBuscar = (e) => setBusqueda(e.target.value);
 
   const handleAsignarEmpleado = () => {
-    if (!empleadoSeleccionado) return;
+    if (!empleadoSeleccionado) {
+      setErrors((prev) => ({
+        ...prev,
+        asignar: "Debe seleccionar un empleado."
+      }));
+      return;
+    }
 
     const empleado = empleados.find(
       (e) => e.id === Number(empleadoSeleccionado)
@@ -71,7 +81,13 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     if (!empleado) return;
 
     const yaAsignado = empleadosAsignados.some((e) => e.id === empleado.id);
-    if (yaAsignado) return alert("Este empleado ya está asignado.");
+    if (yaAsignado) {
+      setErrors((prev) => ({
+        ...prev,
+        asignar: "Este empleado ya está asignado."
+      }));
+      return;
+    }
 
     setEmpleadosAsignados((prev) => [
       ...prev,
@@ -85,6 +101,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
     setEmpleadoSeleccionado("");
     setBusqueda("");
+    setErrors((prev) => ({ ...prev, asignar: "" }));
   };
 
   const handleQuitarEmpleado = async (id) => {
@@ -97,62 +114,89 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
       if (detalleExistente) {
         await remove(detalleExistente.id);
-        console.log(`🗑️ Eliminado: Empleado ${id} del Proyecto ${form.id}`);
         await reload();
       }
 
       setEmpleadosAsignados((prev) => prev.filter((e) => e.id !== id));
     } catch (error) {
-      console.error("❌ Error al eliminar detalle:", error);
-      alert("Error al eliminar el empleado del proyecto.");
+      console.error("Error al eliminar detalle:", error);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const newErrors = {};
+
+    // Cliente
+    if (!form.clienteId) newErrors.clienteId = "Seleccione un cliente.";
+
+    // Nombre
+    if (!form.nombreProyecto.trim())
+      newErrors.nombreProyecto = "El nombre del proyecto es obligatorio.";
+
+    // Presupuesto
+    if (!form.presupuestoTotal || Number(form.presupuestoTotal) <= 0)
+      newErrors.presupuestoTotal = "Debe ingresar un presupuesto válido.";
+
+    // Fechas
+    const minFecha = new Date("2000-01-01");
+    const maxFecha = new Date("2040-12-31");
+
+    if (!form.fechaInicio) {
+      newErrors.fechaInicio = "La fecha de inicio es obligatoria.";
+    } else {
+      const inicio = new Date(form.fechaInicio);
+      if (inicio < minFecha || inicio > maxFecha)
+        newErrors.fechaInicio = "Debe estar entre 2000 y 2040.";
+    }
+
+    if (!form.fechaFin) {
+      newErrors.fechaFin = "La fecha de fin es obligatoria.";
+    } else {
+      const fin = new Date(form.fechaFin);
+      if (fin < minFecha || fin > maxFecha)
+        newErrors.fechaFin = "Debe estar entre 2000 y 2040.";
+
+      if (form.fechaInicio && new Date(form.fechaFin) < new Date(form.fechaInicio))
+        newErrors.fechaFin = "La fecha de fin no puede ser menor a la fecha de inicio.";
+    }
+
+    // Asignar empleados
+    if (empleadosAsignados.length === 0)
+      newErrors.asignar = "Debe asignar al menos un empleado.";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     try {
       const proyectoGuardado = await onSubmit(form);
       const proyectoId = Number(proyectoGuardado?.id);
-      if (!proyectoId) {
-        alert("No se pudo obtener el ID del proyecto guardado.");
-        return;
-      }
 
       for (const emp of empleadosAsignados) {
-        const detalleExistente = detalles.find(
+        const existe = detalles.find(
           (d) =>
             Number(d.empleadoId) === Number(emp.id) &&
             Number(d.proyectoId) === proyectoId
         );
 
-        if (detalleExistente) {
-          if (
-            detalleExistente.fecha_eliminacion ||
-            detalleExistente.fechaEliminacion
-          ) {
-            console.log(`♻️ Reactivando detalle eliminado (${emp.id})`);
-            await edit(detalleExistente.id, {
-              fecha_eliminacion: null,
-              fechaProyecto: new Date().toISOString(),
-            });
-          }
+        if (existe) {
+          await edit(existe.id, { fecha_eliminacion: null });
         } else {
           await add({
             empleadoId: emp.id,
             proyectoId,
             fechaProyecto: new Date().toISOString(),
           });
-          console.log(`Empleado ${emp.id} agregado al proyecto ${proyectoId}`);
         }
       }
 
       await reload();
       onClose();
-      console.log("Proyecto guardado y empleados actualizados correctamente");
     } catch (error) {
-      console.error("Error al guardar proyecto:", error);
-      alert("No se pudo guardar el proyecto.");
+      console.error("Error:", error);
     }
   };
 
@@ -172,36 +216,32 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           {isEdit ? "Editar Proyecto" : "Nuevo Proyecto"}
         </h2>
 
-        {/* === Cliente y estado === */}
+        {/* CLIENTE / ESTADO */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Cliente
-            </label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Cliente</label>
             <select
               name="clienteId"
               value={form.clienteId}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
-              required
+              className="w-full border border-gray-300 rounded-md p-2"
             >
               <option value="">Seleccione un cliente</option>
               {clientes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombreEmpresa}
-                </option>
+                <option key={c.id} value={c.id}>{c.nombreEmpresa}</option>
               ))}
             </select>
+            {errors.clienteId && <p className="text-red-600 text-sm">{errors.clienteId}</p>}
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Estado
-            </label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Estado</label>
             <select
               name="estado"
               value={form.estado}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-md p-2"
             >
               <option value="En Espera">En Espera</option>
               <option value="Activo">Activo</option>
@@ -209,10 +249,12 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               <option value="Cancelado">Cancelado</option>
             </select>
           </div>
+
         </div>
 
-        {/* === Nombre y descripción === */}
+        {/* NOMBRE / DESCRIPCIÓN */}
         <div className="space-y-2 mb-4">
+
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Nombre del Proyecto
@@ -222,10 +264,13 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               name="nombreProyecto"
               value={form.nombreProyecto}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
-              required
+              className="w-full border border-gray-300 rounded-md p-2"
             />
+            {errors.nombreProyecto && (
+              <p className="text-red-600 text-sm">{errors.nombreProyecto}</p>
+            )}
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Descripción
@@ -235,13 +280,14 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               value={form.descripcion}
               onChange={handleChange}
               rows={3}
-              className="w-full border border-gray-300 rounded-md p-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
           </div>
         </div>
 
-        {/* === Ubicación y presupuesto === */}
+        {/* UBICACIÓN / PRESUPUESTO */}
         <div className="grid grid-cols-2 gap-4 mb-4">
+
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Ubicación
@@ -251,9 +297,10 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               name="ubicacion"
               value={form.ubicacion}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Presupuesto Total (C$)
@@ -263,13 +310,18 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               name="presupuestoTotal"
               value={form.presupuestoTotal}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
+            {errors.presupuestoTotal && (
+              <p className="text-red-600 text-sm">{errors.presupuestoTotal}</p>
+            )}
           </div>
+
         </div>
 
-        {/* === Fechas === */}
+        {/* FECHAS */}
         <div className="grid grid-cols-2 gap-4 mb-6">
+
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Fecha de Inicio
@@ -279,9 +331,13 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               name="fechaInicio"
               value={form.fechaInicio}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
+            {errors.fechaInicio && (
+              <p className="text-red-600 text-sm">{errors.fechaInicio}</p>
+            )}
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Fecha de Fin
@@ -291,12 +347,16 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               name="fechaFin"
               value={form.fechaFin}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
+            {errors.fechaFin && (
+              <p className="text-red-600 text-sm">{errors.fechaFin}</p>
+            )}
           </div>
+
         </div>
 
-        {/* === Empleados asignados === */}
+        {/* ASIGNAR EMPLEADOS */}
         <div className="border-t border-gray-300 mt-4 pt-4">
           <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-2">
             Empleados Asignados
@@ -306,16 +366,17 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Buscar empleado por nombre o apellido..."
+                placeholder="Buscar empleado..."
                 value={busqueda}
                 onChange={handleBuscar}
-                className="w-full border border-gray-300 rounded-md p-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                className="w-full border border-gray-300 rounded-md p-2"
               />
+
               {busqueda && (
                 <select
                   value={empleadoSeleccionado}
                   onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md mt-2 p-2 text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)]"
+                  className="w-full border border-gray-300 rounded-md mt-2 p-2"
                 >
                   <option value="">Seleccionar empleado...</option>
                   {empleadosFiltrados.map((e) => (
@@ -325,24 +386,29 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                   ))}
                 </select>
               )}
+
+              {errors.asignar && (
+                <p className="text-red-600 text-sm mt-1">{errors.asignar}</p>
+              )}
             </div>
+
             <button
               type="button"
               onClick={handleAsignarEmpleado}
-              className="text-white px-4 py-2 rounded-md transition hover:scale-105"
+              className="text-white px-4 py-2 rounded-md"
               style={{ backgroundColor: "#1A2E81" }}
             >
               Asignar
             </button>
           </div>
 
-          {empleadosAsignados.length > 0 ? (
-            <div className="bg-[var(--color-fifth)] rounded-lg p-3 shadow-inner">
+          {empleadosAsignados.length > 0 && (
+            <div className="bg-gray-100 rounded-lg p-3 shadow-inner">
               <ul className="divide-y divide-gray-200">
                 {empleadosAsignados.map((e) => (
                   <li
                     key={e.id}
-                    className="flex justify-between items-center py-2 text-gray-900"
+                    className="flex justify-between items-center py-2"
                   >
                     <div>
                       <span className="font-medium">{e.nombre}</span>
@@ -362,30 +428,28 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                 ))}
               </ul>
             </div>
-          ) : (
-            <p className="text-gray-500 italic mb-4">
-              No hay empleados asignados.
-            </p>
           )}
+
         </div>
 
-        {/* === Botones === */}
+        {/* BOTONES */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"
-            className="text-white text-base font-medium px-7 py-3 rounded-md transition hover:scale-105"
-            style={{ backgroundColor: "#1A2E81", minWidth: "130px" }}
+            className="text-white px-7 py-3 rounded-md"
+            style={{ backgroundColor: "#1A2E81" }}
           >
             Guardar
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="bg-gray-300 text-gray-900 text-base font-medium px-7 py-3 rounded-md hover:bg-gray-400 transition-all"
+            className="bg-gray-300 text-gray-900 px-7 py-3 rounded-md"
           >
             Cancelar
           </button>
         </div>
+
       </form>
     </div>
   );

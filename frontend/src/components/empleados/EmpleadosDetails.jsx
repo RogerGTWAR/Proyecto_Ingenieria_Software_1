@@ -22,7 +22,7 @@ const EmpleadosDetails = ({ empleado, onClose, onEdit, onDelete, rolNameById }) 
           Detalles del Empleado
         </h1>
 
-        {/* 📋 Datos personales y laborales */}
+        {/* Datos personales y laborales */}
         <div className="grid grid-cols-2 gap-10 text-center">
           {/* Columna izquierda - Datos personales */}
           <div>

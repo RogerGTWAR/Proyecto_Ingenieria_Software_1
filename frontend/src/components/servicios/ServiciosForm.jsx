@@ -15,6 +15,9 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
     reload: reloadIndirectos,
   } = useCostosIndirectos();
 
+  // Estado para errores
+  const [errors, setErrors] = useState({});
+
   // ⭐ CAMBIO IMPORTANTE: nombreServicio
   const [form, setForm] = useState({
     id: "",
@@ -74,6 +77,7 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const materialesFiltrados = materiales.filter((m) =>
@@ -81,14 +85,25 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
   );
 
   const handleAsignarMaterial = () => {
-    if (!materialSeleccionado) return;
+    const newErrors = {};
+
+    if (!materialSeleccionado) {
+      newErrors.asignarMaterial = "Debe seleccionar un material para asignar.";
+      setErrors((prev) => ({ ...prev, ...newErrors }));
+      return;
+    }
 
     const mat = materiales.find((m) => m.id === Number(materialSeleccionado));
-    if (!mat) return;
+    if (!mat) {
+      newErrors.asignarMaterial = "El material seleccionado no es válido.";
+      setErrors((prev) => ({ ...prev, ...newErrors }));
+      return;
+    }
 
     const repetido = costosDirectosAsignados.some((c) => c.materialId === mat.id);
     if (repetido) {
-      alert("Este material ya está asignado.");
+      newErrors.asignarMaterial = "Este material ya está asignado.";
+      setErrors((prev) => ({ ...prev, ...newErrors }));
       return;
     }
 
@@ -116,6 +131,7 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
 
     setMaterialSeleccionado("");
     setBusquedaMaterial("");
+    setErrors((prev) => ({ ...prev, asignarMaterial: "" }));
   };
 
   const actualizarDirecto = (index, campo, valor) => {
@@ -159,65 +175,80 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
   const quitarIndirecto = () => setCostosIndirectosAsignados([]);
 
   // -------------------------
+  // VALIDACIÓN
+  // -------------------------
+  const validate = () => {
+    const newErrors = {};
+
+    if (!form.nombreServicio.trim()) {
+      newErrors.nombreServicio = "El nombre del servicio es obligatorio.";
+    }
+
+    return newErrors;
+  };
+
+  // -------------------------
   // SUBMIT
   // -------------------------
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const totalDirectos = costosDirectosAsignados.reduce(
-    (acc, d) => acc + Number(d.total),
-    0
-  );
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
-  const totalIndirectos = costosIndirectosAsignados.reduce(
-    (acc, ci) => acc + Number(ci.total),
-    0
-  );
+    const totalDirectos = costosDirectosAsignados.reduce(
+      (acc, d) => acc + Number(d.total),
+      0
+    );
 
-  // 🔥 MAPEADO CORRECTO PARA EL HOOK useServicios
-  const servicioGuardado = await onSubmit({
-    id: form.id,
-    nombreServicio: form.nombreServicio,
-    descripcion: form.descripcion,
-    totalCostoDirecto: totalDirectos,
-    totalCostoIndirecto: totalIndirectos,
-  });
+    const totalIndirectos = costosIndirectosAsignados.reduce(
+      (acc, ci) => acc + Number(ci.total),
+      0
+    );
 
-  if (!servicioGuardado) return;
+    const servicioGuardado = await onSubmit({
+      id: form.id,
+      nombreServicio: form.nombreServicio,
+      descripcion: form.descripcion,
+      totalCostoDirecto: totalDirectos,
+      totalCostoIndirecto: totalIndirectos,
+    });
 
-  const servicioId = servicioGuardado.id;
+    if (!servicioGuardado) return;
 
-  // ⇩ guardado de costos directos
-  for (const d of costosDirectosAsignados) {
-    const payload = {
-      servicio_id: servicioId,
-      material_id: d.materialId,
-      cantidad_material: d.cantidad_material,
-      unidad_de_medida: d.unidad_de_medida,
-      precio_unitario: d.precio_unitario,
-    };
+    const servicioId = servicioGuardado.id;
 
-    if (d.id) await editDirecto(d.id, payload);
-    else await addDirecto(payload);
-  }
+    for (const d of costosDirectosAsignados) {
+      const payload = {
+        servicio_id: servicioId,
+        material_id: d.materialId,
+        cantidad_material: d.cantidad_material,
+        unidad_de_medida: d.unidad_de_medida,
+        precio_unitario: d.precio_unitario,
+      };
 
-  // ⇩ guardado de indirectos
-  for (const ci of costosIndirectosAsignados) {
-    const payload = {
-      servicio_id: servicioId,
-      costo_directo_id: ci.costo_directo_id ?? 1,
-      total_costo_directo: ci.total_costo_directo,
-    };
+      if (d.id) await editDirecto(d.id, payload);
+      else await addDirecto(payload);
+    }
 
-    if (ci.id) await editIndirecto(ci.id, payload);
-    else await addIndirecto(payload);
-  }
+    for (const ci of costosIndirectosAsignados) {
+      const payload = {
+        servicio_id: servicioId,
+        costo_directo_id: ci.costo_directo_id ?? 1,
+        total_costo_directo: ci.total_costo_directo,
+      };
 
-  await reloadDirectos();
-  await reloadIndirectos();
-  onClose();
-};
+      if (ci.id) await editIndirecto(ci.id, payload);
+      else await addIndirecto(payload);
+    }
 
+    await reloadDirectos();
+    await reloadIndirectos();
+    onClose();
+  };
 
   // -------------------------
   // UI
@@ -243,6 +274,9 @@ const handleSubmit = async (e) => {
               onChange={handleChange}
               className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#1A2E81]"
             />
+            {errors.nombreServicio && (
+              <p className="text-red-600 text-sm mt-1">{errors.nombreServicio}</p>
+            )}
           </div>
 
           <div>
@@ -262,7 +296,7 @@ const handleSubmit = async (e) => {
           Costos Directos (Materiales)
         </h3>
 
-        <div className="flex gap-3 mb-4">
+        <div className="flex gap-3 mb-2">
           <div className="flex-1">
             <input
               type="text"
@@ -276,7 +310,10 @@ const handleSubmit = async (e) => {
               <select
                 className="w-full p-3 mt-2 border rounded-lg shadow-sm"
                 value={materialSeleccionado}
-                onChange={(e) => setMaterialSeleccionado(e.target.value)}
+                onChange={(e) => {
+                  setMaterialSeleccionado(e.target.value);
+                  setErrors((prev) => ({ ...prev, asignarMaterial: "" }));
+                }}
               >
                 <option value="">Seleccionar...</option>
                 {materialesFiltrados.map((m) => (
@@ -296,6 +333,10 @@ const handleSubmit = async (e) => {
             Asignar
           </button>
         </div>
+
+        {errors.asignarMaterial && (
+          <p className="text-red-600 text-sm mb-3">{errors.asignarMaterial}</p>
+        )}
 
         {costosDirectosAsignados.length > 0 && (
           <div className="bg-gray-100 rounded-xl p-5 shadow-inner border">

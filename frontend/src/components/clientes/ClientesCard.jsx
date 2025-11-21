@@ -23,13 +23,13 @@ const ClientesCard = ({ clientes, onEdit, onDelete, onVerDetalles }) => {
             {c.nombreEmpresa}
           </h3>
           <p className="text-[15px] text-gray-700 mb-1">
-            👤 {c.nombreContacto || "Sin contacto"}
+            {c.nombreContacto || "Sin contacto"}
           </p>
           <p className="text-[15px] text-gray-600 mb-1">
             Cargo: {c.cargoContacto || "—"}
           </p>
           <p className="text-[15px] text-gray-600 flex items-center gap-1 mb-2">
-            📞 {c.telefono || "Sin teléfono"}
+            {c.telefono || "Sin teléfono"}
           </p>
 
           {/* --- Botones de acción --- */}
