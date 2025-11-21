@@ -3,8 +3,9 @@ import PermisosController from "../controllers/PermisosController.js";
 
 const router = Router();
 
-router.get("/menu", PermisosController.getMenuAll);
-router.get("/:usuarioId", PermisosController.getPermisosByUsuario);
+router.get("/empleado/:documento", PermisosController.buscarEmpleado);
+router.get("/menus", PermisosController.getMenuAll);
+router.get("/asignados/:usuarioId", PermisosController.getPermisosAsignados);
 router.get("/no-asignados/:usuarioId", PermisosController.getMenuSinAsignar);
 router.post("/asignar", PermisosController.asignar);
 router.post("/remover", PermisosController.remover);

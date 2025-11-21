@@ -26,4 +26,6 @@ export async function api(path, { method = "GET", body, token } = {}) {
     throw new Error(msg);
   }
   return json;
+
+  
 }

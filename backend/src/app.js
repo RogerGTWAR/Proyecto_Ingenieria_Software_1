@@ -26,6 +26,9 @@ import VehiculoRoutes from "./routes/VehiculoRoutes.js";
 import CostosDirectosRoutes from "./routes/CostosDirectosRoutes.js";
 import CostosIndirectosRoutes from "./routes/CostosIndirectosRoutes.js";
 import PermisosRoutes from "./routes/PermisoRoutes.js";
+import AuthRoutes from "./routes/AuthRoutes.js";
+import MenuRoutes from "./routes/MenuRoutes.js";
+
 dotenv.config();
 
 const app = express();
@@ -101,6 +104,8 @@ app.use("/api/vehiculos", VehiculoRoutes);
 app.use("/api/costos_directos", CostosDirectosRoutes);
 app.use("/api/costos_indirectos", CostosIndirectosRoutes);
 app.use("/api/permisos", PermisosRoutes);
+app.use("/api/auth", AuthRoutes);
+app.use("/api/menus", MenuRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

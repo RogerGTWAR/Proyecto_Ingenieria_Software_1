@@ -1,271 +1,242 @@
-import React, { useState } from "react";
+// pages/PermisosPage.jsx
+import { useState } from "react";
+import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
 import { usePermisos } from "../hooks/usePermisos";
 
 export default function PermisosPage() {
-  const [documento, setDocumento] = useState("");
-  const [empleado, setEmpleado] = useState(null);
-  const [usuarioId, setUsuarioId] = useState(null);
-
   const {
+    empleado,
     asignados,
     noAsignados,
     loading,
     error,
+
+    buscar,
+    loadMenus,
+    loadAsignados,
+    loadNoAsignados,
     asignar,
     remover,
-  } = usePermisos(usuarioId);
+  } = usePermisos();
 
-  const [seleccionAsignados, setSeleccionAsignados] = useState({});
-  const [seleccionNoAsignados, setSeleccionNoAsignados] = useState({});
+  const [documento, setDocumento] = useState("");
+  const [seleccionAsignados, setSeleccionAsignados] = useState([]);
+  const [seleccionNoAsignados, setSeleccionNoAsignados] = useState([]);
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
 
-  const buscarEmpleado = () => {
-    // TODO: reemplazar por una llamada real al backend
-    // que busque por documento y devuelva empleado + usuario_id
-    const fakeEmpleado = {
-      nombres: "Juan Carlos",
-      apellidos: "Rivas López",
-      tipo: "Administrativo",
-      usuario: "jc.rivas",
-      documento,
-      usuario_id: 1, // <- aquí vinculas con tu tabla usuarios
-    };
+  /* ============================================================
+     BUSCAR EMPLEADO
+     ============================================================ */
+  const handleBuscarEmpleado = async () => {
+    if (!documento.trim()) return alert("Ingrese una cédula.");
 
-    setEmpleado(fakeEmpleado);
-    setUsuarioId(fakeEmpleado.usuario_id);
-    setSeleccionAsignados({});
-    setSeleccionNoAsignados({});
+    const emp = await buscar(documento.trim());
+
+    if (!emp) return;
+
+    const usuario = emp.usuarios?.[0];
+
+    if (!usuario) {
+      alert("⚠ Este empleado no tiene usuario asignado.");
+      return;
+    }
+
+    await loadMenus();
+    await loadAsignados(usuario.usuario_id);
+    await loadNoAsignados(usuario.usuario_id);
   };
 
-  const toggleSeleccionAsignado = (menuId) => {
-    setSeleccionAsignados((prev) => ({
-      ...prev,
-      [menuId]: !prev[menuId],
-    }));
+  /* ============================================================
+     SELECTORES
+     ============================================================ */
+  const toggleSeleccionAsignado = (id) => {
+    setSeleccionAsignados((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
 
-  const toggleSeleccionNoAsignado = (menuId) => {
-    setSeleccionNoAsignados((prev) => ({
-      ...prev,
-      [menuId]: !prev[menuId],
-    }));
+  const toggleSeleccionNoAsignado = (id) => {
+    setSeleccionNoAsignados((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  /* ============================================================
+     ASIGNAR PERMISOS
+     ============================================================ */
+  const handleAsignar = async () => {
+    const usuario = empleado?.usuarios?.[0];
+
+    if (!usuario) {
+      alert("Este empleado no tiene usuario asignado.");
+      return;
+    }
+
+    if (seleccionNoAsignados.length === 0)
+      return alert("Debe seleccionar al menos un menú.");
+
+    await asignar(usuario.usuario_id, seleccionNoAsignados);
+    setSeleccionNoAsignados([]);
+  };
+
+  /* ============================================================
+     CONFIRMAR REMOVER
+     ============================================================ */
+  const confirmarRemover = () => {
+    if (seleccionAsignados.length === 0)
+      return alert("Debe seleccionar al menos un menú.");
+
+    setConfirmRemoveOpen(true);
   };
 
   const handleRemover = async () => {
-    if (!usuarioId) return;
+    const usuario = empleado?.usuarios?.[0];
 
-    const ids = Object.keys(seleccionAsignados)
-      .filter((k) => seleccionAsignados[k])
-      .map((k) => Number(k));
-
-    if (ids.length === 0) return;
-
-    await remover(ids);
-    setSeleccionAsignados({});
+    await remover(usuario.usuario_id, seleccionAsignados);
+    setSeleccionAsignados([]);
+    setConfirmRemoveOpen(false);
   };
 
-  const handleAsignar = async () => {
-    if (!usuarioId) return;
-
-    const ids = Object.keys(seleccionNoAsignados)
-      .filter((k) => seleccionNoAsignados[k])
-      .map((k) => Number(k));
-
-    if (ids.length === 0) return;
-
-    await asignar(ids);
-    setSeleccionNoAsignados({});
-  };
-
-  const renderSubmenu = (m) => (m?.es_submenu ? "Si" : "No");
-  const renderMenuPrincipal = (m) =>
-    m?.id_menu_parent ? "Submenú" : "Principal";
-
+  /* ============================================================
+     UI
+     ============================================================ */
   return (
-    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-[var(--color-primary)] text-center">
-        Gestionar Permisos
+    <div className="min-h-screen bg-gray-50 p-6">
+      <h1 className="heading-1 text-[var(--color-primary)] mb-2">
+        Gestión de Permisos
       </h1>
+      <p className="body-1 text-[var(--color-gray)] mb-6">
+        Asigna o remueve acceso a los módulos del sistema.
+      </p>
 
-      {/* DATOS DEL EMPLEADO */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-xl shadow">
-        {/* Izquierda */}
-        <div>
-          <label className="font-semibold block mb-1">
-            Documento de Identidad
-          </label>
-          <div className="flex gap-2 mb-4">
-            <input
-              value={documento}
-              onChange={(e) => setDocumento(e.target.value)}
-              className="w-full border p-2 rounded"
-            />
-            <button
-              onClick={buscarEmpleado}
-              className="bg-[var(--color-primary)] text-white px-4 rounded hover:opacity-90"
-            >
-              Buscar
-            </button>
-          </div>
+      {/* BUSCADOR */}
+      <div className="bg-white rounded-xl shadow p-4 mb-8 flex items-center gap-4">
+        <input
+          type="text"
+          placeholder="Ingresar cédula del empleado..."
+          value={documento}
+          onChange={(e) => setDocumento(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
+        />
 
-          {empleado && (
-            <>
-              <p>
-                <b>Nombres:</b> {empleado.nombres}
-              </p>
-              <p>
-                <b>Apellidos:</b> {empleado.apellidos}
-              </p>
-            </>
-          )}
-        </div>
-
-        {/* Derecha */}
-        {empleado && (
-          <div className="space-y-1">
-            <p>
-              <b>Nro Documento:</b> {empleado.documento}
-            </p>
-            <p>
-              <b>Tipo Empleado:</b> {empleado.tipo}
-            </p>
-            <p>
-              <b>Usuario:</b> {empleado.usuario}
-            </p>
-          </div>
-        )}
+        <button
+          onClick={handleBuscarEmpleado}
+          className="px-5 py-2 bg-[#1A2E81] text-white rounded-lg hover:scale-105 transition"
+        >
+          {loading ? "Buscando..." : "Buscar"}
+        </button>
       </div>
 
-      {error && (
-        <p className="text-red-500 text-center">
-          Ocurrió un error al cargar permisos: {error}
-        </p>
+      {/* INFO EMPLEADO */}
+      {empleado && (
+        <div className="bg-white rounded-xl shadow p-4 mb-8 border border-gray-200">
+          <h2 className="text-xl font-semibold text-[var(--color-primary)]">
+            Empleado encontrado
+          </h2>
+          <p className="mt-2 text-gray-700">
+            <strong>Nombre: </strong> {empleado.nombres} {empleado.apellidos}
+          </p>
+          <p className="text-gray-700">
+            <strong>Usuario: </strong>{" "}
+            {empleado.usuarios?.[0]?.usuario ?? "—"}
+          </p>
+          <p className="text-gray-700">
+            <strong>Rol: </strong> {empleado.roles?.cargo ?? "—"}
+          </p>
+        </div>
       )}
 
+      {/* TABLAS */}
       {empleado && (
-        <>
-          {/* PERMISOS ASIGNADOS */}
-          <h2 className="text-2xl font-semibold text-center">
-            Permisos Asignados
-          </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* ASIGNADOS */}
+          <div className="bg-white rounded-xl border shadow p-4">
+            <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-4">
+              Permisos Asignados
+            </h3>
 
-          {loading && (
-            <p className="text-center text-sm text-gray-500">
-              Cargando permisos...
-            </p>
-          )}
+            {asignados.length === 0 ? (
+              <p className="text-gray-500">No hay permisos asignados.</p>
+            ) : (
+              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-2">
+                {asignados.map((a) => (
+                  <label
+                    key={a.permisoId}
+                    className="flex items-center gap-3 bg-gray-50 border rounded-lg px-3 py-2 hover:bg-gray-100"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={seleccionAsignados.includes(a.menuId)}
+                      onChange={() => toggleSeleccionAsignado(a.menuId)}
+                    />
+                    <div>
+                      <p className="font-medium">{a.nombre}</p>
+                      <p className="text-sm text-gray-600">
+                        {a.url || "—"} ({a.esSubmenu ? "Submenú" : "Menú"})
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
 
-          <div className="bg-white p-4 rounded-xl shadow overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="p-2 text-left">Seleccionar</th>
-                  <th className="p-2 text-left">Nombre</th>
-                  <th className="p-2 text-left">Ruta</th>
-                  <th className="p-2 text-left">Submenú</th>
-                  <th className="p-2 text-left">Menú Principal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {asignados.length === 0 && !loading && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="p-3 text-center text-gray-500 italic"
-                    >
-                      No hay permisos asignados.
-                    </td>
-                  </tr>
-                )}
-
-                {asignados.map((p) => {
-                  const m = p.menu;
-                  return (
-                    <tr key={p.id} className="border-t">
-                      <td className="p-2">
-                        <input
-                          type="checkbox"
-                          checked={!!seleccionAsignados[m?.id]}
-                          onChange={() => toggleSeleccionAsignado(m.id)}
-                        />
-                      </td>
-                      <td className="p-2">{m?.nombre}</td>
-                      <td className="p-2">{m?.url ?? "-"}</td>
-                      <td className="p-2">{renderSubmenu(m)}</td>
-                      <td className="p-2">{renderMenuPrincipal(m)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="text-center mt-3">
             <button
-              onClick={handleRemover}
-              className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 disabled:opacity-50"
-              disabled={loading}
+              onClick={confirmarRemover}
+              className="mt-4 bg-red-600 text-white px-5 py-2 rounded hover:bg-red-700"
             >
-              Remover Permisos
+              Remover seleccionados
             </button>
           </div>
 
-          {/* PERMISOS NO ASIGNADOS */}
-          <h2 className="text-2xl font-semibold text-center mt-6">
-            Permisos No Asignados
-          </h2>
+          {/* NO ASIGNADOS */}
+          <div className="bg-white rounded-xl border shadow p-4">
+            <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-4">
+              Menús Disponibles para Asignar
+            </h3>
 
-          <div className="bg-white p-4 rounded-xl shadow overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="p-2 text-left">Seleccionar</th>
-                  <th className="p-2 text-left">Nombre</th>
-                  <th className="p-2 text-left">Ruta</th>
-                  <th className="p-2 text-left">Submenú</th>
-                  <th className="p-2 text-left">Menú Principal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {noAsignados.length === 0 && !loading && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="p-3 text-center text-gray-500 italic"
-                    >
-                      No hay menús disponibles para asignar.
-                    </td>
-                  </tr>
-                )}
-
+            {noAsignados.length === 0 ? (
+              <p className="text-gray-500">No hay menús disponibles.</p>
+            ) : (
+              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-2">
                 {noAsignados.map((m) => (
-                  <tr key={m.id} className="border-t">
-                    <td className="p-2">
-                      <input
-                        type="checkbox"
-                        checked={!!seleccionNoAsignados[m.id]}
-                        onChange={() => toggleSeleccionNoAsignado(m.id)}
-                      />
-                    </td>
-                    <td className="p-2">{m.nombre}</td>
-                    <td className="p-2">{m.url ?? "-"}</td>
-                    <td className="p-2">{renderSubmenu(m)}</td>
-                    <td className="p-2">{renderMenuPrincipal(m)}</td>
-                  </tr>
+                  <label
+                    key={m.id}
+                    className="flex items-center gap-3 bg-gray-50 border rounded-lg px-3 py-2 hover:bg-gray-100"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={seleccionNoAsignados.includes(m.id)}
+                      onChange={() => toggleSeleccionNoAsignado(m.id)}
+                    />
+                    <div>
+                      <p className="font-medium">{m.nombre}</p>
+                      <p className="text-sm text-gray-600">
+                        {m.url || "—"} ({m.esSubmenu ? "Submenú" : "Menú"})
+                      </p>
+                    </div>
+                  </label>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            )}
 
-          <div className="text-center mt-3">
             <button
               onClick={handleAsignar}
-              className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50"
-              disabled={loading}
+              className="mt-4 bg-[#1A2E81] text-white px-5 py-2 rounded hover:scale-105 transition"
             >
-              Asignar Permisos
+              Asignar seleccionados
             </button>
           </div>
-        </>
+        </div>
+      )}
+
+      {/* MODAL PARA REMOVER */}
+      {confirmRemoveOpen && (
+        <DeleteConfirmationModal
+          isOpen={confirmRemoveOpen}
+          onClose={() => setConfirmRemoveOpen(false)}
+          onConfirm={handleRemover}
+          itemName="los permisos seleccionados"
+        />
       )}
     </div>
   );

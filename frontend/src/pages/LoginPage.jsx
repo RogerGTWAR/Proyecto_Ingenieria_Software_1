@@ -1,53 +1,128 @@
-import { Link } from 'react-router-dom';
+import { useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { Link, useNavigate } from "react-router-dom";
 
-const LoginPage = () => {
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const [form, setForm] = useState({
+    usuario: "",
+    contrasena: "",
+  });
+
+  const [showPw, setShowPw] = useState(false);
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await login(form);
+      navigate("/");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-200 flex items-center justify-center px-4">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <div className="text-center mb-6">
-          <img src="/logo.png" alt="ACONSA" className="mx-auto h-16 w-auto" />
+    <div className="min-h-screen bg-[#EEF1F7] flex items-center justify-center px-4 py-10">
+
+      <div className="w-full max-w-5xl bg-white shadow-2xl rounded-3xl flex flex-col md:flex-row overflow-hidden animate-fadeIn">
+
+        {/* IZQUIERDA */}
+        <div className="md:w-1/2 bg-[#1A2E81] p-10 flex flex-col items-center text-white relative">
+
+          {/* LOGO */}
+          <img
+            src="/Logo.jpg"
+            alt="ACONSA"
+            className="h-24 w-auto mb-6 drop-shadow-xl"
+          />
+
+          <h1 className="text-3xl font-extrabold text-center mb-6">
+            Bienvenido a ACONSA
+          </h1>
+
+          <p className="text-center opacity-90 text-base leading-relaxed mb-8 px-4">
+            Plataforma de gestión para proyectos, maquinaria, personal,
+            inventario, compras y reportes estratégicos.
+          </p>
         </div>
-        <h1 className="text-2xl font-bold text-red-600 mb-6 text-center">Iniciar sesión</h1>
-        <p className="text-center mb-6">
-          ¿Aún no tiene una cuenta? <Link to="/signup" className="text-blue-500 hover:underline">Registrarse</Link>
-        </p>
-        <form>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="correo">Correo</label>
-            <input
-              type="email"
-              id="correo"
-              className="w-full px-3 py-2 border border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="nombre@gmail.com"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block text-gray-700 mb-2" htmlFor="contrasena">Contraseña</label>
-            <div className="relative">
+
+        {/* DERECHA */}
+        <div className="md:w-1/2 p-10 flex flex-col justify-center bg-white">
+
+          <h2 className="text-3xl font-bold text-center text-[#1A2E81] mb-8">
+            Iniciar Sesión
+          </h2>
+
+          <form onSubmit={onSubmit} className="space-y-6">
+
+            {/* USUARIO */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">
+                Usuario
+              </label>
               <input
-                type="password"
-                id="contrasena"
-                className="w-full px-3 py-2 border border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="********"
+                type="text"
+                name="usuario"
+                value={form.usuario}
+                onChange={(e) =>
+                  setForm({ ...form, usuario: e.target.value })
+                }
+                placeholder="Ingrese su usuario"
+                className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#1A2E81]"
+                required
               />
-              <button type="button" className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </button>
             </div>
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-          >
-            Iniciar sesión
-          </button>
-        </form>
+
+            {/* CONTRASEÑA */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">
+                Contraseña
+              </label>
+              <div className="relative">
+                <input
+                  type={showPw ? "text" : "password"}
+                  name="contrasena"
+                  value={form.contrasena}
+                  onChange={(e) =>
+                    setForm({ ...form, contrasena: e.target.value })
+                  }
+                  placeholder="Ingrese su contraseña"
+                  className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#1A2E81]"
+                  required
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-600 hover:text-gray-800"
+                >
+                  {showPw ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
+
+            {/* BOTÓN */}
+            <button
+              type="submit"
+              className="w-full py-3 px-4 rounded-lg bg-[#1A2E81] text-white font-semibold shadow-md hover:bg-[#16256A] transition"
+            >
+              Entrar
+            </button>
+          </form>
+
+          <p className="text-center mt-6 text-gray-600">
+            ¿No tiene cuenta?{" "}
+            <Link
+              to="/signup"
+              className="text-[#1A2E81] font-semibold hover:underline"
+            >
+              Crear una cuenta
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
-};
-
-export default LoginPage;
+}
