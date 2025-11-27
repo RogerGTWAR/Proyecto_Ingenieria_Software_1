@@ -1,4 +1,3 @@
-//Listo
 import express from "express";
 import RolesController from "../controllers/RolesController.js";
 

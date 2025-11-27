@@ -1,6 +1,5 @@
 import { api } from "./api.js";
 
-// Convertir backend → UI
 const toUI = (d) => ({
   id: d.costo_directo_id,
 
@@ -23,14 +22,12 @@ const toUI = (d) => ({
   fechaActualizacion: d.fecha_actualizacion ?? "",
 });
 
-// GET
 export const fetchCostosDirectos = async () => {
   const { data } = await api("/costos_directos");
   const list = Array.isArray(data.data) ? data.data : data;
   return list.map(toUI);
 };
 
-// POST
 export const createCostoDirecto = async (d) => {
   const body = {
     servicio_id: Number(d.servicio_id ?? d.servicioId),
@@ -48,7 +45,6 @@ export const createCostoDirecto = async (d) => {
   return toUI(response.data || response);
 };
 
-// PATCH
 export const updateCostoDirecto = async (id, d) => {
   const body = {
     servicio_id: d.servicioId ? Number(d.servicioId) : undefined,
@@ -70,7 +66,6 @@ export const updateCostoDirecto = async (id, d) => {
   return toUI(response.data || response);
 };
 
-// DELETE
 export const deleteCostoDirecto = async (id) => {
   await api(`/costos_directos/${id}`, { method: "DELETE" });
   return true;

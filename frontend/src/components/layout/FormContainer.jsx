@@ -7,9 +7,7 @@
       {isEdit ? "Editar Registro" : "Nuevo Registro"}
     </h2>
 
-    {/* Campos del formulario */}
     <div className="grid grid-cols-2 gap-6 mb-6">
-      {/* Ejemplo de campo */}
       <div>
         <label className="block text-gray-900 font-medium mb-1">Campo</label>
         <input
@@ -22,7 +20,6 @@
       </div>
     </div>
 
-    {/* Botones */}
     <div className="flex justify-center gap-6 mt-10">
       <button
         type="submit"

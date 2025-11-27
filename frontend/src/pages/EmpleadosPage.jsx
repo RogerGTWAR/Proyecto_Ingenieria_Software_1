@@ -164,8 +164,7 @@ const guardarEmpleado = async (data) => {
         ]}
       />
 
-      {/* Filtros */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6">
+¡      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="text"

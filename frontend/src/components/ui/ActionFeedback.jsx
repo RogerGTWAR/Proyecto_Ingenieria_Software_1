@@ -44,7 +44,6 @@ export default function ActionFeedback({ open, message, onClose }) {
         ${render ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-3 scale-90"}
       `}
     >
-      {/* Card */}
       <div
         className="
           relative flex items-center gap-4 px-6 py-4 min-w-[330px]
@@ -54,14 +53,11 @@ export default function ActionFeedback({ open, message, onClose }) {
           overflow-hidden
         "
       >
-        {/* Halo Glow */}
         {progress >= 100 && (
           <div className="absolute inset-0 bg-green-100/40 animate-glow pointer-events-none"></div>
         )}
 
-        {/* CÍRCULO PRO + CHECK ANIMADO */}
         <div className="relative w-14 h-14">
-          {/* Círculo base */}
           <svg
             className="absolute top-0 left-0"
             width="60"
@@ -78,7 +74,6 @@ export default function ActionFeedback({ open, message, onClose }) {
             />
           </svg>
 
-          {/* Progreso circular */}
           <svg
             className="absolute top-0 left-0 rotate-[-90deg]"
             width="60"
@@ -101,7 +96,6 @@ export default function ActionFeedback({ open, message, onClose }) {
             />
           </svg>
 
-          {/* Check animado */}
           <svg
             className={`
               absolute top-0 left-0 
@@ -124,7 +118,6 @@ export default function ActionFeedback({ open, message, onClose }) {
           </svg>
         </div>
 
-        {/* TEXTO */}
         <div>
           <p className="text-gray-900 font-bold text-[17px]">{message}</p>
           <p className="text-gray-500 text-sm leading-tight">
@@ -133,7 +126,6 @@ export default function ActionFeedback({ open, message, onClose }) {
         </div>
       </div>
 
-      {/* Animaciones internas */}
       <style>{`
         .animate-check {
           stroke-dasharray: 70;

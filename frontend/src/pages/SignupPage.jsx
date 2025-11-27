@@ -28,7 +28,6 @@ export default function SignupPage() {
 
       <div className="bg-white shadow-2xl rounded-3xl w-full max-w-lg p-10 animate-fadeIn">
 
-        {/* LOGO */}
         <div className="flex justify-center mb-6">
           <img
             src="/Logo.jpg"
@@ -37,14 +36,12 @@ export default function SignupPage() {
           />
         </div>
 
-        {/* TÍTULO */}
         <h1 className="text-3xl font-bold text-center text-[#1A2E81] mb-8">
           Crear Cuenta
         </h1>
 
         <form onSubmit={onSubmit} className="space-y-6">
 
-          {/* EMPLEADO ID */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">
               ID del Empleado
@@ -62,7 +59,6 @@ export default function SignupPage() {
             />
           </div>
 
-          {/* USUARIO */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">
               Usuario
@@ -80,7 +76,6 @@ export default function SignupPage() {
             />
           </div>
 
-          {/* CONTRASEÑA */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">
               Contraseña
@@ -98,7 +93,6 @@ export default function SignupPage() {
             />
           </div>
 
-          {/* BOTÓN */}
           <button
             type="submit"
             className="w-full py-3 rounded-lg bg-[#1A2E81] text-white font-semibold shadow-md hover:bg-[#16256A] transition"
@@ -107,7 +101,6 @@ export default function SignupPage() {
           </button>
         </form>
 
-        {/* LINK A LOGIN */}
         <p className="text-center mt-6 text-gray-600">
           ¿Ya tiene cuenta?{" "}
           <Link

@@ -18,7 +18,6 @@ const ClientesCard = ({ clientes, onEdit, onDelete, onVerDetalles }) => {
                      p-4 w-[280px] hover:shadow-md hover:scale-[1.01] 
                      transition-all duration-200"
         >
-          {/* --- Información del cliente --- */}
           <h3 className="font-semibold text-[var(--color-primary)] text-[17px] mb-1">
             {c.nombreEmpresa}
           </h3>
@@ -32,7 +31,6 @@ const ClientesCard = ({ clientes, onEdit, onDelete, onVerDetalles }) => {
             {c.telefono || "Sin teléfono"}
           </p>
 
-          {/* --- Botones de acción --- */}
           <div className="flex justify-center gap-2 mt-3">
             <button
               onClick={() => onVerDetalles(c)}

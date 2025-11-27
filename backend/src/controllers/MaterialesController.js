@@ -1,9 +1,6 @@
 import prisma from "../database.js";
 
 export default class MaterialesController {
-  // ============================================================
-  // GET ALL
-  // ============================================================
   static async getAll(_req, res) {
     try {
       const materiales = await prisma.materiales.findMany({
@@ -23,7 +20,7 @@ export default class MaterialesController {
 
       res.json({ ok: true, data: materiales });
     } catch (error) {
-      console.error("❌ Error getAll materiales:", error);
+      console.error("Error getAll materiales:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al obtener los materiales"
@@ -31,9 +28,6 @@ export default class MaterialesController {
     }
   }
 
-  // ============================================================
-  // GET BY ID
-  // ============================================================
   static async getById(req, res) {
     const id = parseInt(req.params.id);
 
@@ -64,7 +58,7 @@ export default class MaterialesController {
 
       res.json({ ok: true, data: material });
     } catch (error) {
-      console.error("❌ Error getById materiales:", error);
+      console.error("Error getById materiales:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al obtener el material"
@@ -72,9 +66,6 @@ export default class MaterialesController {
     }
   }
 
-  // ============================================================
-  // CREATE
-  // ============================================================
   static async create(req, res) {
     try {
       const {
@@ -86,7 +77,6 @@ export default class MaterialesController {
         precio_unitario
       } = req.body;
 
-      // Validación de campos obligatorios
       if (
         !nombre_material ||
         !unidad_de_medida ||
@@ -99,7 +89,6 @@ export default class MaterialesController {
         });
       }
 
-      // Validar que no exista otro con el mismo nombre
       const existe = await prisma.materiales.findFirst({
         where: {
           nombre_material: nombre_material.trim(),
@@ -130,7 +119,7 @@ export default class MaterialesController {
         data: material
       });
     } catch (error) {
-      console.error("❌ Error create materiales:", error);
+      console.error("Error create materiales:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al crear material"
@@ -138,9 +127,6 @@ export default class MaterialesController {
     }
   }
 
-  // ============================================================
-  // UPDATE
-  // ============================================================
   static async update(req, res) {
     const id = parseInt(req.params.id);
 
@@ -192,7 +178,7 @@ export default class MaterialesController {
         data: material
       });
     } catch (error) {
-      console.error("❌ Error update materiales:", error);
+      console.error("Error update materiales:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al actualizar material"
@@ -200,9 +186,6 @@ export default class MaterialesController {
     }
   }
 
-  // ============================================================
-  // DELETE (Soft delete)
-  // ============================================================
   static async delete(req, res) {
     const id = parseInt(req.params.id);
 
@@ -235,7 +218,7 @@ export default class MaterialesController {
         msg: "Material eliminado correctamente"
       });
     } catch (error) {
-      console.error("❌ Error delete materiales:", error);
+      console.error("Error delete materiales:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al eliminar material"

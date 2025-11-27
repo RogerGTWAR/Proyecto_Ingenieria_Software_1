@@ -1,4 +1,3 @@
-// hooks/useAvaluos.js
 import { useEffect, useState } from "react";
 
 import {
@@ -13,9 +12,6 @@ export function useAvaluos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // -------------------------------------------------------------
-  // LOAD
-  // -------------------------------------------------------------
   const load = async () => {
     try {
       setLoading(true);
@@ -35,9 +31,6 @@ export function useAvaluos() {
     load();
   }, []);
 
-  // -------------------------------------------------------------
-  // CREATE
-  // -------------------------------------------------------------
   const add = async (payload) => {
 
     const created = await createAvaluo({
@@ -51,9 +44,6 @@ export function useAvaluos() {
     return created;
   };
 
-  // -------------------------------------------------------------
-  // UPDATE
-  // -------------------------------------------------------------
   const edit = async (id, payload) => {
     const updated = await updateAvaluo(id, payload);
 
@@ -64,9 +54,6 @@ export function useAvaluos() {
     return updated;
   };
 
-  // -------------------------------------------------------------
-  // DELETE
-  // -------------------------------------------------------------
   const remove = async (id) => {
     await deleteAvaluo(id);
     setItems((prev) => prev.filter((a) => a.id !== id));

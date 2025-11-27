@@ -4,7 +4,7 @@ import ButtonList from "../components/ButtonList";
 import Modal from "../components/Modal";
 import { mockDb } from "../../data/mockDb";
 
-function ProductosPage() {
+function InventarioPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     categoriaId: "",
@@ -15,10 +15,8 @@ function ProductosPage() {
     precioUnitario: "",
   });
 
-  // 🔹 Encabezados de la tabla
   const tableHeaders = ["Nombre", "Categoría", "Unidad", "Stock", "Precio (C$)"];
 
-  // 🔹 Datos de productos usando mockDb
   const tableData = mockDb.productos.map((producto) => ({
     id: producto.productoId,
     Nombre: producto.nombreProducto,
@@ -34,7 +32,6 @@ function ProductosPage() {
     }),
   }));
 
-  // 🔘 Botones superiores
   const buttons = [
     {
       id: "filter",
@@ -52,7 +49,6 @@ function ProductosPage() {
     },
   ];
 
-  // 🧩 Control de formulario
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -60,7 +56,6 @@ function ProductosPage() {
 
   const handleSubmit = () => {
     console.log("Nuevo producto agregado:", formData);
-    // Aquí iría la lógica para guardar el producto en la base de datos
     setIsModalOpen(false);
     setFormData({
       categoriaId: "",
@@ -72,11 +67,9 @@ function ProductosPage() {
     });
   };
 
-  // 🧾 Render principal
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="p-6">
-        {/* 🔹 Título y descripción */}
         <div>
           <h1 className="heading-1 text-[var(--color-primary)] mb-2">
             Productos
@@ -86,13 +79,10 @@ function ProductosPage() {
           </p>
         </div>
 
-        {/* 🔘 Botones de acción */}
         <ButtonList buttons={buttons} />
 
-        {/* 📋 Tabla de productos */}
         <DataTable headers={tableHeaders} data={tableData} />
 
-        {/* 🧾 Modal para agregar nuevo producto */}
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -100,7 +90,6 @@ function ProductosPage() {
           onSubmit={handleSubmit}
         >
           <div className="space-y-4">
-            {/* Categoría */}
             <div>
               <label className="block body-2 text-[var(--color-gray)] mb-1">
                 Categoría
@@ -121,7 +110,6 @@ function ProductosPage() {
               </select>
             </div>
 
-            {/* Nombre del producto */}
             <div>
               <label className="block body-2 text-[var(--color-gray)] mb-1">
                 Nombre del Producto
@@ -136,7 +124,6 @@ function ProductosPage() {
               />
             </div>
 
-            {/* Descripción */}
             <div>
               <label className="block body-2 text-[var(--color-gray)] mb-1">
                 Descripción
@@ -150,7 +137,6 @@ function ProductosPage() {
               />
             </div>
 
-            {/* Unidad y stock */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block body-2 text-[var(--color-gray)] mb-1">
@@ -188,7 +174,6 @@ function ProductosPage() {
               </div>
             </div>
 
-            {/* Precio unitario */}
             <div>
               <label className="block body-2 text-[var(--color-gray)] mb-1">
                 Precio Unitario (C$)
@@ -211,4 +196,4 @@ function ProductosPage() {
   );
 }
 
-export default ProductosPage;
+export default InventarioPage;

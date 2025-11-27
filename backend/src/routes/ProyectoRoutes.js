@@ -1,4 +1,3 @@
-//Listo
 import express from "express";
 import ProyectosController from "../controllers/ProyectosController.js";
 

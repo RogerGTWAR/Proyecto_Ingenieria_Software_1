@@ -16,7 +16,6 @@ function VehiculosPage() {
 
   const [busqueda, setBusqueda] = useState("");
 
-  // 🔘 NUEVO SWITCH
   const [vistaTarjetas, setVistaTarjetas] = useState(true);
 
   const [vistaDetalle, setVistaDetalle] = useState(false);
@@ -124,13 +123,11 @@ function VehiculosPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 relative">
 
-      {/* TÍTULO */}
       <h1 className="heading-1 text-[var(--color-primary)] mb-2">Vehículos</h1>
       <p className="body-1 text-[var(--color-gray)] mb-6">
         Gestión y control de vehículos asignados
       </p>
 
-      {/* BOTÓN AÑADIR */}
       <ButtonList
         buttons={[
           {
@@ -143,7 +140,6 @@ function VehiculosPage() {
         ]}
       />
 
-      {/* BUSCADOR + SWITCH */}
       <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6 flex items-center gap-4">
         <input
           type="text"
@@ -153,7 +149,6 @@ function VehiculosPage() {
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
         />
 
-        {/* 🔘 Switch Vista */}
         <button
           onClick={() => setVistaTarjetas(!vistaTarjetas)}
           className={`px-5 py-2 rounded-lg shadow-md text-white font-medium transition ${
@@ -164,7 +159,6 @@ function VehiculosPage() {
         </button>
       </div>
 
-      {/* TABLA / TARJETAS */}
       {vistaTarjetas ? (
         <VehiculosCard
           vehiculos={vehiculosFiltrados}
@@ -181,7 +175,6 @@ function VehiculosPage() {
         />
       )}
 
-      {/* DETALLES */}
       {vistaDetalle && vehiculoSeleccionado && (
         <VehiculosDetails
           vehiculo={vehiculoSeleccionado}
@@ -191,7 +184,6 @@ function VehiculosPage() {
         />
       )}
 
-      {/* FORMULARIO */}
       {mostrarFormulario && (
         <VehiculosForm
           onSubmit={guardarVehiculo}
@@ -201,7 +193,6 @@ function VehiculosPage() {
         />
       )}
 
-      {/* MODAL ELIMINAR */}
       {mostrarEliminar && (
         <DeleteConfirmationModal
           isOpen={mostrarEliminar}

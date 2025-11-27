@@ -47,7 +47,6 @@ const MenuForm = ({ onSubmit, onClose, initialData = null, isEdit = false, menus
           {isEdit ? "Actualizar Menú" : "Nuevo Menú"}
         </h2>
 
-        {/* === Nombre & URL === */}
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-gray-900 font-medium mb-1">Nombre</label>
@@ -74,7 +73,6 @@ const MenuForm = ({ onSubmit, onClose, initialData = null, isEdit = false, menus
           </div>
         </div>
 
-        {/* === Menú principal === */}
         <div className="mb-6">
           <label className="block text-gray-900 font-medium mb-1">Menú Principal</label>
 
@@ -87,13 +85,11 @@ const MenuForm = ({ onSubmit, onClose, initialData = null, isEdit = false, menus
         <option value="">-- Sin Menú --</option>
 
         {menus
-            // 1️⃣ Solo menús principales reales
             .filter((m) => m.esSubmenu === false)
             .filter((m) => m.parentId === null)
             .filter((m) => m.estado === true)
             .filter((m) => m.show === true)
 
-            // 2️⃣ Evitar ser padre de sí mismo al editar
             .filter((m) => m.id !== initialData?.id)
 
             .map((m) => (
@@ -105,7 +101,6 @@ const MenuForm = ({ onSubmit, onClose, initialData = null, isEdit = false, menus
 
         </div>
 
-        {/* === Submenú + Activar === */}
         <div className="grid grid-cols-2 gap-6 mb-8">
           <div className="flex items-center gap-3">
             <input

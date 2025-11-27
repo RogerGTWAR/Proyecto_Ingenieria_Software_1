@@ -14,14 +14,8 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     reload: reloadDetalles,
   } = useDetallesAvaluos();
 
-  // ===========================
-  // ERRORES
-  // ===========================
   const [errors, setErrors] = useState({});
 
-  // ===========================
-  // FORM AVALÚO
-  // ===========================
   const [form, setForm] = useState({
     id: "",
     proyectoId: "",
@@ -32,9 +26,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
 
   const [detallesAvaluos, setDetallesAvaluos] = useState([]);
 
-  // ===========================
-  // CARGAR INITIAL DATA
-  // ===========================
   useEffect(() => {
     if (initialData) {
       const formatDate = (fecha) => {
@@ -68,26 +59,18 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     }
   }, [initialData, detalles]);
 
-  // ===========================
-  // HANDLE CHANGE
-  // ===========================
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
 
-    // limpiar error de ese campo
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // ===========================
-  // VALIDACIONES
-  // ===========================
   const validate = () => {
     const newErrors = {};
     const fechaMin = new Date("2000-01-01");
     const fechaMax = new Date("2040-12-31");
 
-    // fechaInicio
     if (!form.fechaInicio) {
       newErrors.fechaInicio = "Debe seleccionar la fecha de inicio.";
     } else {
@@ -97,7 +80,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
       }
     }
 
-    // fechaFin
     if (!form.fechaFin) {
       newErrors.fechaFin = "Debe seleccionar la fecha fin.";
     } else {
@@ -115,9 +97,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     return newErrors;
   };
 
-  // ===========================
-  // AGREGAR SERVICIO
-  // ===========================
   const agregarServicio = (servicioId) => {
     const serv = servicios.find((s) => s.id === Number(servicioId));
     if (!serv) return;
@@ -148,9 +127,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     ]);
   };
 
-  // ===========================
-  // ACTUALIZAR DETALLE
-  // ===========================
   const actualizarDetalle = (index, campo, valor) => {
     setDetallesAvaluos((prev) => {
       const copia = [...prev];
@@ -166,9 +142,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     });
   };
 
-  // ===========================
-  // QUITAR DETALLE
-  // ===========================
   const quitarDetalle = async (detalle) => {
     if (detalle.id) {
       await removeDetalle(detalle.id);
@@ -180,17 +153,13 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     );
   };
 
-  // ===========================
-  // SUBMIT FINAL
-  // ===========================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // correr validaciones
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      return; // detener guardado
+      return;
     }
 
     const totalAvaluo = detallesAvaluos.reduce(
@@ -198,7 +167,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
       0
     );
 
-    // guardar avalúo
     const avaluoGuardado = await onSubmit({
       id: form.id,
       proyectoId: form.proyectoId,
@@ -212,7 +180,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
 
     const avaluoId = avaluoGuardado.id;
 
-    // guardar detalles
     for (const d of detallesAvaluos) {
       const payload = {
         avaluoId,
@@ -230,9 +197,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     onClose();
   };
 
-  // ===========================
-  // UI COMPLETA (sin eliminar nada)
-  // ===========================
   return (
     <div className="fixed inset-0 flex justify-center items-start mt-[40px] z-50">
       <form
@@ -243,7 +207,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
           {isEdit ? "Editar Avalúo" : "Nuevo Avalúo"}
         </h2>
 
-        {/* DATOS GENERALES */}
         <div className="grid grid-cols-2 gap-6 mb-6">
 
           <div>
@@ -273,7 +236,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
             />
           </div>
 
-          {/* === FECHA INICIO === */}
           <div>
             <label className="font-medium text-gray-800 text-sm">
               Fecha Inicio
@@ -290,7 +252,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
             )}
           </div>
 
-          {/* === FECHA FIN === */}
           <div>
             <label className="font-medium text-gray-800 text-sm">
               Fecha Fin
@@ -308,7 +269,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
           </div>
         </div>
 
-        {/* AGREGAR SERVICIO */}
         <h3 className="text-xl font-semibold mt-10 mb-3 text-[#1A2E81]">
           Agregar Servicios al Avalúo
         </h3>
@@ -325,7 +285,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
           ))}
         </select>
 
-        {/* TABLA DETALLES */}
         {detallesAvaluos.length > 0 && (
           <div className="bg-gray-100 rounded-xl p-5 shadow-inner border mt-4">
             <table className="w-full text-sm">
@@ -406,7 +365,6 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
           </div>
         )}
 
-        {/* BOTONES */}
         <div className="flex justify-center gap-6 mt-12">
           <button
             type="submit"

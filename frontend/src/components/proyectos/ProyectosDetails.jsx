@@ -50,13 +50,11 @@ const ProyectosDetails = ({ proyecto, onClose, onEdit, onDelete }) => {
 
   return (
     <div className="fixed inset-0 flex justify-center items-start mt-[120px] z-50">
-      {/* 🏗️ Caja del modal */}
       <div className="bg-[#F9FAFB] rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh]">
         <h2 className="text-2xl font-semibold text-[var(--color-primary)] mb-4 text-center">
           {proyecto.nombreProyecto}
         </h2>
 
-        {/* 📋 Datos generales */}
         <div className="space-y-2 text-gray-700">
           <p><strong>Cliente:</strong> {proyecto.clienteNombre}</p>
           <p><strong>Ubicación:</strong> {proyecto.ubicacion || "—"}</p>
@@ -71,7 +69,6 @@ const ProyectosDetails = ({ proyecto, onClose, onEdit, onDelete }) => {
           <p><strong>Descripción:</strong> {proyecto.descripcion || "—"}</p>
         </div>
 
-        {/* 👷 Empleados asignados */}
         <h3 className="text-lg font-semibold text-[var(--color-primary)] mt-6 mb-2">
           Empleados Asignados
         </h3>
@@ -100,7 +97,6 @@ const ProyectosDetails = ({ proyecto, onClose, onEdit, onDelete }) => {
           </p>
         )}
 
-        {/* 🔘 Botones con estilo uniforme */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             onClick={() => onEdit(proyecto)}

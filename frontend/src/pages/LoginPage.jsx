@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -13,13 +14,16 @@ export default function LoginPage() {
 
   const [showPw, setShowPw] = useState(false);
 
+  const [error, setError] = useState("");
+
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
       await login(form);
       navigate("/");
     } catch (err) {
-      alert(err.message);
+      setError(err.message || "Credenciales incorrectas.");
+      setTimeout(() => setError(""), 4000); 
     }
   };
 
@@ -28,10 +32,8 @@ export default function LoginPage() {
 
       <div className="w-full max-w-5xl bg-white shadow-2xl rounded-3xl flex flex-col md:flex-row overflow-hidden animate-fadeIn">
 
-        {/* IZQUIERDA */}
         <div className="md:w-1/2 bg-[#1A2E81] p-10 flex flex-col items-center text-white relative">
 
-          {/* LOGO */}
           <img
             src="/Logo.jpg"
             alt="ACONSA"
@@ -48,16 +50,20 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* DERECHA */}
         <div className="md:w-1/2 p-10 flex flex-col justify-center bg-white">
 
           <h2 className="text-3xl font-bold text-center text-[#1A2E81] mb-8">
             Iniciar Sesión
           </h2>
 
+          {error && (
+            <div className="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-700 px-4 py-3 text-sm animate-fadeIn">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={onSubmit} className="space-y-6">
 
-            {/* USUARIO */}
             <div>
               <label className="block text-gray-700 font-medium mb-1">
                 Usuario
@@ -75,11 +81,11 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* CONTRASEÑA */}
             <div>
               <label className="block text-gray-700 font-medium mb-1">
                 Contraseña
               </label>
+
               <div className="relative">
                 <input
                   type={showPw ? "text" : "password"}
@@ -98,12 +104,24 @@ export default function LoginPage() {
                   onClick={() => setShowPw(!showPw)}
                   className="absolute inset-y-0 right-3 flex items-center text-gray-600 hover:text-gray-800"
                 >
-                  {showPw ? "🙈" : "👁️"}
+                  {showPw ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
                 </button>
               </div>
+
+              <p className="text-right mt-2">
+                <Link
+                  to="/reset-password"
+                  className="text-[#1A2E81] font-semibold hover:underline text-sm"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </p>
             </div>
 
-            {/* BOTÓN */}
             <button
               type="submit"
               className="w-full py-3 px-4 rounded-lg bg-[#1A2E81] text-white font-semibold shadow-md hover:bg-[#16256A] transition"

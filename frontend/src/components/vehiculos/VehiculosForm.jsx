@@ -63,7 +63,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       return newErrors;
     }
 
-    // Validar fechas
     const inicio = fechaInicio ? new Date(fechaInicio) : null;
     const fin = fechaFin ? new Date(fechaFin) : null;
     const min = new Date("2000-01-01");
@@ -136,7 +135,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     if (!form.placa.trim()) newErrors.placa = "La placa es obligatoria.";
     if (!form.tipo_de_combustible) newErrors.tipo_de_combustible = "Seleccione un tipo de combustible.";
 
-    // Año
     if (!form.anio) {
       newErrors.anio = "El año es obligatorio.";
     } else if (Number(form.anio) < 2000 || Number(form.anio) > 2040) {
@@ -192,10 +190,8 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           {isEdit ? "Editar Vehículo" : "Nuevo Vehículo"}
         </h2>
 
-        {/* Proveedor / Estado */}
         <div className="grid grid-cols-2 gap-6 mb-6">
 
-          {/* PROVEEDOR */}
           <div>
             <label className="font-medium text-gray-900">Proveedor</label>
             <select
@@ -212,7 +208,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             {errors.proveedor_id && <p className="text-red-600 text-sm">{errors.proveedor_id}</p>}
           </div>
 
-          {/* ESTADO */}
           <div>
             <label className="font-medium text-gray-900">Estado</label>
             <select
@@ -230,10 +225,8 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
         </div>
 
-        {/* Marca / Modelo */}
         <div className="grid grid-cols-2 gap-6 mb-6">
 
-          {/* MARCA */}
           <div>
             <label className="font-medium text-gray-900">Marca</label>
             <input
@@ -246,7 +239,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             {errors.marca && <p className="text-red-600 text-sm">{errors.marca}</p>}
           </div>
 
-          {/* MODELO */}
           <div>
             <label className="font-medium text-gray-900">Modelo</label>
             <input
@@ -261,10 +253,8 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
         </div>
 
-        {/* Año / Placa / Tipo */}
         <div className="grid grid-cols-3 gap-6 mb-6">
 
-          {/* AÑO */}
           <div>
             <label className="font-medium text-gray-900">Año</label>
             <input
@@ -277,7 +267,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             {errors.anio && <p className="text-red-600 text-sm">{errors.anio}</p>}
           </div>
 
-          {/* PLACA */}
           <div>
             <label className="font-medium text-gray-900">Placa</label>
             <input
@@ -290,7 +279,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             {errors.placa && <p className="text-red-600 text-sm">{errors.placa}</p>}
           </div>
 
-          {/* COMBUSTIBLE */}
           <div>
             <label className="font-medium text-gray-900">Combustible</label>
             <select
@@ -311,14 +299,12 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
         </div>
 
-        {/* === ASIGNAR EMPLEADOS === */}
         <div className="border-t pt-6 mt-6">
 
           <h3 className="text-lg font-semibold mb-3">
             Empleados asignados al vehículo
           </h3>
 
-          {/* Buscar */}
           <input
             type="text"
             placeholder="Buscar empleado..."
@@ -344,7 +330,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
           {errors.asignar && <p className="text-red-600 text-sm">{errors.asignar}</p>}
 
-          {/* Fechas */}
           <div className="grid grid-cols-2 gap-4 mb-2 mt-3">
 
             <div>
@@ -375,7 +360,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
           </div>
 
-          {/* Descripción */}
           <textarea
             rows="2"
             placeholder="Descripción..."
@@ -393,7 +377,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             Asignar
           </button>
 
-          {/* LISTA */}
           <div className="mt-4">
             {empleadosAsignados.length > 0 ? (
               <ul className="divide-y divide-gray-200">
@@ -418,7 +401,6 @@ const VehiculosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
         </div>
 
-        {/* BOTONES */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"

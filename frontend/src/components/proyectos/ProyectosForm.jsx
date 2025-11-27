@@ -128,18 +128,14 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
     const newErrors = {};
 
-    // Cliente
     if (!form.clienteId) newErrors.clienteId = "Seleccione un cliente.";
 
-    // Nombre
     if (!form.nombreProyecto.trim())
       newErrors.nombreProyecto = "El nombre del proyecto es obligatorio.";
 
-    // Presupuesto
     if (!form.presupuestoTotal || Number(form.presupuestoTotal) <= 0)
       newErrors.presupuestoTotal = "Debe ingresar un presupuesto válido.";
 
-    // Fechas
     const minFecha = new Date("2000-01-01");
     const maxFecha = new Date("2040-12-31");
 
@@ -161,11 +157,6 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       if (form.fechaInicio && new Date(form.fechaFin) < new Date(form.fechaInicio))
         newErrors.fechaFin = "La fecha de fin no puede ser menor a la fecha de inicio.";
     }
-
-    // Asignar empleados
-    if (empleadosAsignados.length === 0)
-      newErrors.asignar = "Debe asignar al menos un empleado.";
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;

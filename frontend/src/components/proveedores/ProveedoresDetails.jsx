@@ -22,7 +22,6 @@ const ProveedoresDetails = ({ proveedor, onClose, onEdit, onDelete }) => {
           <p><strong>Correo:</strong> {proveedor.correo || "—"}</p>
         </div>
 
-        {/* 🔘 Botones con estilo uniforme */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             onClick={() => onEdit(proveedor)}

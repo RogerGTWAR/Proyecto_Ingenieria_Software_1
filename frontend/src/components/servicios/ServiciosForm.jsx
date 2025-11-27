@@ -15,10 +15,8 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
     reload: reloadIndirectos,
   } = useCostosIndirectos();
 
-  // Estado para errores
   const [errors, setErrors] = useState({});
 
-  // ⭐ CAMBIO IMPORTANTE: nombreServicio
   const [form, setForm] = useState({
     id: "",
     nombreServicio: "",
@@ -71,9 +69,6 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
     }
   }, [initialData, directos, indirectos]);
 
-  // -------------------------
-  // HANDLERS
-  // -------------------------
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
@@ -174,9 +169,6 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
 
   const quitarIndirecto = () => setCostosIndirectosAsignados([]);
 
-  // -------------------------
-  // VALIDACIÓN
-  // -------------------------
   const validate = () => {
     const newErrors = {};
 
@@ -187,9 +179,6 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
     return newErrors;
   };
 
-  // -------------------------
-  // SUBMIT
-  // -------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -250,9 +239,6 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
     onClose();
   };
 
-  // -------------------------
-  // UI
-  // -------------------------
   return (
     <div className="fixed inset-0 flex justify-center items-start mt-[40px] z-50">
       <form
@@ -263,7 +249,6 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
           {isEdit ? "Editar Servicio" : "Nuevo Servicio"}
         </h2>
 
-        {/* DATOS GENERALES */}
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div>
             <label className="font-medium text-gray-800 text-sm">Nombre del Servicio</label>
@@ -291,7 +276,6 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
           </div>
         </div>
 
-        {/* COSTOS DIRECTOS */}
         <h3 className="text-xl font-semibold mt-10 mb-3 text-[#1A2E81]">
           Costos Directos (Materiales)
         </h3>
@@ -421,7 +405,6 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
           </div>
         )}
 
-        {/* COSTOS INDIRECTOS */}
         <h3 className="text-xl font-semibold mt-12 mb-3 text-[#1A2E81]">
           Costos Indirectos
         </h3>
@@ -484,7 +467,6 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
           </div>
         )}
 
-        {/* BOTONES */}
         <div className="flex justify-center gap-6 mt-12">
           <button
             type="submit"

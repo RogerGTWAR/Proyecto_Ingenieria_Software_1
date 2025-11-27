@@ -40,14 +40,11 @@ export const createDetalleVehiculo = async (d) => {
     descripcion: d.descripcion ?? null,
   };
 
-  console.log("📤 Enviando al backend:", body);
-
   const data = await api("/detalle_vehiculos", {
     method: "POST",
     body,
   });
 
-  console.log("📩 Backend respondió:", data);
   return toUI(data.data || data);
 };
 

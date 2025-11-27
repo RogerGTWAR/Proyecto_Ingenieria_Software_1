@@ -17,9 +17,12 @@ import MenusPage from './pages/MenusPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import SignupPage from './pages/SignupPage.jsx'
 
-import ProtectedRoute from "./components/ProtectedRoute";
-import PrivateRoute from "./components/PrivateRoute";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import PrivateRoute from "./components/PrivateRoute.jsx";
 import NoAutorizado from "./pages/NoAutorizado.jsx"
+
+import ReportesPage from './pages/ReportesPage.jsx'
+import UsuariosPage from './pages/UsuariosPage.jsx'
 
 function App() {
   return (
@@ -82,6 +85,12 @@ function App() {
           <Route path="permisos"
             element={<PrivateRoute permiso="/permisos" element={<PermisosPage />} />}
           />
+
+          <Route path="usuarios"
+            element={<PrivateRoute permiso="/usuarios" element={<UsuariosPage />} />}
+          />
+          
+          <Route path="reportes" element={<ReportesPage />} />
 
         </Route>
       </Route>

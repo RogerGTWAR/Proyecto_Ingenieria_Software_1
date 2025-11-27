@@ -28,12 +28,10 @@ export default function AvaluosCard({ avaluos, onEdit, onDelete, onVerDetalles }
                        p-5 w-[310px] hover:shadow-lg hover:scale-[1.02] 
                        transition-all duration-200"
           >
-            {/* TITULO */}
             <h3 className="font-semibold text-[var(--color-primary)] text-[17px] mb-2 text-center">
               {a.descripcion?.trim() || `Avalúo #${a.id}`}
             </h3>
 
-            {/* INFO */}
             <div className="text-[15px] text-gray-700 space-y-1 mb-3">
               <p>
                 <strong>Proyecto:</strong>{" "}
@@ -52,7 +50,6 @@ export default function AvaluosCard({ avaluos, onEdit, onDelete, onVerDetalles }
               <p><strong>Días:</strong> {a.tiempoTotalDias || 0}</p>
             </div>
 
-            {/* BOTONES */}
             <div className="flex justify-center gap-2 mt-3">
               <button
                 onClick={() => onVerDetalles(a)}

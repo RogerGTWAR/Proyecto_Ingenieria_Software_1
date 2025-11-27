@@ -24,7 +24,6 @@ function ProyectosPage() {
   const [proyectoAEliminar, setProyectoAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // 🔘 NUEVO: control de vista (true = tarjetas, false = tabla)
   const [vistaTarjetas, setVistaTarjetas] = useState(true);
 
   const proyectosFiltrados = (proyectos || []).filter((p) =>
@@ -62,7 +61,7 @@ function ProyectosPage() {
       }
 
       if (!proyectoGuardado || !proyectoGuardado.id) {
-        console.error("❌ No se pudo obtener el ID del proyecto:", proyectoGuardado);
+        console.error("No se pudo obtener el ID del proyecto:", proyectoGuardado);
         alert("No se pudo obtener el ID del proyecto guardado.");
         return null;
       }
@@ -71,7 +70,7 @@ function ProyectosPage() {
       await reloadDetalles();
       return proyectoGuardado;
     } catch (error) {
-      console.error("❌ Error al guardar proyecto:", error);
+      console.error("Error al guardar proyecto:", error);
       alert("No se pudo guardar el proyecto.");
       return null;
     }
@@ -140,7 +139,6 @@ function ProyectosPage() {
         ]}
       />
 
-      {/* 🔎 Buscador */}
       <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-4 flex items-center justify-between gap-4">
         <input
           type="text"
@@ -150,7 +148,6 @@ function ProyectosPage() {
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
         />
 
-        {/* 🔘 Switch Tabla / Tarjetas */}
         <button
           onClick={() => setVistaTarjetas(!vistaTarjetas)}
           className="px-4 py-2 bg-[#1A2E81] text-white rounded-lg shadow hover:scale-105 transition"
@@ -159,7 +156,6 @@ function ProyectosPage() {
         </button>
       </div>
 
-      {/* 📋 / 🧊 Contenido según la vista */}
       {vistaTarjetas ? (
         <ProyectosCard
           proyectos={proyectosFiltrados}

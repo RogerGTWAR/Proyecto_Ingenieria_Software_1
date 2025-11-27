@@ -24,14 +24,12 @@ export const createDetalleEmpleado = async (d) => {
     fecha_de_proyecto: d.fecha_de_proyecto || null,
   };
 
-  console.log("📤 Enviando al backend:", body);
 
   const data = await api("/detalle_empleados", {
     method: "POST",
     body,
   });
 
-  console.log("📩 Backend respondió:", data);
   return toUI(data.data || data);
 };
 

@@ -1,183 +1,217 @@
-import { useState } from 'react';
-import DataTable from '../components/DataTable';
-import ButtonList from '../components/ButtonList';
-import Modal from '../components/Modal';
-import { mockDb } from '../../data/mockDb';
+import { useState } from "react";
+import ButtonList from "../components/ButtonList";
+import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
+
+import ComprasCard from "../components/compras/ComprasCard";
+import ComprasTable from "../components/compras/ComprasTable";
+import ComprasDetails from "../components/compras/ComprasDetails";
+import ComprasForm from "../components/compras/ComprasForm";
+
+import { useCompras } from "../hooks/useCompras";
+import { useDetallesCompras } from "../hooks/useDetallesCompras";
 
 function ComprasPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    proveedorId: '',
-    empleadoId: '',
-    numeroFactura: '',
-    fechaCompra: '',
-    montoTotal: '',
-    estado: 'Pendiente',
-    observaciones: ''
+  const {
+    items: compras,
+    loading,
+    add,
+    edit,
+    remove,
+    reload,
+  } = useCompras();
+
+  const { reload: reloadDetalles } = useDetallesCompras();
+
+  const [busqueda, setBusqueda] = useState("");
+
+  const [vistaTarjetas, setVistaTarjetas] = useState(true);
+
+  const [vistaDetalle, setVistaDetalle] = useState(false);
+  const [compraSeleccionada, setCompraSeleccionada] = useState(null);
+
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [compraAEditar, setCompraAEditar] = useState(null);
+
+  const [mostrarEliminar, setMostrarEliminar] = useState(false);
+  const [compraAEliminar, setCompraAEliminar] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const comprasFiltradas = (compras || []).filter((c) => {
+    const txt = busqueda.toLowerCase();
+    return (
+      c.numero_factura?.toLowerCase().includes(txt) ||
+      c.proveedorNombre?.toLowerCase().includes(txt) ||
+      c.estado?.toLowerCase().includes(txt)
+    );
   });
 
-  const tableHeaders = ['Proveedor', 'Empleado', 'Factura', 'Fecha', 'Monto', 'Estado'];
-  const tableData = mockDb.compras.map(compra => ({
-    id: compra.compraId,
-    'Proveedor': mockDb.proveedores.find(p => p.proveedorId === compra.proveedorId)?.nombreEmpresa || 'N/A',
-    'Empleado': mockDb.empleados.find(e => e.empleadoId === compra.empleadoId)?.nombres + ' ' + mockDb.empleados.find(e => e.empleadoId === compra.empleadoId)?.apellidos || 'N/A',
-    'Factura': compra.numeroFactura,
-    'Fecha': compra.fechaCompra,
-    'Monto': compra.montoTotal.toLocaleString(),
-    'Estado': compra.estado,
-  }));
-
-  const buttons = [
-    {
-      id: 'filter',
-      name: 'Filtrar',
-      icon: '/icons/filter.svg',
-      coordinate: 3,
-      action: () => console.log('Filter clicked'),
-    },
-    {
-      id: 'add',
-      name: 'Añadir',
-      icon: '/icons/add.svg',
-      coordinate: 4,
-      action: () => setIsModalOpen(true),
-    },
-  ];
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const abrirFormulario = () => {
+    setCompraAEditar(null);
+    setModoEdicion(false);
+    setMostrarFormulario(true);
   };
 
-  const handleSubmit = () => {
-    console.log('Nueva compra:', formData);
-    // Aquí iría la lógica para guardar en la base de datos
-    setIsModalOpen(false);
-    setFormData({
-      proveedorId: '',
-      empleadoId: '',
-      numeroFactura: '',
-      fechaCompra: '',
-      montoTotal: '',
-      estado: 'Pendiente',
-      observaciones: ''
-    });
+  const editarCompra = (compra) => {
+    setCompraAEditar(compra);
+    setModoEdicion(true);
+    setMostrarFormulario(true);
+    setVistaDetalle(false); 
   };
+
+  const cerrarFormulario = () => {
+    setMostrarFormulario(false);
+    setCompraAEditar(null);
+    setModoEdicion(false);
+  };
+
+  const guardarCompra = async (data) => {
+    try {
+      let compraGuardada;
+
+      if (modoEdicion && compraAEditar) {
+        compraGuardada = await edit(compraAEditar.id, data);
+        setCompraSeleccionada(compraGuardada);
+      } else {
+        compraGuardada = await add(data);
+      }
+
+      if (!compraGuardada?.id) {
+        alert("No se pudo obtener el ID de la compra guardada.");
+        return null;
+      }
+
+      await reload();
+      await reloadDetalles();
+      return compraGuardada;
+    } catch (error) {
+      alert("Error al guardar la compra.");
+      return null;
+    }
+  };
+
+  const verDetalles = (compra) => {
+    setCompraSeleccionada(compra);
+    setVistaDetalle(true);
+  };
+
+  const cerrarDetalles = () => {
+    setVistaDetalle(false);
+    setCompraSeleccionada(null);
+  };
+
+  const abrirEliminar = (compra) => {
+    setCompraAEliminar(compra);
+    setMostrarEliminar(true);
+  };
+
+  const cerrarEliminar = () => {
+    setMostrarEliminar(false);
+    setCompraAEliminar(null);
+  };
+
+  const eliminarCompra = async () => {
+    if (!compraAEliminar) return;
+
+    setIsDeleting(true);
+    try {
+      await remove(compraAEliminar.id);
+      await reload();
+      await reloadDetalles();
+      setVistaDetalle(false);
+    } finally {
+      setIsDeleting(false);
+      cerrarEliminar();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-[var(--color-primary)] text-lg font-semibold">
+        Cargando compras...
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="p-6">
-        <div className=" ">
-          <h1 className="heading-1 text-[var(--color-primary)] mb-2">
-            Compras
-          </h1>
-          <p className="body-1 text-[var(--color-gray)]">
-            Gestión de compras y proveedores
-          </p>
-        </div>
-        <ButtonList buttons={buttons} />
-        <DataTable headers={tableHeaders} data={tableData} />
+    <div className="min-h-screen bg-gray-50 p-6 relative">
+      <h1 className="heading-1 text-[var(--color-primary)] mb-2">Compras</h1>
+      <p className="body-1 text-[var(--color-gray)] mb-6">
+        Gestión y control de compras de materiales
+      </p>
 
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title="Añadir Nueva Compra"
-          onSubmit={handleSubmit}
+      <ButtonList
+        buttons={[
+          {
+            id: "add",
+            name: "Registrar Compra",
+            icon: "/icons/add.svg",
+            coordinate: 4,
+            action: abrirFormulario,
+          },
+        ]}
+      />
+
+      <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6 flex items-center gap-4">
+        <input
+          type="text"
+          placeholder="Buscar por Nº factura, proveedor o estado..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
+        />
+
+        <button
+          onClick={() => setVistaTarjetas(!vistaTarjetas)}
+          className="px-5 py-2 rounded-lg shadow-md text-white font-medium transition bg-[#1A2E81]"
         >
-          <div className="space-y-4">
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Proveedor</label>
-              <select
-                name="proveedorId"
-                value={formData.proveedorId}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              >
-                <option value="">Seleccionar proveedor</option>
-                {mockDb.proveedores.map(proveedor => (
-                  <option key={proveedor.proveedorId} value={proveedor.proveedorId}>
-                    {proveedor.nombreEmpresa}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Empleado</label>
-              <select
-                name="empleadoId"
-                value={formData.empleadoId}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              >
-                <option value="">Seleccionar empleado</option>
-                {mockDb.empleados.map(empleado => (
-                  <option key={empleado.empleadoId} value={empleado.empleadoId}>
-                    {empleado.nombres} {empleado.apellidos}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Número de Factura</label>
-              <input
-                type="text"
-                name="numeroFactura"
-                value={formData.numeroFactura}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              />
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Fecha de Compra</label>
-              <input
-                type="date"
-                name="fechaCompra"
-                value={formData.fechaCompra}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              />
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Monto Total</label>
-              <input
-                type="number"
-                name="montoTotal"
-                value={formData.montoTotal}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                required
-              />
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Estado</label>
-              <select
-                name="estado"
-                value={formData.estado}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-              >
-                <option value="Pendiente">Pendiente</option>
-                <option value="Pagada">Pagada</option>
-                <option value="Cancelada">Cancelada</option>
-              </select>
-            </div>
-            <div>
-              <label className="block body-2 text-[var(--color-gray)] mb-1">Observaciones</label>
-              <textarea
-                name="observaciones"
-                value={formData.observaciones}
-                onChange={handleInputChange}
-                className="w-full p-2 border    border-gray-450 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                rows="3"
-              />
-            </div>
-          </div>
-        </Modal>
-      </main>
+          {vistaTarjetas ? "Vista: Tarjetas" : "Vista: Tabla"}
+        </button>
+      </div>
+
+      {vistaTarjetas ? (
+        <ComprasCard
+          compras={comprasFiltradas}
+          onEdit={editarCompra}
+          onDelete={abrirEliminar}
+          onVerDetalles={verDetalles}
+        />
+      ) : (
+        <ComprasTable
+          compras={comprasFiltradas}
+          onEdit={editarCompra}
+          onDelete={abrirEliminar}
+          onVerDetalles={verDetalles}
+        />
+      )}
+
+      {vistaDetalle && compraSeleccionada && (
+        <ComprasDetails
+          compra={compraSeleccionada}
+          onClose={cerrarDetalles}
+          onEdit={editarCompra}
+          onDelete={abrirEliminar}
+        />
+      )}
+
+      {mostrarFormulario && (
+        <ComprasForm
+          onSubmit={guardarCompra}
+          onClose={cerrarFormulario}
+          initialData={compraAEditar}
+          isEdit={modoEdicion}
+        />
+      )}
+
+      {mostrarEliminar && (
+        <DeleteConfirmationModal
+          isOpen={mostrarEliminar}
+          onClose={cerrarEliminar}
+          onConfirm={eliminarCompra}
+          itemName={compraAEliminar?.numero_factura || ""}
+          loading={isDeleting}
+        />
+      )}
     </div>
   );
 }

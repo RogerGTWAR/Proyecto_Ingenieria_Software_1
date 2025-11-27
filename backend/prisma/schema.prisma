@@ -324,6 +324,7 @@ model usuarios {
 
   empleados empleados @relation(fields: [empleado_id], references: [empleado_id])
   permisos  permisos[]
+  reportes_generados reportes_generados[]
 }
 
 
@@ -415,4 +416,22 @@ model permisos {
   menu     menu     @relation(fields: [id_menu], references: [id_menu])
 
   @@unique([usuario_id, id_menu])
+}
+
+model reportes_generados {
+  reporte_id          Int       @id @default(autoincrement())
+  usuario_id          Int
+
+  nombre_reporte      String
+  tipo_reporte        String
+  descripcion         String?
+  datos               Json?
+  archivo_url         String
+  ip_generacion       String?
+
+  fecha_creacion      DateTime  @default(now())
+  fecha_actualizacion DateTime?
+  fecha_eliminacion   DateTime?
+
+  usuario usuarios @relation(fields: [usuario_id], references: [usuario_id])
 }

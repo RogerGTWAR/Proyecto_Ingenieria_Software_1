@@ -21,6 +21,7 @@
     "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "libreoffice-convert": "^1.7.0",
     "tailwindcss": "^4.1.14"
   },
   "devDependencies": {

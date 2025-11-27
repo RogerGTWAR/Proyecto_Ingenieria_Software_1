@@ -18,7 +18,6 @@ const MaterialesCard = ({ materiales, onEdit, onDelete, onVerDetalles }) => {
                      p-5 w-[290px] hover:shadow-lg hover:scale-[1.02] 
                      transition-all duration-200"
         >
-          {/* --- Información del material --- */}
           <h3 className="font-semibold text-[var(--color-primary)] text-[17px] mb-2 text-center">
             {material.nombre_material}
           </h3>
@@ -46,7 +45,6 @@ const MaterialesCard = ({ materiales, onEdit, onDelete, onVerDetalles }) => {
             </p>
           </div>
 
-          {/* --- Botones de acción --- */}
           <div className="flex justify-center gap-2 mt-3">
             <button
               onClick={() => onVerDetalles(material)}

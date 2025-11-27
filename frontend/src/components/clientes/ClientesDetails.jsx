@@ -10,7 +10,6 @@ const ClientesDetails = ({ cliente, onClose, onEdit, onDelete }) => {
           Detalles del Cliente
         </h1>
 
-        {/* 📋 Datos Generales y Contacto */}
         <div className="grid grid-cols-2 gap-10 text-center">
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
@@ -37,7 +36,6 @@ const ClientesDetails = ({ cliente, onClose, onEdit, onDelete }) => {
           </div>
         </div>
 
-        {/* 🔘 Botones */}
         <div className="flex justify-center gap-6 mt-12">
           <button
             onClick={() => onEdit?.(cliente)}

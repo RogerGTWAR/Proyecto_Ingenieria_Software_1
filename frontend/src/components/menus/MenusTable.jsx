@@ -4,7 +4,6 @@ export default function MenusTable({ menus, onEdit, onDelete }) {
   return (
     <div className="w-full bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
       
-      {/* Headers */}
       <div className="grid grid-cols-6 font-semibold text-[#1A2E81] bg-gray-100 p-3 border-b">
         <span>Nombre</span>
         <span>Tipo</span>

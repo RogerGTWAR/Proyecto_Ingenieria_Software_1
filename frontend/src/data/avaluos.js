@@ -1,6 +1,5 @@
 import { api } from "./api.js";
 
-// Convertir backend → UI
 const toUI = (d) => ({
   id: d.avaluo_id,
 
@@ -16,14 +15,12 @@ const toUI = (d) => ({
   fechaActualizacion: d.fecha_actualizacion ?? "",
 });
 
-// GET
 export const fetchAvaluos = async () => {
   const { data } = await api("/avaluos");
   const list = Array.isArray(data.data) ? data.data : data;
   return list.map(toUI);
 };
 
-// POST
 export const createAvaluo = async (d) => {
   const body = {
     proyecto_id: Number(d.proyecto_id ?? d.proyectoId),
@@ -40,7 +37,6 @@ export const createAvaluo = async (d) => {
   return toUI(response.data || response);
 };
 
-// PATCH
 export const updateAvaluo = async (id, d) => {
   const body = {
     proyecto_id: d.proyectoId !== undefined ? Number(d.proyectoId) : undefined,
@@ -57,7 +53,6 @@ export const updateAvaluo = async (id, d) => {
   return toUI(response.data || response);
 };
 
-// DELETE
 export const deleteAvaluo = async (id) => {
   await api(`/avaluos/${id}`, { method: "DELETE" });
   return true;

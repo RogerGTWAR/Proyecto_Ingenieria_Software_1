@@ -20,7 +20,7 @@ export default class ServiciosController {
       res.json({ ok: true, data: list });
 
     } catch (error) {
-      console.error("❌ Error en getAll:", error);
+      console.error("Error en getAll:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al obtener servicios."
@@ -53,7 +53,7 @@ export default class ServiciosController {
       res.json({ ok: true, data: servicio });
 
     } catch (error) {
-      console.error("❌ Error en getById:", error);
+      console.error("Error en getById:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al obtener el servicio."
@@ -100,7 +100,7 @@ export default class ServiciosController {
       });
 
     } catch (error) {
-      console.error("❌ Error en create:", error);
+      console.error("Error en create:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al crear el servicio."
@@ -158,7 +158,7 @@ export default class ServiciosController {
       res.json({ ok: true, msg: "Servicio actualizado.", data });
 
     } catch (error) {
-      console.error("❌ Error en update:", error);
+      console.error("Error en update:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al actualizar el servicio."
@@ -196,7 +196,7 @@ export default class ServiciosController {
       });
 
     } catch (error) {
-      console.error("❌ Error en delete:", error);
+      console.error("Error en delete:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al eliminar el servicio."

@@ -2,9 +2,6 @@ import prisma from "../database.js";
 
 export default class menuController {
 
-  /* =========================================================
-     1. OBTENER TODOS LOS MENÚS (PLANO)
-     ========================================================= */
   static async getAll(_req, res) {
     try {
       const data = await prisma.menu.findMany({
@@ -19,14 +16,11 @@ export default class menuController {
       res.json({ ok: true, data });
 
     } catch (error) {
-      console.error("❌ Error Menu getAll:", error);
+      console.error("Error Menu getAll:", error);
       res.status(500).json({ ok: false, msg: "Error al obtener menús." });
     }
   }
 
-  /* =========================================================
-     2. OBTENER MENÚ POR ID
-     ========================================================= */
   static async getById(req, res) {
     try {
       const id = Number(req.params.id);
@@ -48,14 +42,11 @@ export default class menuController {
       res.json({ ok: true, data: item });
 
     } catch (error) {
-      console.error("❌ Error Menu getById:", error);
+      console.error("Error Menu getById:", error);
       res.status(500).json({ ok: false, msg: "Error interno del sistema." });
     }
   }
 
-  /* =========================================================
-     3. CREAR MENÚ
-     ========================================================= */
   static async create(req, res) {
     try {
       const { nombre, es_submenu, url, id_menu_parent, estado, show } = req.body;
@@ -83,14 +74,11 @@ export default class menuController {
       res.status(201).json({ ok: true, msg: "Menú creado.", data: nuevo });
 
     } catch (error) {
-      console.error("❌ Error Menu create:", error);
+      console.error("Error Menu create:", error);
       res.status(500).json({ ok: false, msg: "Error al crear menú." });
     }
   }
 
-  /* =========================================================
-     4. ACTUALIZAR MENÚ
-     ========================================================= */
   static async update(req, res) {
     try {
       const id = Number(req.params.id);
@@ -119,14 +107,11 @@ export default class menuController {
       res.json({ ok: true, msg: "Menú actualizado.", data: upd });
 
     } catch (error) {
-      console.error("❌ Error Menu update:", error);
+      console.error("Error Menu update:", error);
       res.status(500).json({ ok: false, msg: "Error al actualizar menú." });
     }
   }
 
-  /* =========================================================
-     5. ELIMINAR MENÚ (VALIDACIÓN DE HIJOS)
-     ========================================================= */
   static async delete(req, res) {
     try {
       const id = Number(req.params.id);
@@ -152,14 +137,11 @@ export default class menuController {
       res.json({ ok: true, msg: "Menú eliminado correctamente." });
 
     } catch (error) {
-      console.error("❌ Error Menu delete:", error);
+      console.error("Error Menu delete:", error);
       res.status(500).json({ ok: false, msg: "Error al eliminar menú." });
     }
   }
 
-  /* =========================================================
-     6. ÁRBOL COMPLETO (PARENT → CHILDREN)
-     ========================================================= */
   static async getTree(_req, res) {
     try {
       const data = await prisma.menu.findMany({
@@ -180,38 +162,37 @@ export default class menuController {
       res.json({ ok: true, data: tree });
 
     } catch (error) {
-      console.error("❌ Error Menu getTree:", error);
+      console.error("Error Menu getTree:", error);
       res.status(500).json({ ok: false, msg: "Error al construir árbol." });
     }
   }
 
-  /* =========================================================
-     7. MENÚ POR USUARIO (PERMISOS)
-     ========================================================= */
   static async getMenuByUser(req, res) {
     try {
       const usuario_id = Number(req.params.usuario_id);
 
       const permisos = await prisma.permisos.findMany({
-        where: { usuario_id },
+        where: {
+          usuario_id,
+          fecha_eliminacion: null   
+        },
         include: { menu: true }
       });
 
-      const menus = permisos.map(p => p.menu);
+      const menus = permisos.map((p) => p.menu);
 
       const tree = menus
-        .filter(m => !m.id_menu_parent)
-        .map(parent => ({
+        .filter((m) => !m.id_menu_parent)
+        .map((parent) => ({
           ...parent,
-          children: menus.filter(m => m.id_menu_parent === parent.id_menu)
+          children: menus.filter((m) => m.id_menu_parent === parent.id_menu),
         }));
 
       res.json({ ok: true, data: tree });
 
     } catch (error) {
-      console.error("❌ Error Menu getMenuByUser:", error);
+      console.error("Error Menu getMenuByUser:", error);
       res.status(500).json({ ok: false, msg: "Error al obtener menú del usuario." });
     }
   }
-
 }

@@ -4,7 +4,6 @@ export default function AvaluosTable({ avaluos, onEdit, onDelete, onVerDetalles 
   return (
     <div className="w-full bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
       
-      {/* Encabezados */}
       <div className="grid grid-cols-6 font-semibold text-[#1A2E81] bg-gray-100 p-3 border-b">
         <span>Proyecto</span>
         <span>Descripción</span>
@@ -14,7 +13,6 @@ export default function AvaluosTable({ avaluos, onEdit, onDelete, onVerDetalles 
         <span className="text-center">Acciones</span>
       </div>
 
-      {/* Filas */}
       <div className="divide-y divide-gray-200">
         {avaluos.length > 0 ? (
           avaluos.map((a, idx) => (
@@ -24,22 +22,17 @@ export default function AvaluosTable({ avaluos, onEdit, onDelete, onVerDetalles 
                 idx % 2 === 0 ? "bg-gray-50" : "bg-white"
               } hover:bg-gray-100 transition`}
             >
-              {/* PROYECTO */}
               <span>{a.proyectoNombre || `Proyecto ${a.proyectoId}`}</span>
 
-              {/* DESCRIPCIÓN */}
               <span>{a.descripcion || "—"}</span>
 
-              {/* FECHAS */}
               <span>{a.fechaInicio?.slice(0, 10) || "—"}</span>
               <span>{a.fechaFin?.slice(0, 10) || "—"}</span>
 
-              {/* MONTO EJECUTADO */}
               <span className="font-semibold text-green-700">
                 C${Number(a.montoEjecutado || 0).toLocaleString("es-NI")}
               </span>
 
-              {/* ACCIONES */}
               <div className="flex justify-center gap-2">
                 <button
                   onClick={() => onVerDetalles(a)}

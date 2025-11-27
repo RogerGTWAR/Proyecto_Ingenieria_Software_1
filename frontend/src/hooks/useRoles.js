@@ -1,4 +1,3 @@
-//Listo
 import { useCallback, useEffect, useState } from "react";
 import { fetchRoles, createRole, updateRole, deleteRole } from "../data/roles.js";
 

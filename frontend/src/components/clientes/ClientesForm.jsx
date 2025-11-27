@@ -193,7 +193,6 @@ const ClientesForm = ({ onSubmit, onClose, initialData = {}, isEdit = false }) =
           </div>
         </div>
 
-        {/* Botones */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"

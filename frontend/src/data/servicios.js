@@ -11,14 +11,12 @@ const toUI = (s) => ({
   fechaActualizacion: s.fecha_actualizacion,
 });
 
-// GET
 export const fetchServicios = async () => {
   const { data } = await api("/servicios");
   const list = Array.isArray(data.data) ? data.data : data;
   return list.map(toUI);
 };
 
-// POST — CORRECTO FINAL
 export const createServicio = async (data) => {
   const body = {
     nombre_servicio: data.nombreServicio,
@@ -35,7 +33,6 @@ export const createServicio = async (data) => {
   return toUI(result.data || result);
 };
 
-// PATCH — CORRECTO
 export const updateServicio = async (id, data) => {
   const body = {
     ...(data.nombreServicio && { nombre_servicio: data.nombreServicio }),

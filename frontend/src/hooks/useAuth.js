@@ -15,12 +15,9 @@ export function useAuth() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* ============================================================
-     Cargar usuario + menú desde cookie JWT
-     ============================================================ */
   const loadUser = async () => {
     try {
-      const res = await meRequest(); // ← ahora devuelve { ok, user }
+      const res = await meRequest(); 
 
       if (res?.ok && res.user) {
         const usr = res.user;
@@ -28,7 +25,6 @@ export function useAuth() {
         setUser(usr);
         localStorage.setItem("user", JSON.stringify(usr));
 
-        // cargar menú desde backend
         const menu = await fetchMenuByUser(usr.usuario_id);
         localStorage.setItem("menu", JSON.stringify(menu));
       } else {
@@ -37,7 +33,7 @@ export function useAuth() {
         localStorage.removeItem("menu");
       }
     } catch (e) {
-      console.error("❌ loadUser error:", e);
+      console.error("loadUser error:", e);
       setUser(null);
       localStorage.removeItem("user");
       localStorage.removeItem("menu");
@@ -50,17 +46,12 @@ export function useAuth() {
     loadUser();
   }, []);
 
-  /* ============================================================
-     LOGIN
-     ============================================================ */
+ 
   const login = async (payload) => {
     await loginRequest(payload);
-    await loadUser(); // recarga usuario + menú
+    await loadUser();
   };
 
-  /* ============================================================
-     RESTO
-     ============================================================ */
   const register = async (payload) => await registerRequest(payload);
 
   const autoRegister = async (payload) =>

@@ -1,4 +1,3 @@
-//Listo
 import prisma from "../database.js";
 
 export default class CategoriasController {

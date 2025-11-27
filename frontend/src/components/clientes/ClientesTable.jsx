@@ -4,7 +4,6 @@ export default function ClientesTable({ clientes, onEdit, onDelete, onVerDetalle
   return (
     <div className="w-full bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
       
-      {/* Encabezados */}
       <div className="grid grid-cols-6 font-semibold text-[#1A2E81] bg-gray-100 p-3 border-b">
         <span>Empresa</span>
         <span>Contacto</span>
@@ -14,7 +13,6 @@ export default function ClientesTable({ clientes, onEdit, onDelete, onVerDetalle
         <span className="text-center">Acciones</span>
       </div>
 
-      {/* Filas */}
       <div className="divide-y divide-gray-200">
         {clientes.length > 0 ? (
           clientes.map((c, idx) => (
@@ -30,7 +28,6 @@ export default function ClientesTable({ clientes, onEdit, onDelete, onVerDetalle
               <span>{c.ciudad || "—"}</span>
               <span>{c.telefono || "—"}</span>
 
-              {/* Acciones */}
               <div className="flex justify-center gap-2">
                 <button
                   onClick={() => onVerDetalles(c)}

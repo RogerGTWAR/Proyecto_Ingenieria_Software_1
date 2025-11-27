@@ -1,6 +1,5 @@
 import { api } from "./api.js";
 
-// 🔹 Adaptar datos del backend al formato de la UI
 const toUI = (v) => ({
   id: v.vehiculo_id,
   proveedor_id: v.proveedor_id,
@@ -17,14 +16,12 @@ const toUI = (v) => ({
     : "",
 });
 
-// 🔹 Obtener todos los vehículos
 export const fetchVehiculos = async () => {
   const { data } = await api("/vehiculos");
   const list = Array.isArray(data.data) ? data.data : data;
   return list.map(toUI);
 };
 
-// 🔹 Crear vehículo
 export const createVehiculo = async (v) => {
   const body = {
     proveedor_id: Number(v.proveedor_id) || null,
@@ -39,8 +36,6 @@ export const createVehiculo = async (v) => {
       v.fecha_registro || new Date().toISOString().split("T")[0],
   };
 
-  console.log("📤 POST /vehiculos:", body);
-
   const data = await api("/vehiculos", {
     method: "POST",
     body,
@@ -50,7 +45,6 @@ export const createVehiculo = async (v) => {
   return toUI(payload);
 };
 
-// 🔹 Actualizar vehículo
 export const updateVehiculo = async (id, v) => {
   const body = {
     proveedor_id: Number(v.proveedor_id) || null,
@@ -65,8 +59,6 @@ export const updateVehiculo = async (id, v) => {
       v.fecha_registro || new Date().toISOString().split("T")[0],
   };
 
-  console.log("📤 PATCH /vehiculos:", body);
-
   const data = await api(`/vehiculos/${id}`, {
     method: "PATCH",
     body,
@@ -76,7 +68,6 @@ export const updateVehiculo = async (id, v) => {
   return toUI(payload);
 };
 
-// 🔹 Eliminar vehículo
 export const deleteVehiculo = async (id) => {
   await api(`/vehiculos/${id}`, { method: "DELETE" });
   return true;

@@ -41,8 +41,10 @@ const Upbar = ({ title }) => {
             <span className="body-1 text-white font-medium">
               {user?.usuario ?? "Usuario"}
             </span>
+
+            {/* Mostrar el cargo desde roles */}
             <span className="body-3 text-gray-300">
-              ID: {user?.empleado_id ?? "-"}
+              Rol: {user?.cargo ?? "Sin cargo"}
             </span>
           </div>
 

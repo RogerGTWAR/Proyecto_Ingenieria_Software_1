@@ -22,9 +22,7 @@ const EmpleadosDetails = ({ empleado, onClose, onEdit, onDelete, rolNameById }) 
           Detalles del Empleado
         </h1>
 
-        {/* Datos personales y laborales */}
         <div className="grid grid-cols-2 gap-10 text-center">
-          {/* Columna izquierda - Datos personales */}
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
               Datos Personales
@@ -39,7 +37,6 @@ const EmpleadosDetails = ({ empleado, onClose, onEdit, onDelete, rolNameById }) 
             </div>
           </div>
 
-          {/* Columna derecha - Información laboral */}
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
               Información Laboral
@@ -54,7 +51,6 @@ const EmpleadosDetails = ({ empleado, onClose, onEdit, onDelete, rolNameById }) 
           </div>
         </div>
 
-        {/* 🔘 Botones */}
         <div className="flex justify-center gap-6 mt-12">
           <button
             onClick={() => onEdit(empleado)}

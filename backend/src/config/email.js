@@ -1,4 +1,3 @@
-//Falta-En Revision
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({

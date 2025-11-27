@@ -171,7 +171,7 @@ export default class DetallesServiciosController {
       });
 
     } catch (error) {
-      console.error("❌ Error create:", error);
+      console.error("Error create:", error);
       res.status(500).json({ ok: false, msg: "Error interno al crear el detalle." });
     }
   }
@@ -225,7 +225,7 @@ export default class DetallesServiciosController {
       });
 
     } catch (error) {
-      console.error("❌ Error update:", error);
+      console.error("Error update:", error);
       res.status(500).json({ ok: false, msg: "Error interno al actualizar" });
     }
   }
@@ -249,7 +249,7 @@ export default class DetallesServiciosController {
       res.json({ ok: true, msg: "Detalle eliminado correctamente" });
 
     } catch (error) {
-      console.error("❌ Error delete:", error);
+      console.error("Error delete:", error);
       res.status(500).json({ ok: false, msg: "Error interno al eliminar" });
     }
   }

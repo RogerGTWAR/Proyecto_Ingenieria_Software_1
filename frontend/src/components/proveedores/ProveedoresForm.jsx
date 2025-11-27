@@ -34,27 +34,22 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
     const newErrors = {};
 
-    // Categoría obligatoria
     if (!form.categoria_proveedor_id) {
       newErrors.categoria_proveedor_id = "Seleccione una categoría.";
     }
 
-    // Empresa obligatoria
     if (!form.nombre_empresa.trim()) {
       newErrors.nombre_empresa = "El nombre de la empresa es obligatorio.";
     }
 
-    // Nombre de contacto obligatorio
     if (!form.nombre_contacto.trim()) {
       newErrors.nombre_contacto = "El nombre del contacto es obligatorio.";
     }
 
-    // Cargo del contacto obligatorio
     if (!form.cargo_contacto.trim()) {
       newErrors.cargo_contacto = "El cargo del contacto es obligatorio.";
     }
 
-    // Teléfono mínimo 8 dígitos y numérico
     if (!form.telefono.trim()) {
       newErrors.telefono = "El teléfono es obligatorio.";
     } else if (!/^[0-9]+$/.test(form.telefono)) {
@@ -63,7 +58,6 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       newErrors.telefono = "El teléfono debe tener al menos 8 dígitos.";
     }
 
-    // Correo válido
     const emailRegex = /^\S+@\S+\.\S+$/;
     if (!form.correo.trim()) {
       newErrors.correo = "El correo es obligatorio.";
@@ -89,7 +83,6 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           {isEdit ? "Editar Proveedor" : "Nuevo Proveedor"}
         </h2>
 
-        {/* Categoría y Empresa */}
         <div className="grid grid-cols-2 gap-6 mb-6">
 
           <div>
@@ -126,7 +119,6 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
         </div>
 
-        {/* Contacto */}
         <div className="grid grid-cols-2 gap-6 mb-6">
 
           <div>
@@ -159,7 +151,6 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
         </div>
 
-        {/* Dirección */}
         <div className="mb-6">
           <label className="block text-gray-900 font-medium mb-1">Dirección</label>
           <input
@@ -171,7 +162,6 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           />
         </div>
 
-        {/* Ciudad, País, Teléfono */}
         <div className="grid grid-cols-3 gap-6 mb-6">
 
           <div>
@@ -212,7 +202,6 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
         </div>
 
-        {/* Correo */}
         <div className="mb-8">
           <label className="block text-gray-900 font-medium mb-1">Correo</label>
           <input
@@ -227,7 +216,6 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           )}
         </div>
 
-        {/* Botones */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"

@@ -22,7 +22,7 @@ export function useMenus() {
       setItems(Array.isArray(list) ? list : []);
 
     } catch (e) {
-      console.error("❌ Error en useMenus:", e);
+      console.error("Error en useMenus:", e);
       setError(e.message || "Error al cargar menús");
 
     } finally {

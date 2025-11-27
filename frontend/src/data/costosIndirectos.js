@@ -26,14 +26,12 @@ const toUI = (d) => ({
   fechaActualizacion: d.fecha_actualizacion ?? "",
 });
 
-// GET
 export const fetchCostosIndirectos = async () => {
   const { data } = await api("/costos_indirectos");
   const list = Array.isArray(data.data) ? data.data : data;
   return list.map(toUI);
 };
 
-// POST
 export const createCostoIndirecto = async (d) => {
   const body = {
     servicio_id: Number(d.servicio_id ?? d.servicioId),
@@ -51,7 +49,6 @@ export const createCostoIndirecto = async (d) => {
   return toUI(response.data || response);
 };
 
-// PATCH
 export const updateCostoIndirecto = async (id, d) => {
   const body = {
     servicio_id: d.servicioId ? Number(d.servicioId) : undefined,
@@ -70,7 +67,6 @@ export const updateCostoIndirecto = async (id, d) => {
   return toUI(response.data || response);
 };
 
-// DELETE
 export const deleteCostoIndirecto = async (id) => {
   await api(`/costos_indirectos/${id}`, { method: "DELETE" });
   return true;

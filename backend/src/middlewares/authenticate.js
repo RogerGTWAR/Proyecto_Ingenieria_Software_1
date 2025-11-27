@@ -1,4 +1,3 @@
-//Falta-En Revision
 import JWT from "jsonwebtoken";
 
 export default function authenticate(req, res, next) {

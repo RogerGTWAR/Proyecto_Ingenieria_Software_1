@@ -14,7 +14,6 @@ export default function MenusPage() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [isEdit, setIsEdit] = useState(false);
 
-  // 🟥 Estados nuevos para eliminar (SOLO ESTO AGREGO)
   const [mostrarEliminar, setMostrarEliminar] = useState(false);
   const [menuAEliminar, setMenuAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -43,7 +42,6 @@ export default function MenusPage() {
     reload();
   };
 
-  // 🟥 Funciones nuevas para eliminar (SOLO ESTO AGREGO)
   const abrirEliminar = (menu) => {
     setMenuAEliminar(menu);
     setMostrarEliminar(true);
@@ -62,7 +60,7 @@ export default function MenusPage() {
       await reload();
       cerrarEliminar();
     } catch (e) {
-      console.error("❌ Error al eliminar menú:", e);
+      console.error("Error al eliminar menú:", e);
       alert("No se pudo eliminar el menú.");
     } finally {
       setIsDeleting(false);
@@ -105,7 +103,6 @@ export default function MenusPage() {
           />
         )}
 
-        {/* 🟥 MODAL CONFIRMACIÓN DE ELIMINACIÓN */}
         {mostrarEliminar && (
           <DeleteConfirmationModal
             isOpen={mostrarEliminar}

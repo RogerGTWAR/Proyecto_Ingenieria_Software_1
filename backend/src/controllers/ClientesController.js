@@ -1,4 +1,3 @@
-// ✅ ClientesController.js
 import prisma from "../database.js";
 
 export default class ClientesController {
@@ -10,7 +9,7 @@ export default class ClientesController {
       });
       res.json({ ok: true, data: clientes });
     } catch (error) {
-      console.error("❌ Error en getAll:", error);
+      console.error("Error en getAll:", error);
       res.status(500).json({ ok: false, msg: "Error al obtener los clientes." });
     }
   }
@@ -28,7 +27,7 @@ export default class ClientesController {
 
       res.json({ ok: true, data: cliente });
     } catch (error) {
-      console.error("❌ Error en getById:", error);
+      console.error("Error en getById:", error);
       res.status(500).json({ ok: false, msg: "Error al obtener el cliente." });
     }
   }
@@ -69,7 +68,7 @@ export default class ClientesController {
 
       res.status(201).json({ ok: true, msg: "Cliente creado correctamente.", data: cliente });
     } catch (error) {
-      console.error("❌ Error en create:", error);
+      console.error("Error en create:", error);
       res.status(500).json({ ok: false, msg: "Error interno al crear el cliente." });
     }
   }
@@ -109,7 +108,7 @@ export default class ClientesController {
 
       res.json({ ok: true, msg: "Cliente actualizado correctamente.", data: cliente });
     } catch (error) {
-      console.error("❌ Error en update:", error);
+      console.error("Error en update:", error);
       res.status(500).json({ ok: false, msg: "Error interno al actualizar el cliente." });
     }
   }
@@ -132,7 +131,7 @@ export default class ClientesController {
 
       res.json({ ok: true, msg: "Cliente eliminado correctamente." });
     } catch (error) {
-      console.error("❌ Error en delete:", error);
+      console.error("Error en delete:", error);
       res.status(500).json({ ok: false, msg: "Error interno al eliminar el cliente." });
     }
   }

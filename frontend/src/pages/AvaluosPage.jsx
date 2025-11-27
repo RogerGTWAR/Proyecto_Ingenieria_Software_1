@@ -24,7 +24,6 @@ function AvaluosPage() {
 
   const { reload: reloadDetalles } = useDetallesAvaluos();
 
-  // ⬅️ 👉 NECESARIO PARA FORMULARIO Y DETALLES
   const { items: servicios, reload: reloadServicios } = useServicios();
 
   const [busqueda, setBusqueda] = useState("");
@@ -81,14 +80,13 @@ function AvaluosPage() {
         return null;
       }
 
-      // ⬅️ RECARGAR SERVICIOS ES OBLIGATORIO
       await reloadServicios();
       await reload();
       await reloadDetalles();
 
       return avaluoGuardado;
     } catch (error) {
-      console.error("❌ Error al guardar avalúo:", error);
+      console.error("Error al guardar avalúo:", error);
       alert("No se pudo guardar el avalúo.");
       return null;
     }
@@ -122,7 +120,7 @@ function AvaluosPage() {
       await remove(avaluoAEliminar.id);
       await reload();
     } catch (e) {
-      console.error("❌ Error al eliminar avalúo:", e);
+      console.error("Error al eliminar avalúo:", e);
       alert("Error al eliminar el avalúo.");
     } finally {
       setIsDeleting(false);
@@ -206,7 +204,6 @@ function AvaluosPage() {
           initialData={avaluoAEditar}
           isEdit={modoEdicion}
 
-          // ⬅️ PASAMOS SERVICIOS AL FORMULARIO
           servicios={servicios}
         />
       )}

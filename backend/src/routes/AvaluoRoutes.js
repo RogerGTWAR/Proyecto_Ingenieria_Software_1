@@ -1,4 +1,3 @@
-//Listo
 import express from "express";
 import AvaluosController from "../controllers/AvaluosController.js";
 

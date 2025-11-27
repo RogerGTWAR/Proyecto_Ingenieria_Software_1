@@ -16,7 +16,7 @@ export default class ProveedoresController {
 
       res.json({ ok: true, data });
     } catch (error) {
-      console.error("❌ Error en getAll:", error);
+      console.error("Error en getAll:", error);
       res.status(500).json({ ok: false, msg: "Error interno al obtener los proveedores." });
     }
   }
@@ -40,7 +40,7 @@ export default class ProveedoresController {
         data: { ...prov, categoria: prov.categorias_proveedor?.nombre_categoria ?? null },
       });
     } catch (error) {
-      console.error("❌ Error en getById:", error);
+      console.error("Error en getById:", error);
       res.status(500).json({ ok: false, msg: "Error interno al obtener el proveedor." });
     }
   }
@@ -93,7 +93,7 @@ export default class ProveedoresController {
         data: { ...proveedor, categoria: proveedor.categorias_proveedor?.nombre_categoria ?? null },
       });
     } catch (error) {
-      console.error("❌ Error en create:", error);
+      console.error("Error en create:", error);
       res.status(500).json({ ok: false, msg: "Error interno al crear el proveedor." });
     }
   }
@@ -153,7 +153,7 @@ export default class ProveedoresController {
         data: { ...proveedor, categoria: proveedor.categorias_proveedor?.nombre_categoria ?? null },
       });
     } catch (error) {
-      console.error("❌ Error en update:", error);
+      console.error("Error en update:", error);
       res.status(500).json({ ok: false, msg: "Error interno al actualizar el proveedor." });
     }
   }
@@ -177,7 +177,7 @@ export default class ProveedoresController {
 
       res.json({ ok: true, msg: "Proveedor eliminado correctamente", id: proveedor_id });
     } catch (error) {
-      console.error("❌ Error en delete:", error);
+      console.error("Error en delete:", error);
       res.status(500).json({ ok: false, msg: "Error interno al eliminar el proveedor." });
     }
   }

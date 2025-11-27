@@ -29,7 +29,6 @@ export default function ServiciosDetails({ servicio, onClose, onEdit, onDelete }
           {servicio.nombreServicio}
         </h2>
 
-        {/* Datos generales */}
         <div className="space-y-2 text-gray-700 mb-6">
           <p><strong>Descripción:</strong> {servicio.descripcion || "—"}</p>
           <p>
@@ -48,7 +47,6 @@ export default function ServiciosDetails({ servicio, onClose, onEdit, onDelete }
           </p>
         </div>
 
-        {/* COSTOS DIRECTOS */}
         <h3 className="text-lg font-semibold text-[var(--color-primary)] mt-6 mb-2">
           Costos Directos
         </h3>
@@ -83,7 +81,6 @@ export default function ServiciosDetails({ servicio, onClose, onEdit, onDelete }
           <p className="text-gray-500 italic">No hay costos directos.</p>
         )}
 
-        {/* COSTOS INDIRECTOS */}
         <h3 className="text-lg font-semibold text-[var(--color-primary)] mt-6 mb-2">
           Costos Indirectos
         </h3>
@@ -107,7 +104,6 @@ export default function ServiciosDetails({ servicio, onClose, onEdit, onDelete }
           <p className="text-gray-500 italic">No hay costos indirectos.</p>
         )}
 
-        {/* BOTONES */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             onClick={() => onEdit(servicio)}

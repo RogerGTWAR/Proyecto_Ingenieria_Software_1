@@ -1,4 +1,3 @@
-// utils/response.js
 export const ok = (res, msg, data = {}) => {
   return res.json({
     ok: true,

@@ -1,8 +1,5 @@
 import prisma from "../database.js";
 
-// -------------------------------
-// MAPEO DE CAMPOS CALCULADOS
-// -------------------------------
 const mapDetalle = (row) => {
   const cantidad = Number(row.cantidad ?? 0);
   const precioUnit = Number(row.precio_unitario ?? 0);
@@ -19,9 +16,6 @@ const mapDetalle = (row) => {
   };
 };
 
-// -------------------------------
-// Recalcular monto ejecutado del avalúo
-// -------------------------------
 async function recalcularMontoEjecutado(avaluo_id) {
   const detalles = await prisma.detalles_avaluos.findMany({
     where: { avaluo_id, fecha_eliminacion: null },
@@ -39,12 +33,8 @@ async function recalcularMontoEjecutado(avaluo_id) {
   });
 }
 
-// -------------------------------
-// CONTROLADOR
-// -------------------------------
 export default class DetallesAvaluosController {
 
-  // ---------------- GET ALL ----------------
   static async getAll(_req, res) {
     try {
       const data = await prisma.detalles_avaluos.findMany({
@@ -59,7 +49,7 @@ export default class DetallesAvaluosController {
       res.json({ ok: true, data: data.map(mapDetalle) });
 
     } catch (error) {
-      console.error("❌ Error getAll:", error);
+      console.error("Error getAll:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al obtener detalles del avalúo.",
@@ -67,7 +57,6 @@ export default class DetallesAvaluosController {
     }
   }
 
-  // ---------------- GET BY ID ----------------
   static async getById(req, res) {
     const id = Number(req.params.id);
 
@@ -89,14 +78,11 @@ export default class DetallesAvaluosController {
       res.json({ ok: true, data: mapDetalle(detalle) });
 
     } catch (error) {
-      console.error("❌ Error getById:", error);
+      console.error("Error getById:", error);
       res.status(500).json({ ok: false, msg: "Error interno." });
     }
   }
 
-  // -----------------------------------------------------------
-  // CREATE — CORREGIDO PARA EVITAR DUPLICADOS POR AVALÚO
-  // -----------------------------------------------------------
   static async create(req, res) {
     try {
       const {
@@ -113,7 +99,6 @@ export default class DetallesAvaluosController {
           msg: "Campos obligatorios faltantes.",
         });
 
-      // 1) Evitar que el mismo servicio se repita en el avalúo
       const dup = await prisma.detalles_avaluos.findFirst({
         where: {
           avaluo_id: Number(avaluo_id),
@@ -162,14 +147,11 @@ export default class DetallesAvaluosController {
       });
 
     } catch (error) {
-      console.error("❌ Error create:", error);
+      console.error("Error create:", error);
       res.status(500).json({ ok: false, msg: "Error interno al crear." });
     }
   }
 
-  // -----------------------------------------------------------
-  // UPDATE — CORREGIDO PARA EVITAR DUPLICADOS EN CAMBIO SERVICIO
-  // -----------------------------------------------------------
   static async update(req, res) {
     try {
       const id = Number(req.params.id);
@@ -190,7 +172,6 @@ export default class DetallesAvaluosController {
 
       let precio_unitario = old.precio_unitario;
 
-      // Si cambia el servicio → validar duplicado + recalcular precio
       if (servicio_id && Number(servicio_id) !== old.servicio_id) {
 
         const dup = await prisma.detalles_avaluos.findFirst({
@@ -240,12 +221,11 @@ export default class DetallesAvaluosController {
       });
 
     } catch (error) {
-      console.error("❌ Error update:", error);
+      console.error("Error update:", error);
       res.status(500).json({ ok: false, msg: "Error al actualizar." });
     }
   }
 
-  // ---------------- DELETE (soft) ----------------
   static async delete(req, res) {
     try {
       const id = Number(req.params.id);
@@ -270,7 +250,7 @@ export default class DetallesAvaluosController {
       res.json({ ok: true, msg: "Eliminado correctamente." });
 
     } catch (error) {
-      console.error("❌ Error delete:", error);
+      console.error("Error delete:", error);
       res.status(500).json({ ok: false, msg: "Error al eliminar." });
     }
   }

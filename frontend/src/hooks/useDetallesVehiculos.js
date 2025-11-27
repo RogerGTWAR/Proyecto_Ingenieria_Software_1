@@ -30,7 +30,6 @@ export function useDetallesVehiculos() {
     load();
   }, []);
 
-  // 🟢 Agregar o actualizar una asignación
   const add = async (payload) => {
     const body = {
       vehiculo_id: payload.vehiculo_id ?? payload.vehiculoId,
@@ -42,7 +41,6 @@ export function useDetallesVehiculos() {
       descripcion: payload.descripcion ?? "Asignación inicial",
     };
 
-    // Evitar duplicados
     const existente = items.find(
       (d) =>
         Number(d.vehiculoId) === Number(body.vehiculo_id) &&
@@ -50,7 +48,7 @@ export function useDetallesVehiculos() {
     );
 
     if (existente) {
-      console.log("🔄 Actualizando detalle existente:", existente.id);
+      console.log("Actualizando detalle existente:", existente.id);
       const updated = await updateDetalleVehiculo(existente.id, body);
       setItems((prev) =>
         prev.map((d) => (d.id === existente.id ? updated : d))
@@ -58,7 +56,7 @@ export function useDetallesVehiculos() {
       return updated;
     }
 
-    console.log("🆕 Creando nuevo detalle de vehículo:", body);
+    console.log("Creando nuevo detalle de vehículo:", body);
     const created = await createDetalleVehiculo(body);
     setItems((prev) => [created, ...prev]);
     return created;

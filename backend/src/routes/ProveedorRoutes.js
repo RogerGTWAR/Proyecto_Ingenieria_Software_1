@@ -1,4 +1,3 @@
-//Listo
 import express from "express";
 import ProveedoresController from "../controllers/ProveedoresController.js";
 

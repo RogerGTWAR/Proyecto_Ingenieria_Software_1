@@ -28,7 +28,6 @@ function ClientesPage() {
 
   const [vistaTarjetas, setVistaTarjetas] = useState(true);
 
-  // 📌 Estado del feedback interactivo
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
 
@@ -152,7 +151,6 @@ function ClientesPage() {
         ]}
       />
 
-      {/* 🔍 Buscador + Toggle */}
       <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6 flex items-center gap-4">
         <input
           type="text"
@@ -214,7 +212,6 @@ function ClientesPage() {
         />
       )}
 
-      {/* ⭐ FEEDBACK ANIMADO */}
       <ActionFeedback
         open={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}

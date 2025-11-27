@@ -1,4 +1,3 @@
-//Listo
 import prisma from "../database.js";
 
 const mapWithCalcs = (row) => {
@@ -206,7 +205,7 @@ export default class CostosDirectosServiciosController {
       });
 
     } catch (error) {
-      console.error("❌ Error create:", error);
+      console.error("Error create:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al crear el costo directo.",
@@ -267,7 +266,7 @@ export default class CostosDirectosServiciosController {
       });
 
     } catch (error) {
-      console.error("❌ Error update:", error);
+      console.error("Error update:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al actualizar.",
@@ -302,7 +301,7 @@ export default class CostosDirectosServiciosController {
       });
 
     } catch (error) {
-      console.error("❌ Error delete:", error);
+      console.error("Error delete:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al eliminar.",

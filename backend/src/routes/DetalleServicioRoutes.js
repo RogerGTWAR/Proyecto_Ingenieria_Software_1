@@ -1,4 +1,3 @@
-//Listo
 import express from "express";
 import DetallesServiciosController from "../controllers/DetallesServiciosController.js";
 

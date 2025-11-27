@@ -4,7 +4,6 @@ export default function MaterialesTable({ materiales, onEdit, onDelete, onVerDet
   return (
     <div className="w-full bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
 
-      {/* Encabezados */}
       <div className="grid grid-cols-6 font-semibold text-[#1A2E81] bg-gray-100 p-3 border-b">
         <span>Material</span>
         <span>Categoría</span>
@@ -23,26 +22,16 @@ export default function MaterialesTable({ materiales, onEdit, onDelete, onVerDet
                 idx % 2 === 0 ? "bg-gray-50" : "bg-white"
               } hover:bg-gray-100 transition`}
             >
-              {/* Nombre */}
               <span>{m.nombre_material}</span>
-
-              {/* Categoría */}
               <span>{m.categoriaNombre || "—"}</span>
-
-              {/* Unidad */}
               <span>{m.unidad_de_medida || "—"}</span>
-
-              {/* Stock */}
               <span>{m.cantidad_en_stock ?? 0}</span>
-
-              {/* Precio */}
               <span>
                 {m.precio_unitario
                   ? `C$${Number(m.precio_unitario).toLocaleString("es-NI")}`
                   : "C$0.00"}
               </span>
 
-              {/* Acciones */}
               <div className="flex justify-center gap-2">
                 <button
                   onClick={() => onVerDetalles(m)}

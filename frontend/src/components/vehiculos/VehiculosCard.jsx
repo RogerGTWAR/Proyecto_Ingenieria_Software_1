@@ -18,12 +18,11 @@ const VehiculosCard = ({ vehiculos, onEdit, onDelete, onVerDetalles }) => {
                      p-4 w-[280px] hover:shadow-md hover:scale-[1.01] 
                      transition-all duration-200"
         >
-          {/* --- Información principal del vehículo --- */}
           <h3 className="font-semibold text-[var(--color-primary)] text-[17px] mb-1">
             {v.marca} {v.modelo}
           </h3>
           <p className="text-[15px] text-gray-700 mb-1">
-            🚘 Placa: <span className="font-medium">{v.placa}</span>
+            Placa: <span className="font-medium">{v.placa}</span>
           </p>
           <p className="text-[15px] text-gray-600 mb-1">
             Año: {v.anio || "—"}
@@ -49,7 +48,6 @@ const VehiculosCard = ({ vehiculos, onEdit, onDelete, onVerDetalles }) => {
             Proveedor: {v.proveedorNombre || "—"}
           </p>
 
-          {/* --- Botones de acción --- */}
           <div className="flex justify-center gap-2 mt-3">
             <button
               onClick={() => onVerDetalles(v)}

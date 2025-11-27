@@ -20,12 +20,10 @@ export default function AvaluosDetails({ avaluo, onClose, onEdit, onDelete }) {
     (p) => Number(p.id) === Number(avaluo.proyectoId)
   );
 
-  // Filtrar detalles del avaluo
   const detallesAvaluo = detalles.filter(
     (d) => Number(d.avaluoId) === Number(avaluo.id)
   );
 
-  // Acceso directo a servicios
   const serviciosMap = Object.fromEntries(
     servicios.map((s) => [Number(s.id), s])
   );
@@ -34,12 +32,10 @@ export default function AvaluosDetails({ avaluo, onClose, onEdit, onDelete }) {
     <div className="fixed inset-0 flex justify-center items-start mt-[120px] z-50">
       <div className="bg-[#F9FAFB] rounded-2xl shadow-2xl w-full max-w-3xl p-6 relative overflow-y-auto max-h-[90vh]">
 
-        {/* TITULO */}
         <h2 className="text-2xl font-semibold text-[var(--color-primary)] mb-4 text-center">
           {avaluo.descripcion?.trim() || `Avalúo #${avaluo.id}`}
         </h2>
 
-        {/* DATOS GENERALES */}
         <div className="space-y-2 text-gray-700 mb-6">
           <p>
             <strong>Proyecto:</strong>{" "}
@@ -64,7 +60,6 @@ export default function AvaluosDetails({ avaluo, onClose, onEdit, onDelete }) {
           </p>
         </div>
 
-        {/* DETALLES DEL AVALÚO */}
         <h3 className="text-lg font-semibold text-[var(--color-primary)] mt-6 mb-2">
           Servicios Asociados
         </h3>
@@ -85,12 +80,10 @@ export default function AvaluosDetails({ avaluo, onClose, onEdit, onDelete }) {
                   key={d.id}
                   className="border border-gray-300 rounded-xl bg-[#F9FAFB] p-4 shadow-sm hover:shadow-md transition"
                 >
-                  {/* Nombre del servicio */}
                   <h4 className="text-base font-semibold text-gray-800 mb-3">
                     {nombreServicio}
                   </h4>
 
-                  {/* Datos */}
                   <div className="text-sm text-gray-700 space-y-1">
 
                     <p><strong>Actividad:</strong> {d.actividad}</p>
@@ -116,7 +109,6 @@ export default function AvaluosDetails({ avaluo, onClose, onEdit, onDelete }) {
                       TOTAL: C${d.totalCostoVenta.toLocaleString("es-NI")}
                     </p>
 
-                    {/* Descripción del servicio (opcional) */}
                     {descripcionServicio && (
                       <p className="text-gray-500 italic mt-2">
                         {descripcionServicio}

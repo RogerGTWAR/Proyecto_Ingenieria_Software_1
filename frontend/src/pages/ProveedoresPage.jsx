@@ -122,7 +122,6 @@ function ProveedoresPage() {
         ]}
       />
 
-      {/* 🔍 Buscador + Switch de Vista */}
       <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6 flex items-center gap-4">
         <input
           type="text"
@@ -132,7 +131,6 @@ function ProveedoresPage() {
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
         />
 
-        {/* 🔘 Botón Toggle con estilo unificado */}
         <button
           onClick={() => setVistaTabla(!vistaTabla)}
           className="px-4 py-2 bg-[#1A2E81] text-white rounded-lg shadow hover:scale-105 transition"
@@ -142,7 +140,6 @@ function ProveedoresPage() {
       </div>
 
 
-      {/* Vista Tabla o Tarjetas */}
       {vistaTabla ? (
         <ProveedoresTable
           proveedores={proveedoresFiltrados}

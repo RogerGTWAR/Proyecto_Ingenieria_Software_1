@@ -15,7 +15,6 @@ const MaterialesForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
   const [errors, setErrors] = useState({});
 
-  // Cargar datos al editar
   useEffect(() => {
     if (initialData) {
       setForm({
@@ -33,7 +32,6 @@ const MaterialesForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
 
-    // limpiar errores en tiempo real
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
@@ -90,7 +88,6 @@ const MaterialesForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           {isEdit ? "Editar Material" : "Nuevo Material"}
         </h2>
 
-        {/* Categoría & Nombre */}
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-gray-900 font-medium mb-1">Categoría</label>
@@ -129,7 +126,6 @@ const MaterialesForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           </div>
         </div>
 
-        {/* Unidad & Cantidad */}
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-gray-900 font-medium mb-1">
@@ -164,7 +160,6 @@ const MaterialesForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           </div>
         </div>
 
-        {/* Precio */}
         <div className="mb-6">
           <label className="block text-gray-900 font-medium mb-1">
             Precio Unitario (C$)
@@ -182,7 +177,6 @@ const MaterialesForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           )}
         </div>
 
-        {/* Descripción */}
         <div className="mb-8">
           <label className="block text-gray-900 font-medium mb-1">
             Descripción
@@ -196,7 +190,6 @@ const MaterialesForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           ></textarea>
         </div>
 
-        {/* Botones */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"

@@ -3,7 +3,7 @@ import ButtonList from "../components/ButtonList";
 import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
 
 import MaterialesCard from "../components/materiales/MaterialesCard";
-import MaterialesTable from "../components/materiales/MaterialesTable"; // NUEVO
+import MaterialesTable from "../components/materiales/MaterialesTable"; 
 import MaterialesDetails from "../components/materiales/MaterialesDetails";
 import MaterialesForm from "../components/materiales/MaterialesForm";
 
@@ -22,7 +22,6 @@ function MaterialesPage() {
   const [materialAEliminar, setMaterialAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // 🔘 Nueva vista (true = tarjetas, false = tabla)
   const [vistaTarjetas, setVistaTarjetas] = useState(true);
 
   const materialesFiltrados = materiales.filter((m) =>
@@ -57,7 +56,7 @@ function MaterialesPage() {
       await reload();
       cerrarFormulario();
     } catch (e) {
-      console.error("❌ Error al guardar material:", e);
+      console.error("Error al guardar material:", e);
       alert("No se pudo guardar el material.");
     }
   };
@@ -90,7 +89,7 @@ function MaterialesPage() {
       await reload();
       cerrarEliminar();
     } catch (e) {
-      console.error("❌ Error al eliminar material:", e);
+      console.error("Error al eliminar material:", e);
       alert("No se pudo eliminar el material.");
     } finally {
       setIsDeleting(false);
@@ -124,7 +123,6 @@ function MaterialesPage() {
         ]}
       />
 
-      {/* Buscador + Switch */}
       <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6 flex items-center gap-4">
         <input
           type="text"
@@ -134,7 +132,6 @@ function MaterialesPage() {
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
         />
 
-        {/* 🔘 Switch Vista */}
         <button
           onClick={() => setVistaTarjetas(!vistaTarjetas)}
           className="px-4 py-2 bg-[#1A2E81] text-white rounded-lg shadow hover:scale-105 transition"
@@ -143,7 +140,6 @@ function MaterialesPage() {
         </button>
       </div>
 
-      {/* Vista Tarjetas / Tabla */}
       {vistaTarjetas ? (
         <MaterialesCard
           materiales={materialesFiltrados}

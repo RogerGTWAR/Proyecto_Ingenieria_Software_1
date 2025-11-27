@@ -4,7 +4,6 @@ export default function VehiculosTable({ vehiculos, onEdit, onDelete, onVerDetal
   return (
     <div className="w-full bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
 
-      {/* ENCABEZADO */}
       <div className="grid grid-cols-7 font-semibold text-[#1A2E81] bg-gray-100 p-3 border-b">
         <span>Placa</span>
         <span>Marca</span>
@@ -15,7 +14,6 @@ export default function VehiculosTable({ vehiculos, onEdit, onDelete, onVerDetal
         <span className="text-center">Acciones</span>
       </div>
 
-      {/* FILAS */}
       <div className="divide-y divide-gray-200">
         {vehiculos.length > 0 ? (
           vehiculos.map((v, idx) => (
@@ -43,7 +41,6 @@ export default function VehiculosTable({ vehiculos, onEdit, onDelete, onVerDetal
                 {v.estado}
               </span>
 
-              {/* ACCIONES */}
               <div className="flex justify-center gap-2">
                 <button
                   onClick={() => onVerDetalles(v)}

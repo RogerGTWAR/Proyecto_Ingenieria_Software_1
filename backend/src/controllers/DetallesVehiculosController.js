@@ -1,7 +1,6 @@
 import prisma from "../database.js";
 
 export default class DetallesVehiculosController {
-  // 🟢 Obtener todos los detalles
   static async getAll(_req, res) {
     try {
       const detalles = await prisma.detalles_vehiculos.findMany({
@@ -37,7 +36,6 @@ export default class DetallesVehiculosController {
     }
   }
 
-  // 🟢 Obtener detalle por ID
   static async getById(req, res) {
     const idNum = parseInt(req.params.id);
     if (isNaN(idNum))
@@ -75,7 +73,6 @@ export default class DetallesVehiculosController {
     }
   }
 
-  // 🟢 Crear nueva asignación
   static async create(req, res) {
     try {
       if (!req.body || Object.keys(req.body).length === 0) {
@@ -103,7 +100,6 @@ export default class DetallesVehiculosController {
         });
       }
 
-      // 🔹 Validar existencia de empleado y vehículo
       const empOk = await prisma.empleados.findFirst({
         where: { AND: [{ empleado_id: empleadoId }, { fecha_eliminacion: null }] },
       });
@@ -120,7 +116,6 @@ export default class DetallesVehiculosController {
           .status(400)
           .json({ ok: false, msg: "El vehículo especificado no existe o fue dado de baja" });
 
-      // 🔹 Validar fechas
       const fInicio = fecha_asignacion ? new Date(fecha_asignacion) : new Date();
       const fFin = fecha_fin_asignacion ? new Date(fecha_fin_asignacion) : null;
 
@@ -131,7 +126,6 @@ export default class DetallesVehiculosController {
         });
       }
 
-      // 🔹 Buscar si ya existía una asignación
       const previo = await prisma.detalles_vehiculos.findFirst({
         where: { empleado_id: empleadoId, vehiculo_id: vehiculoId },
         include: {
@@ -140,7 +134,6 @@ export default class DetallesVehiculosController {
         },
       });
 
-      // ✅ Si estaba eliminado → reactivar
       if (previo && previo.fecha_eliminacion !== null) {
         const reactivado = await prisma.detalles_vehiculos.update({
           where: { detalle_vehiculo_id: previo.detalle_vehiculo_id },
@@ -164,7 +157,6 @@ export default class DetallesVehiculosController {
         });
       }
 
-      // ✅ Si ya existía y está activa
       if (previo && previo.fecha_eliminacion === null) {
         return res.status(200).json({
           ok: true,
@@ -173,7 +165,6 @@ export default class DetallesVehiculosController {
         });
       }
 
-      // ✅ Crear nueva asignación
       const detalle = await prisma.detalles_vehiculos.create({
         data: {
           empleado_id: empleadoId,
@@ -202,7 +193,6 @@ export default class DetallesVehiculosController {
     }
   }
 
-  // 🟢 Actualizar asignación
   static async update(req, res) {
     const idNum = parseInt(req.params.id);
     if (isNaN(idNum))
@@ -304,7 +294,6 @@ export default class DetallesVehiculosController {
     }
   }
 
-  // 🟢 Eliminar (baja lógica)
   static async delete(req, res) {
     const idNum = parseInt(req.params.id);
     if (isNaN(idNum))

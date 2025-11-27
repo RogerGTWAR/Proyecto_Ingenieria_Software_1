@@ -19,9 +19,7 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, itemName, loading
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="relative bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
-        {/* Botón cerrar */}
          <CloseButton onClick={onClose} className="absolute top-3 right-3" />
-        {/* Contenido */}
         <div className="text-center space-y-4">
           <svg
             className="mx-auto text-gray-400 w-12 h-12"
@@ -36,7 +34,6 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, itemName, loading
             ¿Está seguro de eliminar <span className="font-semibold text-red-600">{itemName}</span>?
           </h3>
 
-          {/* Botones */}
           <div className="flex justify-center gap-3 pt-4">
             <ButtonIcon
               variant="secondary"

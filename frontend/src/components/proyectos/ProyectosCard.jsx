@@ -18,7 +18,6 @@ const ProyectosCard = ({ proyectos, onEdit, onDelete, onVerDetalles }) => {
                      p-5 w-[310px] hover:shadow-lg hover:scale-[1.02] 
                      transition-all duration-200"
         >
-          {/* --- Información principal del proyecto --- */}
           <h3 className="font-semibold text-[var(--color-primary)] text-[17px] mb-2 text-center">
             {p.nombreProyecto}
           </h3>
@@ -54,7 +53,6 @@ const ProyectosCard = ({ proyectos, onEdit, onDelete, onVerDetalles }) => {
             </p>
           </div>
 
-          {/* --- Botones de acción --- */}
           <div className="flex justify-center gap-2 mt-3">
             <button
               onClick={() => onVerDetalles(p)}

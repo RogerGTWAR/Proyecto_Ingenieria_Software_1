@@ -2,44 +2,33 @@ import prisma from "../database.js";
 
 export default class PermisosController {
 
-  // ============================================================
-  // 1. BUSCAR EMPLEADO POR DOCUMENTO (cédula)
-  // ============================================================
   static async buscarEmpleado(req, res) {
     try {
-      const { documento } = req.params;
+      const { usuario } = req.params;
 
-      if (!documento)
-        return res.status(400).json({ ok: false, msg: "Debe enviar el documento" });
+      if (!usuario)
+        return res.status(400).json({ ok: false, msg: "Debe enviar el usuario" });
 
-      const empleado = await prisma.empleados.findFirst({
-        where: { cedula: documento },
+      const usuarioEncontrado = await prisma.usuarios.findFirst({
+        where: { usuario },
         include: {
-          usuarios: true,
-          roles: true
+          empleados: {
+            include: { roles: true }
+          }
         }
       });
 
-      if (!empleado)
-        return res.status(404).json({ ok: false, msg: "Empleado no encontrado" });
+      if (!usuarioEncontrado)
+        return res.status(404).json({ ok: false, msg: "Usuario no encontrado" });
 
-      if (!empleado.usuarios || empleado.usuarios.length === 0)
-        return res.status(400).json({
-          ok: false,
-          msg: "Empleado no tiene usuario asignado"
-        });
-
-      return res.json({ ok: true, data: empleado });
+      return res.json({ ok: true, data: usuarioEncontrado });
 
     } catch (error) {
-      console.error("❌ Error buscarEmpleado:", error);
-      return res.status(500).json({ ok: false, msg: "Error al buscar empleado" });
+      console.error("Error buscarEmpleado:", error);
+      return res.status(500).json({ ok: false, msg: "Error al buscar usuario" });
     }
   }
 
-  // ============================================================
-  // 2. Obtener TODOS LOS MENÚS
-  // ============================================================
   static async getMenuAll(_req, res) {
     try {
       const data = await prisma.menu.findMany({
@@ -49,14 +38,11 @@ export default class PermisosController {
       return res.json({ ok: true, data });
 
     } catch (error) {
-      console.error("❌ Error getMenuAll:", error);
+      console.error("Error getMenuAll:", error);
       return res.status(500).json({ ok: false, msg: "Error al obtener menús" });
     }
   }
 
-  // ============================================================
-  // 3. Obtener PERMISOS ASIGNADOS a un usuario
-  // ============================================================
   static async getPermisosAsignados(req, res) {
     try {
       const usuarioId = Number(req.params.usuarioId);
@@ -73,17 +59,23 @@ export default class PermisosController {
         orderBy: { id_menu: "asc" }
       });
 
-      return res.json({ ok: true, data: asignados });
+      const formatted = asignados.map(p => ({
+        permisoId: p.permiso_id,
+        menuId: p.id_menu,
+        usuarioId: p.usuario_id,
+        nombre: p.menu?.nombre,
+        url: p.menu?.url,
+        esSubmenu: p.menu?.esSubmenu ?? false
+      }));
+
+      return res.json({ ok: true, data: formatted });
 
     } catch (error) {
-      console.error("❌ Error getPermisosAsignados:", error);
+      console.error("Error getPermisosAsignados:", error);
       return res.status(500).json({ ok: false, msg: "Error interno" });
     }
   }
 
-  // ============================================================
-  // 4. Obtener MENÚS NO ASIGNADOS
-  // ============================================================
   static async getMenuSinAsignar(req, res) {
     try {
       const usuarioId = Number(req.params.usuarioId);
@@ -113,14 +105,11 @@ export default class PermisosController {
       return res.json({ ok: true, data: noAsignados });
 
     } catch (error) {
-      console.error("❌ Error getMenuSinAsignar:", error);
+      console.error("Error getMenuSinAsignar:", error);
       return res.status(500).json({ ok: false, msg: "Error interno" });
     }
   }
 
-  // ============================================================
-  // 5. ASIGNAR permisos
-  // ============================================================
   static async asignar(req, res) {
     try {
       const { usuario_id, menus } = req.body;
@@ -132,16 +121,29 @@ export default class PermisosController {
         });
 
       const usuarioId = Number(usuario_id);
+
+      const userExists = await prisma.usuarios.findFirst({
+        where: { usuario_id: usuarioId }
+      });
+
+      if (!userExists)
+        return res.status(404).json({ ok: false, msg: "Usuario no existe" });
+
       const resultado = [];
 
       for (const menu of menus) {
         const menuId = Number(menu);
 
+        const existeMenu = await prisma.menu.findFirst({
+          where: { id_menu: menuId }
+        });
+
+        if (!existeMenu) continue;
+
         const permiso = await prisma.permisos.findFirst({
           where: { usuario_id: usuarioId, id_menu: menuId }
         });
 
-        // Caso: existe pero eliminado → reactivar
         if (permiso && permiso.fecha_eliminacion !== null) {
           const updated = await prisma.permisos.update({
             where: { permiso_id: permiso.permiso_id },
@@ -155,7 +157,6 @@ export default class PermisosController {
           continue;
         }
 
-        // Caso: no existe → crear
         if (!permiso) {
           const created = await prisma.permisos.create({
             data: {
@@ -174,14 +175,11 @@ export default class PermisosController {
       });
 
     } catch (error) {
-      console.error("❌ Error asignar:", error);
+      console.error("Error asignar:", error);
       return res.status(500).json({ ok: false, msg: "Error al asignar permisos" });
     }
   }
 
-  // ============================================================
-  // 6. REMOVER permisos (baja lógica)
-  // ============================================================
   static async remover(req, res) {
     try {
       const { usuario_id, menus } = req.body;
@@ -227,7 +225,7 @@ export default class PermisosController {
       });
 
     } catch (error) {
-      console.error("❌ Error remover:", error);
+      console.error("Error remover:", error);
       return res.status(500).json({ ok: false, msg: "Error al remover permisos" });
     }
   }

@@ -4,7 +4,7 @@ import ButtonList from "../components/ButtonList";
 import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
 
 import ServiciosCard from "../components/servicios/ServiciosCard";
-import ServiciosTable from "../components/servicios/ServiciosTable"; // ← NUEVO
+import ServiciosTable from "../components/servicios/ServiciosTable"; 
 import ServiciosDetails from "../components/servicios/ServiciosDetails";
 import ServiciosForm from "../components/servicios/ServiciosForm";
 
@@ -19,7 +19,6 @@ function ServiciosPage() {
 
   const [busqueda, setBusqueda] = useState("");
 
-  // 🔘 NUEVO: Vista tarjetas o tabla
   const [vistaTarjetas, setVistaTarjetas] = useState(true);
 
   const [vistaDetalle, setVistaDetalle] = useState(false);
@@ -78,7 +77,7 @@ function ServiciosPage() {
 
       return servicioGuardado;
     } catch (error) {
-      console.error("❌ Error al guardar servicio:", error);
+      console.error("Error al guardar servicio:", error);
       alert("No se pudo guardar el servicio.");
       return null;
     }
@@ -112,7 +111,7 @@ function ServiciosPage() {
       await reload();
       setVistaDetalle(false);
     } catch (e) {
-      console.error("❌ Error al eliminar servicio:", e);
+      console.error("Error al eliminar servicio:", e);
       alert("Error al eliminar el servicio.");
     } finally {
       setIsDeleting(false);
@@ -147,7 +146,6 @@ function ServiciosPage() {
         ]}
       />
 
-      {/* 🔍 Buscador + Botón Toggle (misma posición y estilo que los demás módulos) */}
       <div className="bg-white rounded-xl shadow-sm p-4 mt-4 mb-6 flex items-center gap-4">
 
         <input
@@ -158,7 +156,6 @@ function ServiciosPage() {
           className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[var(--color-primary)]"
         />
 
-        {/* 🔘 Switch Vista */}
         <button
           onClick={() => setVistaTarjetas(!vistaTarjetas)}
           className={`px-5 py-2 rounded-lg shadow-md text-white font-medium transition 
@@ -168,7 +165,6 @@ function ServiciosPage() {
         </button>
       </div>
 
-      {/* 🔄 Mostrar Tarjetas o Tabla */}
       {vistaTarjetas ? (
         <ServiciosCard
           servicios={serviciosFiltrados}

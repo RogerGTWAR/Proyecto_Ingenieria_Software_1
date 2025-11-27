@@ -1,4 +1,3 @@
-//Falta-En Revision
 import transporter from "../config/email.js";
 
 export default class Mailer {

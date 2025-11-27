@@ -1,41 +1,28 @@
-// data/permisos.js
 import { api } from "./api.js";
 
-/* ============================================================
-   1. Buscar empleado por documento
-   ============================================================ */
-export const buscarEmpleado = async (documento) => {
-  const res = await api(`/permisos/empleado/${documento}`);
+export const buscarEmpleado = async (usuario) => {
+  const res = await api(`/permisos/empleado/${usuario}`);
   return res.data;
 };
 
-/* ============================================================
-   2. Obtener todos los menús
-   ============================================================ */
 export const fetchMenusAll = async () => {
   const res = await api(`/permisos/menus`);
   return Array.isArray(res.data) ? res.data : [];
 };
 
-/* ============================================================
-   3. Permisos asignados
-   ============================================================ */
 export const fetchPermisosAsignados = async (usuarioId) => {
   const res = await api(`/permisos/asignados/${usuarioId}`);
   const list = res.data ?? [];
 
   return list.map((d) => ({
-    permisoId: d.permiso_id,
-    menuId: d.id_menu,
-    nombre: d.menu?.nombre ?? "",
-    url: d.menu?.url ?? "",
-    esSubmenu: Boolean(d.menu?.es_submenu),
+    permisoId: d.permisoId ?? d.permiso_id,
+    menuId: d.menuId ?? d.id_menu,
+    nombre: d.nombre ?? d.menu?.nombre ?? "",
+    url: d.url ?? d.menu?.url ?? "",
+    esSubmenu: d.esSubmenu ?? d.menu?.es_submenu ?? false,
   }));
 };
 
-/* ============================================================
-   4. Menús NO asignados
-   ============================================================ */
 export const fetchMenusSinAsignar = async (usuarioId) => {
   const res = await api(`/permisos/no-asignados/${usuarioId}`);
   const list = res.data ?? [];
@@ -48,9 +35,6 @@ export const fetchMenusSinAsignar = async (usuarioId) => {
   }));
 };
 
-/* ============================================================
-   5. ASIGNAR permisos
-   ============================================================ */
 export const asignarPermisos = async (usuarioId, menus) => {
   const body = {
     usuario_id: Number(usuarioId),
@@ -65,9 +49,6 @@ export const asignarPermisos = async (usuarioId, menus) => {
   return res.data;
 };
 
-/* ============================================================
-   6. REMOVER permisos
-   ============================================================ */
 export const removerPermisos = async (usuarioId, menus) => {
   const body = {
     usuario_id: Number(usuarioId),
@@ -80,4 +61,9 @@ export const removerPermisos = async (usuarioId, menus) => {
   });
 
   return res.data;
+};
+
+export const fetchMenuByUser = async (usuarioId) => {
+  const res = await api(`/menus/usuario/${usuarioId}`);
+  return res.data ?? [];
 };

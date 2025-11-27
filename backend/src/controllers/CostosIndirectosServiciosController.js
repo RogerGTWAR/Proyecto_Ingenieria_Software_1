@@ -52,7 +52,7 @@ export default class CostosIndirectosServiciosController {
         data: items.map(mapWithCalcs),
       });
     } catch (error) {
-      console.error("❌ Error getAll:", error);
+      console.error("Error getAll:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al obtener costos indirectos.",
@@ -81,7 +81,7 @@ export default class CostosIndirectosServiciosController {
 
       res.json({ ok: true, data: mapWithCalcs(item) });
     } catch (error) {
-      console.error("❌ Error getById:", error);
+      console.error("Error getById:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al obtener el registro.",
@@ -175,7 +175,7 @@ export default class CostosIndirectosServiciosController {
         data: mapWithCalcs(nuevo),
       });
     } catch (error) {
-      console.error("❌ Error create:", error);
+      console.error("Error create:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al crear el costo indirecto.",
@@ -231,7 +231,7 @@ export default class CostosIndirectosServiciosController {
         data: mapWithCalcs(actualizado),
       });
     } catch (error) {
-      console.error("❌ Error update:", error);
+      console.error("Error update:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al actualizar.",
@@ -265,7 +265,7 @@ export default class CostosIndirectosServiciosController {
         msg: "Costo indirecto eliminado correctamente.",
       });
     } catch (error) {
-      console.error("❌ Error delete:", error);
+      console.error("Error delete:", error);
       res.status(500).json({
         ok: false,
         msg: "Error interno al eliminar.",

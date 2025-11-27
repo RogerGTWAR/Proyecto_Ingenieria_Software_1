@@ -12,7 +12,6 @@ export default class AvaluosController {
         orderBy: { avaluo_id: "asc" },
       });
 
-      // tiempo_total_dias (calculado manual)
       const list = data.map(a => ({
         ...a,
         tiempo_total_dias:
@@ -22,7 +21,7 @@ export default class AvaluosController {
       res.json({ ok: true, data: list });
 
     } catch (error) {
-      console.error("❌ Error getAll:", error);
+      console.error("Error getAll:", error);
       res.status(500).json({ ok: false, msg: "Error al obtener avalúos." });
     }
   }
@@ -47,7 +46,7 @@ export default class AvaluosController {
       res.json({ ok: true, data: { ...a, tiempo_total_dias } });
 
     } catch (error) {
-      console.error("❌ Error getById:", error);
+      console.error("Error getById:", error);
       res.status(500).json({ ok: false, msg: "Error interno." });
     }
   }
@@ -82,7 +81,7 @@ export default class AvaluosController {
       });
 
     } catch (error) {
-      console.error("❌ Error create:", error);
+      console.error("Error create:", error);
       res.status(500).json({ ok: false, msg: "Error al crear." });
     }
   }
@@ -121,7 +120,7 @@ export default class AvaluosController {
       });
 
     } catch (error) {
-      console.error("❌ Error update:", error);
+      console.error("Error update:", error);
       res.status(500).json({ ok: false, msg: "Error al actualizar." });
     }
   }
@@ -148,7 +147,7 @@ export default class AvaluosController {
       res.json({ ok: true, msg: "Avalúo eliminado correctamente." });
 
     } catch (error) {
-      console.error("❌ Error delete:", error);
+      console.error("Error delete:", error);
       res.status(500).json({ ok: false, msg: "Error al eliminar." });
     }
   }

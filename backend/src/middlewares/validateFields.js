@@ -1,4 +1,3 @@
-//Falta-En Revision
 import { validationResult } from "express-validator";
 
 export default function validateFields(req, res, next) {

@@ -1,6 +1,5 @@
 // hooks/usePermisos.js
-import { useEffect, useState } from "react";
-
+import { useState } from "react";
 import {
   buscarEmpleado,
   fetchMenusAll,
@@ -8,6 +7,7 @@ import {
   fetchMenusSinAsignar,
   asignarPermisos,
   removerPermisos,
+  fetchMenuByUser,
 } from "../data/permisos.js";
 
 export function usePermisos() {
@@ -18,15 +18,19 @@ export function usePermisos() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* ============================================================
-     1. Buscar empleado por cédula
-     ============================================================ */
-  const buscar = async (documento) => {
+  const refreshLocalMenus = async (usuarioId) => {
+    const menuReal = await fetchMenuByUser(usuarioId);
+
+    localStorage.setItem("menu", JSON.stringify(menuReal));
+    window.dispatchEvent(new Event("storage"));
+  };
+
+  const buscar = async (usuario) => {
     try {
       setLoading(true);
       setError("");
 
-      const result = await buscarEmpleado(documento);
+      const result = await buscarEmpleado(usuario);
 
       if (!result) {
         setEmpleado(null);
@@ -35,7 +39,6 @@ export function usePermisos() {
 
       setEmpleado(result);
       return result;
-
     } catch (e) {
       setError(e.message);
       setEmpleado(null);
@@ -45,9 +48,6 @@ export function usePermisos() {
     }
   };
 
-  /* ============================================================
-     2. Cargar menús completos
-     ============================================================ */
   const loadMenus = async () => {
     try {
       const list = await fetchMenusAll();
@@ -57,9 +57,6 @@ export function usePermisos() {
     }
   };
 
-  /* ============================================================
-     3. Permisos asignados al usuario
-     ============================================================ */
   const loadAsignados = async (usuarioId) => {
     try {
       const list = await fetchPermisosAsignados(usuarioId);
@@ -71,9 +68,6 @@ export function usePermisos() {
     }
   };
 
-  /* ============================================================
-     4. Menús NO asignados
-     ============================================================ */
   const loadNoAsignados = async (usuarioId) => {
     try {
       const list = await fetchMenusSinAsignar(usuarioId);
@@ -85,22 +79,18 @@ export function usePermisos() {
     }
   };
 
-  /* ============================================================
-     5. ASIGNAR permisos
-     ============================================================ */
   const asignar = async (usuarioId, idsMenus) => {
     await asignarPermisos(usuarioId, idsMenus);
     await loadAsignados(usuarioId);
     await loadNoAsignados(usuarioId);
+    await refreshLocalMenus(usuarioId);
   };
 
-  /* ============================================================
-     6. REMOVER permisos
-     ============================================================ */
   const remover = async (usuarioId, idsMenus) => {
     await removerPermisos(usuarioId, idsMenus);
     await loadAsignados(usuarioId);
     await loadNoAsignados(usuarioId);
+    await refreshLocalMenus(usuarioId);
   };
 
   return {

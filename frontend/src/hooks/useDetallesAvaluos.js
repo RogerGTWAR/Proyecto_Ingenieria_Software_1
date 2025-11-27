@@ -1,4 +1,3 @@
-// hooks/useDetallesAvaluos.js
 import { useEffect, useState } from "react";
 
 import {
@@ -32,21 +31,19 @@ export function useDetallesAvaluos() {
     load();
   }, []);
 
-  // CREATE
   const add = async (payload) => {
     const created = await createDetalleAvaluo({
       avaluoId: payload.avaluo_id ?? payload.avaluoId,
       servicioId: payload.servicio_id ?? payload.servicioId,
       actividad: payload.actividad,
-      unidadMedida: payload.unidadMedida, // <-- CORREGIDO
-      cantidad: Number(payload.cantidad > 0 ? payload.cantidad : 1), // <-- CORREGIDO
+      unidadMedida: payload.unidadMedida, 
+      cantidad: Number(payload.cantidad > 0 ? payload.cantidad : 1),
     });
 
     setItems((prev) => [created, ...prev]);
     return created;
   };
 
-  // UPDATE
   const edit = async (id, payload) => {
     const updated = await updateDetalleAvaluo(id, payload);
 
@@ -57,7 +54,6 @@ export function useDetallesAvaluos() {
     return updated;
   };
 
-  // DELETE
   const remove = async (id) => {
     await deleteDetalleAvaluo(id);
     setItems((prev) => prev.filter((d) => d.id !== id));

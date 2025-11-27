@@ -11,13 +11,11 @@ const toUI = (m) => ({
   precio_unitario: m.precio_unitario ?? 0,
 });
 
-// GET ALL
 export const fetchMateriales = async () => {
   const { data } = await api("/materiales");
   return (data ?? []).map(toUI);
 };
 
-// CREATE
 export const createMaterial = async (m) => {
   const body = {
     nombre_material: m.nombre_material,
@@ -36,7 +34,6 @@ export const createMaterial = async (m) => {
   return toUI(data);
 };
 
-// UPDATE
 export const updateMaterial = async (id, m) => {
   const body = {
     ...(m.nombre_material && { nombre_material: m.nombre_material }),
@@ -55,7 +52,6 @@ export const updateMaterial = async (id, m) => {
   return toUI(data);
 };
 
-// DELETE
 export const deleteMaterial = async (id) => {
   await api(`/materiales/${id}`, { method: "DELETE" });
   return true;

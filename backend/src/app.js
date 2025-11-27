@@ -28,6 +28,7 @@ import CostosIndirectosRoutes from "./routes/CostosIndirectosRoutes.js";
 import PermisosRoutes from "./routes/PermisoRoutes.js";
 import AuthRoutes from "./routes/AuthRoutes.js";
 import MenuRoutes from "./routes/MenuRoutes.js";
+import ReportesRouter from "./routes/reportesRoutes.js";
 
 dotenv.config();
 
@@ -47,21 +48,16 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Permitir peticiones sin origin (Postman, backend interno, etc.)
       if (!origin) return callback(null, true);
-
-      // Permitir las de la lista blanca
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-
-      // Permitir extensiones del navegador solo en desarrollo
       if (origin.startsWith("chrome-extension://")) {
-        console.log("⚠️ Permitido temporalmente:", origin);
+        console.log("Permitido temporalmente:", origin);
         return callback(null, true);
       }
 
-      console.warn("❌ Bloqueado por CORS:", origin);
+      console.warn("Bloqueado por CORS:", origin);
       return callback(new Error("No permitido por CORS"));
     },
     credentials: true,
@@ -106,6 +102,7 @@ app.use("/api/costos_indirectos", CostosIndirectosRoutes);
 app.use("/api/permisos", PermisosRoutes);
 app.use("/api/auth", AuthRoutes);
 app.use("/api/menus", MenuRoutes);
+app.use("/api/reportes", ReportesRouter);
 
 app.use((req, res) => {
   res.status(404).json({

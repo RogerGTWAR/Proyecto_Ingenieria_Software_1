@@ -1,4 +1,3 @@
-// utils/validation.js
 export const isEmpty = (value) => {
   return (
     value === undefined ||

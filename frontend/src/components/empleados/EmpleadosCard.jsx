@@ -27,7 +27,6 @@ const EmpleadosCard = ({ empleados, rolNameById, onEdit, onDelete, onVerDetalles
               <span>{empleado.cedula || "—"}</span>
               <span>{empleado.correo || "Sin correo"}</span>
 
-              {/* 🔘 Botones de acción */}
               <div className="flex justify-center gap-2">
                 <button
                   onClick={() => onVerDetalles(empleado)}

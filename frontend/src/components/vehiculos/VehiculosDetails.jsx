@@ -54,7 +54,6 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
           {vehiculo.marca} {vehiculo.modelo}
         </h2>
 
-        {/* 🧾 Información general del vehículo */}
         <div className="space-y-2 text-gray-700">
           <p>
             <strong>Placa:</strong> {vehiculo.placa || "—"}
@@ -84,7 +83,6 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
           </p>
         </div>
 
-        {/* Empleados asignados */}
         <h3 className="text-lg font-semibold text-[var(--color-primary)] mt-6 mb-2">
           Empleados Asignados
         </h3>
@@ -119,7 +117,6 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
           </p>
         )}
 
-        {/* Botones */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             onClick={() => onEdit(vehiculo)}

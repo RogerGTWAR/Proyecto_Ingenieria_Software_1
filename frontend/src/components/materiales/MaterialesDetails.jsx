@@ -33,7 +33,6 @@ const MaterialesDetails = ({ material, onClose, onEdit, onDelete }) => {
           <p><strong>Descripción:</strong> {material.descripcion || "—"}</p>
         </div>
 
-        {/* 🔘 Botones */}
         <div className="flex justify-center gap-4 mt-8">
           <button
             onClick={() => onEdit(material)}

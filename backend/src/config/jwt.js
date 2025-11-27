@@ -1,4 +1,3 @@
-// config/jwt.js
 import jwt from "jsonwebtoken";
 
 export const signToken = (payload) => {
