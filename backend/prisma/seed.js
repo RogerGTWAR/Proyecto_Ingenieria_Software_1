@@ -204,6 +204,7 @@ main()
     await prisma.$disconnect();
   });
 */
+/*
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
