@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "NODE_ENV=production node src/server.js",
-    "postinstall": "npx prisma generate && npx prisma migrate deploy && npm run seed",
+    "postinstall": "npx prisma generate && npx prisma migrate resolve --applied 20251027_init || true && npx prisma migrate deploy && npm run seed",
     "seed": "node prisma/seed.js"
   },
   "keywords": [],
