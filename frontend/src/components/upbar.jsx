@@ -12,13 +12,11 @@ const Upbar = ({ title }) => {
       className="flex items-center px-10 justify-between py-4 fixed top-0 left-0 right-0 z-60 lg:ml-48"
       style={{ backgroundColor: "#1A2E81" }}
     >
-      {/* TITLE */}
       <span className="heading-4 text-white font-semibold tracking-wide">
         {title}
       </span>
 
       <div className="flex items-center gap-4 relative">
-        {/* 🔔 Notificaciones */}
         <button
           type="button"
           className="flex items-center justify-center focus:outline-none hover:scale-105 transition-transform"
@@ -26,7 +24,6 @@ const Upbar = ({ title }) => {
           <img src={bellIcon.path} className="size-7 filter-white" alt="Notificaciones" />
         </button>
 
-        {/* 👤 Usuario + Dropdown */}
         <div
           className="flex items-center gap-2 cursor-pointer select-none"
           onClick={() => setOpen(!open)}
@@ -42,7 +39,6 @@ const Upbar = ({ title }) => {
               {user?.usuario ?? "Usuario"}
             </span>
 
-            {/* Mostrar el cargo desde roles */}
             <span className="body-3 text-gray-300">
               Rol: {user?.cargo ?? "Sin cargo"}
             </span>
@@ -60,7 +56,6 @@ const Upbar = ({ title }) => {
           </svg>
         </div>
 
-        {/* 🔽 Dropdown */}
         {open && (
           <div
             className="absolute right-0 mt-30 w-52 rounded-lg overflow-hidden animate-fadeIn z-50"

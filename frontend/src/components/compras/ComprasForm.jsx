@@ -67,9 +67,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
   const empleadosFiltrados = useMemo(() => {
     if (!busquedaEmpleado.trim() || form.empleado_id) return [];
     return empleados.filter((e) =>
-      `${e.nombres} ${e.apellidos}`
-        .toLowerCase()
-        .includes(busquedaEmpleado.toLowerCase())
+      `${e.nombres} ${e.apellidos}`.toLowerCase().includes(busquedaEmpleado.toLowerCase())
     );
   }, [busquedaEmpleado, empleados, form.empleado_id]);
 
@@ -94,12 +92,11 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
   };
 
   const handleAsignarMaterial = () => {
-    if (!materialSeleccionado) {
+    if (!materialSeleccionado)
       return setErrors((prev) => ({
         ...prev,
         asignarMaterial: "Debe seleccionar un material.",
       }));
-    }
 
     const mat = materiales.find((m) => Number(m.id) === Number(materialSeleccionado));
     if (!mat) return;
@@ -108,12 +105,11 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
       (m) => Number(m.material_id) === Number(mat.id)
     );
 
-    if (existe) {
+    if (existe)
       return setErrors((prev) => ({
         ...prev,
         asignarMaterial: "Este material ya está asignado.",
       }));
-    }
 
     setMaterialesAsignados((prev) => [
       ...prev,
@@ -153,15 +149,12 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
 
   const validateForm = () => {
     const e = {};
-
     if (!form.empleado_id) e.empleado_id = "Seleccione un empleado.";
     if (!form.proveedor_id) e.proveedor_id = "Seleccione un proveedor.";
     if (!form.numero_factura.trim()) e.numero_factura = "Campo obligatorio.";
     if (!form.fecha_compra) e.fecha_compra = "Seleccione una fecha.";
-
     if (materialesAsignados.length === 0)
       e.asignarMaterial = "Debe asignar al menos un material.";
-
     return e;
   };
 
@@ -203,17 +196,23 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
   const totalCompra = materialesAsignados.reduce((a, b) => a + b.subtotal, 0);
 
   return (
-    <div className="fixed inset-0 flex justify-center items-start mt-[40px] z-50">
+    <div className="fixed inset-0 flex justify-center items-start mt-[100px] z-50">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-10 overflow-y-auto max-h-[90vh]"
+        className="
+          bg-[#F9FAFB] rounded-2xl shadow-2xl
+          w-full max-w-3xl p-8
+          max-h-[90vh] overflow-y-auto
+        "
       >
-        <h2 className="text-3xl font-semibold text-center mb-6 text-[#1A2E81]">
+        <h2 className="text-2xl font-semibold text-[#1A2E81] text-center mb-6">
           {isEdit ? "Editar Compra" : "Nueva Compra"}
         </h2>
 
         <div className="mb-6">
-          <label className="font-medium text-gray-800 text-sm">Empleado</label>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Empleado
+          </label>
 
           {!empleadoAsignado && (
             <input
@@ -221,7 +220,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
               placeholder="Buscar empleado..."
               value={busquedaEmpleado}
               onChange={(e) => setBusquedaEmpleado(e.target.value)}
-              className="w-full p-3 border rounded-lg"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
           )}
 
@@ -265,7 +264,9 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
         </div>
 
         <div className="mb-6">
-          <label className="font-medium text-gray-800 text-sm">Proveedor</label>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Proveedor
+          </label>
 
           {!proveedorAsignado && (
             <input
@@ -273,7 +274,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
               placeholder="Buscar proveedor..."
               value={busquedaProveedor}
               onChange={(e) => setBusquedaProveedor(e.target.value)}
-              className="w-full p-3 border rounded-lg"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
           )}
 
@@ -314,9 +315,9 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
-            <label className="font-medium text-gray-800 text-sm">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Número Factura
             </label>
             <input
@@ -324,7 +325,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
               name="numero_factura"
               value={form.numero_factura}
               onChange={handleChange}
-              className="w-full p-3 border rounded-lg"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
             {errors.numero_factura && (
               <p className="text-red-600 text-sm">{errors.numero_factura}</p>
@@ -332,7 +333,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
           </div>
 
           <div>
-            <label className="font-medium text-gray-800 text-sm">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Fecha Compra
             </label>
             <input
@@ -340,35 +341,33 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
               name="fecha_compra"
               value={form.fecha_compra}
               onChange={handleChange}
-              className="w-full p-3 border rounded-lg"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
             {errors.fecha_compra && (
               <p className="text-red-600 text-sm">{errors.fecha_compra}</p>
             )}
           </div>
         </div>
-        
+
         <div className="mb-6">
-          <label className="font-medium text-gray-800 text-sm">Estado</label>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Estado
+          </label>
 
           <select
             name="estado"
             value={form.estado}
             onChange={handleChange}
-            className="w-full p-3 border rounded-lg"
+            className="w-full border border-gray-300 rounded-md p-2"
           >
             <option value="Pendiente">Pendiente</option>
             <option value="Pagada">Pagada</option>
             <option value="Cancelada">Cancelada</option>
           </select>
-
-          {errors.estado && (
-            <p className="text-red-600 text-sm">{errors.estado}</p>
-          )}
         </div>
 
         <div className="mb-6">
-          <label className="font-medium text-gray-800 text-sm">
+          <label className="block text-sm font-medium text-gray-900 mb-1">
             Observaciones
           </label>
           <textarea
@@ -376,18 +375,18 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
             value={form.observaciones}
             onChange={handleChange}
             rows={3}
-            className="w-full p-3 border rounded-lg"
+            className="w-full border border-gray-300 rounded-md p-2"
           />
         </div>
 
-        <h3 className="text-xl font-semibold text-[#1A2E81] mb-3">
+        <h3 className="text-lg font-semibold text-[#1A2E81] mb-2">
           Materiales Asignados
         </h3>
 
-        <div className="bg-white border p-4 rounded-xl shadow-sm mb-4">
+        <div className="bg-[#F9FAFB] border p-4 rounded-xl shadow-sm mb-4">
           <div className="grid grid-cols-12 gap-3 items-end">
             <div className="col-span-8">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-800">
                 Buscar material
               </label>
               <input
@@ -395,14 +394,14 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                 placeholder="Escribe para buscar..."
                 value={busquedaMaterial}
                 onChange={(e) => setBusquedaMaterial(e.target.value)}
-                className="w-full p-2 border rounded-lg"
+                className="w-full border border-gray-300 rounded-md p-2"
               />
 
               {busquedaMaterial && (
                 <select
                   value={materialSeleccionado}
                   onChange={(e) => setMaterialSeleccionado(e.target.value)}
-                  className="w-full mt-2 p-2 border rounded-lg"
+                  className="w-full mt-2 border border-gray-300 rounded-md p-2"
                 >
                   <option value="">Selecciona un material...</option>
                   {materialesFiltrados.map((m) => (
@@ -414,17 +413,15 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
               )}
 
               {errors.asignarMaterial && (
-                <p className="text-red-600 text-sm mt-1">
-                  {errors.asignarMaterial}
-                </p>
+                <p className="text-red-600 text-sm mt-1">{errors.asignarMaterial}</p>
               )}
             </div>
 
-            <div className="col-span-4 flex">
+            <div className="col-span-4">
               <button
                 type="button"
                 onClick={handleAsignarMaterial}
-                className="w-full h-[42px] bg-[#1A2E81] text-white rounded-lg shadow hover:bg-[#2538a3]"
+                className="w-full h-[42px] bg-[#1A2E81] text-white rounded-md shadow hover:bg-[#2538a3]"
               >
                 Agregar
               </button>
@@ -433,20 +430,16 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
         </div>
 
         {materialesAsignados.length > 0 && (
-          <div className="overflow-auto rounded-xl border bg-white shadow-sm">
+          <div className="overflow-auto rounded-xl border bg-[#F9FAFB] shadow-sm">
             <table className="min-w-full text-sm">
               <thead className="bg-gray-100 border-b">
                 <tr>
                   <th className="p-3 text-left font-semibold">Material</th>
                   <th className="p-3 text-center font-semibold">Unidad</th>
-                  <th className="p-3 text-center font-semibold w-24">Cantidad</th>
-                  <th className="p-3 text-center font-semibold w-28">
-                    Precio Unit.
-                  </th>
-                  <th className="p-3 text-right font-semibold w-32">
-                    Subtotal
-                  </th>
-                  <th className="p-3 text-center w-20"></th>
+                  <th className="p-3 text-center font-semibold">Cantidad</th>
+                  <th className="p-3 text-center font-semibold">Precio Unit.</th>
+                  <th className="p-3 text-right font-semibold">Subtotal</th>
+                  <th className="p-3 text-center"></th>
                 </tr>
               </thead>
 
@@ -467,11 +460,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                           setMaterialesAsignados((prev) =>
                             prev.map((x) =>
                               x.material_id === m.material_id
-                                ? {
-                                    ...x,
-                                    cantidad: q,
-                                    subtotal: q * x.precio_unitario,
-                                  }
+                                ? { ...x, cantidad: q, subtotal: q * x.precio_unitario }
                                 : x
                             )
                           );
@@ -491,11 +480,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                           setMaterialesAsignados((prev) =>
                             prev.map((x) =>
                               x.material_id === m.material_id
-                                ? {
-                                    ...x,
-                                    precio_unitario: p,
-                                    subtotal: p * x.cantidad,
-                                  }
+                                ? { ...x, precio_unitario: p, subtotal: p * x.cantidad }
                                 : x
                             )
                           );
@@ -528,10 +513,11 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
           </div>
         )}
 
-        <div className="flex justify-center gap-6 mt-8">
+        <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"
-            className="px-10 py-3 bg-[#1A2E81] text-white rounded-lg"
+            className="px-10 py-3 text-white rounded-md shadow-md"
+            style={{ backgroundColor: "#1A2E81" }}
           >
             {isEdit ? "Actualizar" : "Guardar"}
           </button>
@@ -539,7 +525,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
           <button
             type="button"
             onClick={onClose}
-            className="px-10 py-3 bg-gray-300 text-gray-900 rounded-lg"
+            className="px-10 py-3 bg-gray-300 text-gray-900 rounded-md shadow-md hover:bg-gray-400"
           >
             Cancelar
           </button>

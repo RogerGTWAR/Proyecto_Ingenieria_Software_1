@@ -70,7 +70,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     if (!empleadoSeleccionado) {
       setErrors((prev) => ({
         ...prev,
-        asignar: "Debe seleccionar un empleado."
+        asignar: "Debe seleccionar un empleado.",
       }));
       return;
     }
@@ -84,7 +84,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     if (yaAsignado) {
       setErrors((prev) => ({
         ...prev,
-        asignar: "Este empleado ya está asignado."
+        asignar: "Este empleado ya está asignado.",
       }));
       return;
     }
@@ -157,6 +157,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       if (form.fechaInicio && new Date(form.fechaFin) < new Date(form.fechaInicio))
         newErrors.fechaFin = "La fecha de fin no puede ser menor a la fecha de inicio.";
     }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -192,26 +193,36 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   };
 
   const empleadosFiltrados = empleados.filter((e) =>
-    `${e.nombres} ${e.apellidos}`
-      .toLowerCase()
-      .includes(busqueda.toLowerCase())
+    `${e.nombres} ${e.apellidos}`.toLowerCase().includes(busqueda.toLowerCase())
   );
 
   return (
-    <div className="fixed inset-0 flex justify-center items-start mt-[120px] z-50">
+    <div
+      className="
+        fixed inset-20 z-50
+        flex justify-center items-center
+        p-111
+      "
+    >
       <form
         onSubmit={handleSubmit}
-        className="bg-[#F9FAFB] rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative overflow-y-auto max-h-[100vh]"
+        className="
+          bg-[#F9FAFB] rounded-2xl shadow-2xl
+          w-full max-w-2xl
+          p-8
+          max-h-[90vh]
+          overflow-y-auto
+        "
       >
         <h2 className="text-2xl font-semibold text-[var(--color-primary)] mb-4 text-center">
           {isEdit ? "Editar Proyecto" : "Nuevo Proyecto"}
         </h2>
 
-        {/* CLIENTE / ESTADO */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Cliente</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              Cliente
+            </label>
             <select
               name="clienteId"
               value={form.clienteId}
@@ -220,14 +231,20 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             >
               <option value="">Seleccione un cliente</option>
               {clientes.map((c) => (
-                <option key={c.id} value={c.id}>{c.nombreEmpresa}</option>
+                <option key={c.id} value={c.id}>
+                  {c.nombreEmpresa}
+                </option>
               ))}
             </select>
-            {errors.clienteId && <p className="text-red-600 text-sm">{errors.clienteId}</p>}
+            {errors.clienteId && (
+              <p className="text-red-600 text-sm">{errors.clienteId}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Estado</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              Estado
+            </label>
             <select
               name="estado"
               value={form.estado}
@@ -240,12 +257,9 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               <option value="Cancelado">Cancelado</option>
             </select>
           </div>
-
         </div>
 
-        {/* NOMBRE / DESCRIPCIÓN */}
         <div className="space-y-2 mb-4">
-
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Nombre del Proyecto
@@ -276,9 +290,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           </div>
         </div>
 
-        {/* UBICACIÓN / PRESUPUESTO */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Ubicación
@@ -304,15 +316,14 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               className="w-full border border-gray-300 rounded-md p-2"
             />
             {errors.presupuestoTotal && (
-              <p className="text-red-600 text-sm">{errors.presupuestoTotal}</p>
+              <p className="text-red-600 text-sm">
+                {errors.presupuestoTotal}
+              </p>
             )}
           </div>
-
         </div>
 
-        {/* FECHAS */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Fecha de Inicio
@@ -344,10 +355,8 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               <p className="text-red-600 text-sm">{errors.fechaFin}</p>
             )}
           </div>
-
         </div>
 
-        {/* ASIGNAR EMPLEADOS */}
         <div className="border-t border-gray-300 mt-4 pt-4">
           <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-2">
             Empleados Asignados
@@ -394,7 +403,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
           </div>
 
           {empleadosAsignados.length > 0 && (
-            <div className="bg-gray-100 rounded-lg p-3 shadow-inner">
+            <div className="bg-[#F9FAFB] rounded-lg p-3 shadow-inner">
               <ul className="divide-y divide-gray-200">
                 {empleadosAsignados.map((e) => (
                   <li
@@ -408,6 +417,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                         {new Date(e.fecha).toLocaleDateString()}
                       </p>
                     </div>
+
                     <button
                       type="button"
                       onClick={() => handleQuitarEmpleado(e.id)}
@@ -420,10 +430,8 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               </ul>
             </div>
           )}
-
         </div>
 
-        {/* BOTONES */}
         <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"
@@ -440,7 +448,6 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             Cancelar
           </button>
         </div>
-
       </form>
     </div>
   );

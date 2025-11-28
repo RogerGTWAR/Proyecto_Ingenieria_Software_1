@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
-
 import { useMateriales } from "../../hooks/useMateriales";
 import { useCostosDirectos } from "../../hooks/useCostosDirectos";
 import { useCostosIndirectos } from "../../hooks/useCostosIndirectos";
 
 export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }) {
   const { items: materiales } = useMateriales();
-  const { items: directos, add: addDirecto, edit: editDirecto, reload: reloadDirectos } =
-    useCostosDirectos();
+  const {
+    items: directos,
+    add: addDirecto,
+    edit: editDirecto,
+    reload: reloadDirectos,
+  } = useCostosDirectos();
   const {
     items: indirectos,
     add: addIndirecto,
@@ -83,20 +86,15 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
     const newErrors = {};
 
     if (!materialSeleccionado) {
-      newErrors.asignarMaterial = "Debe seleccionar un material para asignar.";
+      newErrors.asignarMaterial = "Debe seleccionar un material.";
       setErrors((prev) => ({ ...prev, ...newErrors }));
       return;
     }
 
     const mat = materiales.find((m) => m.id === Number(materialSeleccionado));
-    if (!mat) {
-      newErrors.asignarMaterial = "El material seleccionado no es válido.";
-      setErrors((prev) => ({ ...prev, ...newErrors }));
-      return;
-    }
+    if (!mat) return;
 
-    const repetido = costosDirectosAsignados.some((c) => c.materialId === mat.id);
-    if (repetido) {
+    if (costosDirectosAsignados.some((c) => c.materialId === mat.id)) {
       newErrors.asignarMaterial = "Este material ya está asignado.";
       setErrors((prev) => ({ ...prev, ...newErrors }));
       return;
@@ -145,10 +143,10 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
     });
   };
 
-  const quitarDirecto = (materialId) =>
-    setCostosDirectosAsignados((p) => p.filter((m) => m.materialId !== materialId));
+  const quitarDirecto = (id) =>
+    setCostosDirectosAsignados((p) => p.filter((m) => m.materialId !== id));
 
-  const agregarIndirectoDesdeDirectos = () => {
+  const generarIndirectos = () => {
     const totalDirecto = costosDirectosAsignados.reduce((acc, d) => acc + d.total, 0);
 
     const admin = totalDirecto * 0.05;
@@ -170,35 +168,24 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
   const quitarIndirecto = () => setCostosIndirectosAsignados([]);
 
   const validate = () => {
-    const newErrors = {};
-
-    if (!form.nombreServicio.trim()) {
-      newErrors.nombreServicio = "El nombre del servicio es obligatorio.";
-    }
-
-    return newErrors;
+    const er = {};
+    if (!form.nombreServicio.trim()) er.nombreServicio = "El nombre es obligatorio.";
+    return er;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newErrors = validate();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    const er = validate();
+    if (Object.keys(er).length > 0) {
+      setErrors(er);
       return;
     }
 
-    const totalDirectos = costosDirectosAsignados.reduce(
-      (acc, d) => acc + Number(d.total),
-      0
-    );
+    const totalDirectos = costosDirectosAsignados.reduce((acc, d) => acc + d.total, 0);
+    const totalIndirectos = costosIndirectosAsignados.reduce((acc, ci) => acc + ci.total, 0);
 
-    const totalIndirectos = costosIndirectosAsignados.reduce(
-      (acc, ci) => acc + Number(ci.total),
-      0
-    );
-
-    const servicioGuardado = await onSubmit({
+    const saved = await onSubmit({
       id: form.id,
       nombreServicio: form.nombreServicio,
       descripcion: form.descripcion,
@@ -206,9 +193,9 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
       totalCostoIndirecto: totalIndirectos,
     });
 
-    if (!servicioGuardado) return;
+    if (!saved) return;
 
-    const servicioId = servicioGuardado.id;
+    const servicioId = saved.id;
 
     for (const d of costosDirectosAsignados) {
       const payload = {
@@ -240,66 +227,73 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
   };
 
   return (
-    <div className="fixed inset-0 flex justify-center items-start mt-[40px] z-50">
+    <div className="fixed inset-0 flex justify-center items-start mt-[100px] z-50">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl p-10 overflow-y-auto max-h-[90vh] border border-gray-200"
+        className="
+          bg-[#F9FAFB] rounded-2xl shadow-2xl
+          w-full max-w-3xl
+          p-8
+          max-h-[90vh]
+          overflow-y-auto
+        "
       >
-        <h2 className="text-3xl font-semibold text-center mb-6 text-[#1A2E81] tracking-wide">
+        <h2 className="text-2xl font-semibold text-[#1A2E81] mb-6 text-center">
           {isEdit ? "Editar Servicio" : "Nuevo Servicio"}
         </h2>
 
-        <div className="grid grid-cols-2 gap-6 mb-6">
+        <div className="space-y-4 mb-6">
           <div>
-            <label className="font-medium text-gray-800 text-sm">Nombre del Servicio</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              Nombre del Servicio
+            </label>
             <input
               type="text"
               name="nombreServicio"
               value={form.nombreServicio}
               onChange={handleChange}
-              className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#1A2E81]"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
             {errors.nombreServicio && (
-              <p className="text-red-600 text-sm mt-1">{errors.nombreServicio}</p>
+              <p className="text-red-600 text-sm">{errors.nombreServicio}</p>
             )}
           </div>
 
           <div>
-            <label className="font-medium text-gray-800 text-sm">Descripción</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              Descripción
+            </label>
             <textarea
               name="descripcion"
               value={form.descripcion}
               onChange={handleChange}
               rows={3}
-              className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#1A2E81]"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
           </div>
         </div>
 
-        <h3 className="text-xl font-semibold mt-10 mb-3 text-[#1A2E81]">
+        <h3 className="text-lg font-semibold text-[#1A2E81] mt-6 mb-3">
           Costos Directos (Materiales)
         </h3>
 
-        <div className="flex gap-3 mb-2">
+        <div className="flex gap-2 mb-3">
           <div className="flex-1">
             <input
               type="text"
               placeholder="Buscar material..."
               value={busquedaMaterial}
               onChange={(e) => setBusquedaMaterial(e.target.value)}
-              className="w-full p-3 border rounded-lg shadow-sm"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
 
             {busquedaMaterial && (
               <select
-                className="w-full p-3 mt-2 border rounded-lg shadow-sm"
+                className="w-full border border-gray-300 rounded-md mt-2 p-2"
                 value={materialSeleccionado}
-                onChange={(e) => {
-                  setMaterialSeleccionado(e.target.value);
-                  setErrors((prev) => ({ ...prev, asignarMaterial: "" }));
-                }}
+                onChange={(e) => setMaterialSeleccionado(e.target.value)}
               >
-                <option value="">Seleccionar...</option>
+                <option value="">Seleccionar…</option>
                 {materialesFiltrados.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.nombre_material} — C${m.precio_unitario}
@@ -307,26 +301,26 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
                 ))}
               </select>
             )}
+
+            {errors.asignarMaterial && (
+              <p className="text-red-600 text-sm mt-1">{errors.asignarMaterial}</p>
+            )}
           </div>
 
           <button
             type="button"
             onClick={handleAsignarMaterial}
-            className="px-6 bg-[#1A2E81] text-white rounded-lg hover:bg-[#213799] shadow-md"
+            className="px-6 bg-[#1A2E81] text-white rounded-md shadow-md hover:bg-[#213799]"
           >
             Asignar
           </button>
         </div>
 
-        {errors.asignarMaterial && (
-          <p className="text-red-600 text-sm mb-3">{errors.asignarMaterial}</p>
-        )}
-
         {costosDirectosAsignados.length > 0 && (
-          <div className="bg-gray-100 rounded-xl p-5 shadow-inner border">
+          <div className="bg-[#F9FAFB] rounded-lg p-4 shadow-inner border mb-6">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-200 text-gray-700">
+                <tr className="bg-gray-200 text-gray-700 border-b">
                   <th className="p-2">Material</th>
                   <th className="p-2">Cant.</th>
                   <th className="p-2">U/M</th>
@@ -340,14 +334,14 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
               </thead>
 
               <tbody>
-                {costosDirectosAsignados.map((m, i) => (
+                {costosDirectosAsignados.map((d, i) => (
                   <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-2">{m.nombre}</td>
+                    <td className="p-2">{d.nombre}</td>
 
                     <td className="p-2">
                       <input
                         type="number"
-                        value={m.cantidad_material}
+                        value={d.cantidad_material}
                         onChange={(e) =>
                           actualizarDirecto(i, "cantidad_material", Number(e.target.value))
                         }
@@ -355,12 +349,12 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
                       />
                     </td>
 
-                    <td className="p-2">{m.unidad_de_medida}</td>
+                    <td className="p-2">{d.unidad_de_medida}</td>
 
                     <td className="p-2">
                       <input
                         type="number"
-                        value={m.precio_unitario}
+                        value={d.precio_unitario}
                         onChange={(e) =>
                           actualizarDirecto(i, "precio_unitario", Number(e.target.value))
                         }
@@ -368,24 +362,21 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
                       />
                     </td>
 
-                    <td className="p-2">C${m.costo_material.toLocaleString("es-NI")}</td>
-
+                    <td className="p-2">C${d.costo_material.toLocaleString("es-NI")}</td>
                     <td className="p-2 text-blue-700 font-medium">
-                      C${m.mano_obra.toLocaleString("es-NI")}
+                      C${d.mano_obra.toLocaleString("es-NI")}
                     </td>
-
                     <td className="p-2 text-blue-700 font-medium">
-                      C${m.equipos.toLocaleString("es-NI")}
+                      C${d.equipos.toLocaleString("es-NI")}
                     </td>
-
                     <td className="p-2 font-bold text-green-700">
-                      C${m.total.toLocaleString("es-NI")}
+                      C${d.total.toLocaleString("es-NI")}
                     </td>
 
                     <td className="p-2">
                       <button
                         type="button"
-                        onClick={() => quitarDirecto(m.materialId)}
+                        onClick={() => quitarDirecto(d.materialId)}
                         className="text-red-600 text-sm hover:underline"
                       >
                         Quitar
@@ -405,24 +396,24 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
           </div>
         )}
 
-        <h3 className="text-xl font-semibold mt-12 mb-3 text-[#1A2E81]">
+        <h3 className="text-lg font-semibold text-[#1A2E81] mb-3">
           Costos Indirectos
         </h3>
 
         <button
           type="button"
-          onClick={agregarIndirectoDesdeDirectos}
-          className="px-6 py-2 bg-[#1A2E81] text-white rounded-lg hover:bg-[#213799] shadow-md mb-3"
+          onClick={generarIndirectos}
+          className="px-6 py-2 bg-[#F9FAFB] text-white rounded-md shadow-md hover:bg-[#213799] mb-3"
         >
           Generar Automáticamente
         </button>
 
         {costosIndirectosAsignados.length > 0 && (
-          <div className="bg-gray-100 rounded-xl p-5 shadow-inner border">
+          <div className="bg-white rounded-lg p-4 shadow-inner border mb-6">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-200 text-gray-700">
-                  <th className="p-2">Costo Directo</th>
+                <tr className="bg-gray-200 text-gray-700 border-b">
+                  <th className="p-2">C. Directo</th>
                   <th className="p-2">Admin</th>
                   <th className="p-2">Operación</th>
                   <th className="p-2">Utilidad</th>
@@ -432,8 +423,8 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
               </thead>
 
               <tbody>
-                {costosIndirectosAsignados.map((ci, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
+                {costosIndirectosAsignados.map((ci, i) => (
+                  <tr key={i} className="border-b hover:bg-gray-50">
                     <td className="p-2">
                       C${ci.total_costo_directo.toLocaleString("es-NI")}
                     </td>
@@ -446,8 +437,7 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
                     <td className="p-2">
                       C${ci.utilidad.toLocaleString("es-NI")}
                     </td>
-
-                    <td className="p-2 font-bold text-blue-700">
+                    <td className="p-2 font-bold text-blue-800">
                       C${ci.total.toLocaleString("es-NI")}
                     </td>
 
@@ -467,10 +457,11 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
           </div>
         )}
 
-        <div className="flex justify-center gap-6 mt-12">
+        <div className="flex justify-center gap-6 mt-10">
           <button
             type="submit"
-            className="px-10 py-3 bg-[#1A2E81] text-white rounded-lg text-lg font-medium shadow-md hover:bg-[#213799]"
+            className="px-10 py-3 text-white rounded-md shadow-md"
+            style={{ backgroundColor: "#1A2E81" }}
           >
             Guardar
           </button>
@@ -478,7 +469,7 @@ export default function ServiciosForm({ onSubmit, onClose, initialData, isEdit }
           <button
             type="button"
             onClick={onClose}
-            className="px-10 py-3 bg-gray-300 text-gray-900 rounded-lg text-lg hover:bg-gray-400 shadow"
+            className="px-10 py-3 bg-gray-300 text-gray-900 rounded-md shadow-md hover:bg-gray-400"
           >
             Cancelar
           </button>

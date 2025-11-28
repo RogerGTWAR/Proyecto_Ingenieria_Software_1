@@ -17,6 +17,10 @@ const Layout = () => {
       case '/proveedores': return 'Proveedores';
       case '/materiales': return 'Inventario';
       case '/avaluos': return 'Avalúos';
+      case '/permisos': return 'Permisos';
+      case '/menus': return 'Menús';
+      case '/reportes': return 'Reportes';
+      case '/usuarios': return 'Usuarios';
       default: return 'Dashboard';
     }
   };

@@ -56,7 +56,7 @@ const Sidebar = () => {
     { id: "vehiculos", link: "/vehiculos", label: "Vehículos", icon: "icons/car.svg" },
     { id: "compras", link: "/compras", label: "Compras", icon: "icons/buy.svg" },
     { id: "inventario", link: "/materiales", label: "Inventario", icon: "icons/inventory.svg" },
-    { id: "avaluos", link: "/avaluos", label: "Avalúos", icon: "icons/suppliers.svg" },
+    { id: "avaluos", link: "/avaluos", label: "Avalúos", icon: "icons/avaluos.svg" },
     { id: "servicios", link: "/servicios", label: "Servicios", icon: "icons/tool.svg" },
     { id: "menus", link: "/menus", label: "Menús", icon: "icons/menu.svg" },
   ];
@@ -65,9 +65,9 @@ const Sidebar = () => {
     { id: "empleados", link: "/empleados", label: "Empleados", icon: "icons/employee.svg" },
     { id: "clientes", link: "/clientes", label: "Clientes", icon: "icons/clients.svg" },
     { id: "proveedores", link: "/proveedores", label: "Proveedores", icon: "icons/suppliers.svg" },
-    { id: "permisos", link: "/permisos", label: "Permisos", icon: "icons/suppliers.svg" },
+    { id: "permisos", link: "/permisos", label: "Permisos", icon: "icons/permisos.svg" },
     { id: "reportes", link: "/reportes", label: "Reportes", icon: "icons/suppliers.svg" },
-    { id: "usuarios", link: "/usuarios", label: "Usuarios", icon: "icons/suppliers.svg" },
+    { id: "usuarios", link: "/usuarios", label: "Usuarios", icon: "icons/user.svg" },
   ];
 
   const registroFiltrado = registroItems.filter((r) =>
