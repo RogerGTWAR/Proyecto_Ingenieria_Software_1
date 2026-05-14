@@ -28,7 +28,7 @@ function App() {
   return (
     <Routes>
       {/* LOGIN / SIGNUP */}
-      <Route path="/login" element={<LoginPage />} />
+    <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
 
       {/* PÁGINA DE ACCESO DENEGADO */}

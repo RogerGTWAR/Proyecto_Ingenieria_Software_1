@@ -16,40 +16,142 @@ const mapDetalle = (row) => {
   };
 };
 
-async function recalcularMontoEjecutado(avaluo_id) {
-  const detalles = await prisma.detalles_avaluos.findMany({
-    where: { avaluo_id, fecha_eliminacion: null },
+async function recalcularMontoEjecutado(tx, avaluo_id) {
+  const detalles = await tx.detalles_avaluos.findMany({
+    where: {
+      avaluo_id: Number(avaluo_id),
+      fecha_eliminacion: null,
+    },
   });
 
   let total = 0;
+
   for (const d of detalles) {
     const m = mapDetalle(d);
     total += m.total_costo_venta;
   }
 
-  await prisma.avaluos.update({
-    where: { avaluo_id },
-    data: { monto_ejecutado: total },
+  await tx.avaluos.update({
+    where: {
+      avaluo_id: Number(avaluo_id),
+    },
+    data: {
+      monto_ejecutado: Number(total.toFixed(2)),
+      fecha_actualizacion: new Date(),
+    },
   });
+
+  return Number(total.toFixed(2));
+}
+
+async function obtenerMaterialesDelServicio(tx, servicioId) {
+  const materialesServicio = await tx.costos_directos_servicios.findMany({
+    where: {
+      servicio_id: Number(servicioId),
+      fecha_eliminacion: null,
+    },
+    include: {
+      material_id_materiales: true,
+    },
+  });
+
+  if (materialesServicio.length === 0) {
+    throw new Error(
+      "El servicio no tiene materiales asignados en costos directos."
+    );
+  }
+
+  return materialesServicio;
+}
+
+async function disminuirInventarioPorServicio(tx, servicioId, cantidadServicio) {
+  const materialesServicio = await obtenerMaterialesDelServicio(tx, servicioId);
+
+  for (const item of materialesServicio) {
+    const materialId = Number(item.material_id);
+    const cantidadNecesaria =
+      Number(item.cantidad_material) * Number(cantidadServicio);
+
+    const material = await tx.materiales.findFirst({
+      where: {
+        material_id: materialId,
+        fecha_eliminacion: null,
+      },
+    });
+
+    if (!material) {
+      throw new Error(
+        `El material con ID ${materialId} no existe o fue eliminado.`
+      );
+    }
+
+    const stockActual = Number(material.cantidad_en_stock);
+
+    if (stockActual < cantidadNecesaria) {
+      throw new Error(
+        `Stock insuficiente para "${material.nombre_material}". Stock actual: ${stockActual}, cantidad requerida: ${cantidadNecesaria}.`
+      );
+    }
+
+    await tx.materiales.update({
+      where: {
+        material_id: materialId,
+      },
+      data: {
+        cantidad_en_stock: {
+          decrement: cantidadNecesaria,
+        },
+        fecha_actualizacion: new Date(),
+      },
+    });
+  }
+}
+
+async function devolverInventarioPorServicio(tx, servicioId, cantidadServicio) {
+  const materialesServicio = await obtenerMaterialesDelServicio(tx, servicioId);
+
+  for (const item of materialesServicio) {
+    const materialId = Number(item.material_id);
+    const cantidadDevolver =
+      Number(item.cantidad_material) * Number(cantidadServicio);
+
+    await tx.materiales.update({
+      where: {
+        material_id: materialId,
+      },
+      data: {
+        cantidad_en_stock: {
+          increment: cantidadDevolver,
+        },
+        fecha_actualizacion: new Date(),
+      },
+    });
+  }
 }
 
 export default class DetallesAvaluosController {
-
   static async getAll(_req, res) {
     try {
       const data = await prisma.detalles_avaluos.findMany({
-        where: { fecha_eliminacion: null },
+        where: {
+          fecha_eliminacion: null,
+        },
         include: {
           Servicios: true,
           Avaluos: true,
         },
-        orderBy: { detalle_avaluo_id: "asc" },
+        orderBy: {
+          detalle_avaluo_id: "asc",
+        },
       });
 
-      res.json({ ok: true, data: data.map(mapDetalle) });
-
+      res.json({
+        ok: true,
+        data: data.map(mapDetalle),
+      });
     } catch (error) {
       console.error("Error getAll:", error);
+
       res.status(500).json({
         ok: false,
         msg: "Error interno al obtener detalles del avalúo.",
@@ -60,26 +162,43 @@ export default class DetallesAvaluosController {
   static async getById(req, res) {
     const id = Number(req.params.id);
 
-    if (isNaN(id))
-      return res.status(400).json({ ok: false, msg: "ID inválido." });
+    if (isNaN(id)) {
+      return res.status(400).json({
+        ok: false,
+        msg: "ID inválido.",
+      });
+    }
 
     try {
       const detalle = await prisma.detalles_avaluos.findFirst({
-        where: { detalle_avaluo_id: id, fecha_eliminacion: null },
+        where: {
+          detalle_avaluo_id: id,
+          fecha_eliminacion: null,
+        },
         include: {
           Servicios: true,
           Avaluos: true,
         },
       });
 
-      if (!detalle)
-        return res.status(404).json({ ok: false, msg: "No encontrado." });
+      if (!detalle) {
+        return res.status(404).json({
+          ok: false,
+          msg: "No encontrado.",
+        });
+      }
 
-      res.json({ ok: true, data: mapDetalle(detalle) });
-
+      res.json({
+        ok: true,
+        data: mapDetalle(detalle),
+      });
     } catch (error) {
       console.error("Error getById:", error);
-      res.status(500).json({ ok: false, msg: "Error interno." });
+
+      res.status(500).json({
+        ok: false,
+        msg: "Error interno.",
+      });
     }
   }
 
@@ -93,62 +212,105 @@ export default class DetallesAvaluosController {
         cantidad,
       } = req.body;
 
-      if (!avaluo_id || !servicio_id || !actividad || !unidad_de_medida || !cantidad)
+      if (
+        !avaluo_id ||
+        !servicio_id ||
+        !actividad ||
+        !unidad_de_medida ||
+        cantidad == null
+      ) {
         return res.status(400).json({
           ok: false,
           msg: "Campos obligatorios faltantes.",
         });
+      }
 
-      const dup = await prisma.detalles_avaluos.findFirst({
-        where: {
-          avaluo_id: Number(avaluo_id),
-          servicio_id: Number(servicio_id),
-          fecha_eliminacion: null,
-        },
-      });
-
-      if (dup) {
-        return res.status(409).json({
+      if (Number(cantidad) <= 0) {
+        return res.status(400).json({
           ok: false,
-          msg: "Este servicio ya está asignado a este avalúo.",
+          msg: "La cantidad debe ser mayor que cero.",
         });
       }
 
-      const serv = await prisma.servicios.findFirst({
-        where: { servicio_id: Number(servicio_id), fecha_eliminacion: null },
-      });
-
-      if (!serv)
-        return res.status(400).json({
-          ok: false,
-          msg: "El servicio no existe.",
+      const resultado = await prisma.$transaction(async (tx) => {
+        const avaluo = await tx.avaluos.findFirst({
+          where: {
+            avaluo_id: Number(avaluo_id),
+            fecha_eliminacion: null,
+          },
         });
 
-      const precio_unitario =
-        Number(serv.total_costo_directo) + Number(serv.total_costo_indirecto);
+        if (!avaluo) {
+          throw new Error("El avalúo no existe.");
+        }
 
-      const nuevo = await prisma.detalles_avaluos.create({
-        data: {
-          avaluo_id: Number(avaluo_id),
-          servicio_id: Number(servicio_id),
-          actividad,
-          unidad_de_medida,
-          cantidad: Number(cantidad),
-          precio_unitario,
-        },
+        const dup = await tx.detalles_avaluos.findFirst({
+          where: {
+            avaluo_id: Number(avaluo_id),
+            servicio_id: Number(servicio_id),
+            fecha_eliminacion: null,
+          },
+        });
+
+        if (dup) {
+          throw new Error("Este servicio ya está asignado a este avalúo.");
+        }
+
+        const serv = await tx.servicios.findFirst({
+          where: {
+            servicio_id: Number(servicio_id),
+            fecha_eliminacion: null,
+          },
+        });
+
+        if (!serv) {
+          throw new Error("El servicio no existe.");
+        }
+
+        await disminuirInventarioPorServicio(
+          tx,
+          Number(servicio_id),
+          Number(cantidad)
+        );
+
+        const precio_unitario =
+          Number(serv.total_costo_directo) + Number(serv.total_costo_indirecto);
+
+        const nuevo = await tx.detalles_avaluos.create({
+          data: {
+            avaluo_id: Number(avaluo_id),
+            servicio_id: Number(servicio_id),
+            actividad,
+            unidad_de_medida,
+            cantidad: Number(cantidad),
+            precio_unitario,
+          },
+        });
+
+        const montoEjecutado = await recalcularMontoEjecutado(
+          tx,
+          Number(avaluo_id)
+        );
+
+        return {
+          nuevo,
+          montoEjecutado,
+        };
       });
-
-      await recalcularMontoEjecutado(Number(avaluo_id));
 
       res.status(201).json({
         ok: true,
-        msg: "Detalle agregado.",
-        data: mapDetalle(nuevo),
+        msg: "Detalle agregado. El inventario fue actualizado.",
+        data: mapDetalle(resultado.nuevo),
+        monto_ejecutado: resultado.montoEjecutado,
       });
-
     } catch (error) {
       console.error("Error create:", error);
-      res.status(500).json({ ok: false, msg: "Error interno al crear." });
+
+      res.status(500).json({
+        ok: false,
+        msg: error.message || "Error interno al crear.",
+      });
     }
   }
 
@@ -156,12 +318,12 @@ export default class DetallesAvaluosController {
     try {
       const id = Number(req.params.id);
 
-      const old = await prisma.detalles_avaluos.findFirst({
-        where: { detalle_avaluo_id: id, fecha_eliminacion: null },
-      });
-
-      if (!old)
-        return res.status(404).json({ ok: false, msg: "No encontrado." });
+      if (isNaN(id)) {
+        return res.status(400).json({
+          ok: false,
+          msg: "ID inválido.",
+        });
+      }
 
       const {
         servicio_id,
@@ -170,59 +332,132 @@ export default class DetallesAvaluosController {
         cantidad,
       } = req.body;
 
-      let precio_unitario = old.precio_unitario;
+      if (cantidad !== undefined && Number(cantidad) <= 0) {
+        return res.status(400).json({
+          ok: false,
+          msg: "La cantidad debe ser mayor que cero.",
+        });
+      }
 
-      if (servicio_id && Number(servicio_id) !== old.servicio_id) {
-
-        const dup = await prisma.detalles_avaluos.findFirst({
+      const resultado = await prisma.$transaction(async (tx) => {
+        const old = await tx.detalles_avaluos.findFirst({
           where: {
-            avaluo_id: old.avaluo_id,
-            servicio_id: Number(servicio_id),
+            detalle_avaluo_id: id,
             fecha_eliminacion: null,
           },
         });
 
-        if (dup) {
-          return res.status(409).json({
-            ok: false,
-            msg: "Ese servicio ya está asignado a este avalúo.",
-          });
+        if (!old) {
+          throw new Error("No encontrado.");
         }
 
-        const serv = await prisma.servicios.findFirst({
-          where: { servicio_id: Number(servicio_id), fecha_eliminacion: null },
+        const nuevoServicioId =
+          servicio_id !== undefined
+            ? Number(servicio_id)
+            : Number(old.servicio_id);
+
+        const nuevaCantidad =
+          cantidad !== undefined ? Number(cantidad) : Number(old.cantidad);
+
+        let precio_unitario = Number(old.precio_unitario);
+
+        if (Number(nuevoServicioId) !== Number(old.servicio_id)) {
+          const dup = await tx.detalles_avaluos.findFirst({
+            where: {
+              avaluo_id: Number(old.avaluo_id),
+              servicio_id: nuevoServicioId,
+              fecha_eliminacion: null,
+            },
+          });
+
+          if (dup) {
+            throw new Error("Ese servicio ya está asignado a este avalúo.");
+          }
+
+          const servNuevo = await tx.servicios.findFirst({
+            where: {
+              servicio_id: nuevoServicioId,
+              fecha_eliminacion: null,
+            },
+          });
+
+          if (!servNuevo) {
+            throw new Error("El nuevo servicio no existe.");
+          }
+
+          await devolverInventarioPorServicio(
+            tx,
+            old.servicio_id,
+            old.cantidad
+          );
+
+          await disminuirInventarioPorServicio(
+            tx,
+            nuevoServicioId,
+            nuevaCantidad
+          );
+
+          precio_unitario =
+            Number(servNuevo.total_costo_directo) +
+            Number(servNuevo.total_costo_indirecto);
+        } else {
+          const diferencia = nuevaCantidad - Number(old.cantidad);
+
+          if (diferencia > 0) {
+            await disminuirInventarioPorServicio(
+              tx,
+              old.servicio_id,
+              diferencia
+            );
+          }
+
+          if (diferencia < 0) {
+            await devolverInventarioPorServicio(
+              tx,
+              old.servicio_id,
+              Math.abs(diferencia)
+            );
+          }
+        }
+
+        const upd = await tx.detalles_avaluos.update({
+          where: {
+            detalle_avaluo_id: id,
+          },
+          data: {
+            servicio_id: nuevoServicioId,
+            actividad: actividad ?? old.actividad,
+            unidad_de_medida: unidad_de_medida ?? old.unidad_de_medida,
+            cantidad: nuevaCantidad,
+            precio_unitario,
+            fecha_actualizacion: new Date(),
+          },
         });
 
-        if (serv) {
-          precio_unitario =
-            Number(serv.total_costo_directo) + Number(serv.total_costo_indirecto);
-        }
-      }
+        const montoEjecutado = await recalcularMontoEjecutado(
+          tx,
+          upd.avaluo_id
+        );
 
-      const upd = await prisma.detalles_avaluos.update({
-        where: { detalle_avaluo_id: id },
-        data: {
-          servicio_id: servicio_id ? Number(servicio_id) : old.servicio_id,
-          actividad: actividad ?? old.actividad,
-          unidad_de_medida: unidad_de_medida ?? old.unidad_de_medida,
-          cantidad:
-            cantidad !== undefined ? Number(cantidad) : old.cantidad,
-          precio_unitario,
-          fecha_actualizacion: new Date(),
-        },
+        return {
+          upd,
+          montoEjecutado,
+        };
       });
-
-      await recalcularMontoEjecutado(upd.avaluo_id);
 
       res.json({
         ok: true,
-        msg: "Actualizado correctamente.",
-        data: mapDetalle(upd),
+        msg: "Actualizado correctamente. El inventario fue ajustado.",
+        data: mapDetalle(resultado.upd),
+        monto_ejecutado: resultado.montoEjecutado,
       });
-
     } catch (error) {
       console.error("Error update:", error);
-      res.status(500).json({ ok: false, msg: "Error al actualizar." });
+
+      res.status(500).json({
+        ok: false,
+        msg: error.message || "Error al actualizar.",
+      });
     }
   }
 
@@ -230,28 +465,65 @@ export default class DetallesAvaluosController {
     try {
       const id = Number(req.params.id);
 
-      const old = await prisma.detalles_avaluos.findFirst({
-        where: { detalle_avaluo_id: id, fecha_eliminacion: null },
-      });
-
-      if (!old)
-        return res.status(404).json({
+      if (isNaN(id)) {
+        return res.status(400).json({
           ok: false,
-          msg: "No encontrado.",
+          msg: "ID inválido.",
+        });
+      }
+
+      const resultado = await prisma.$transaction(async (tx) => {
+        const old = await tx.detalles_avaluos.findFirst({
+          where: {
+            detalle_avaluo_id: id,
+            fecha_eliminacion: null,
+          },
         });
 
-      await prisma.detalles_avaluos.update({
-        where: { detalle_avaluo_id: id },
-        data: { fecha_eliminacion: new Date() },
+        if (!old) {
+          throw new Error("No encontrado.");
+        }
+
+        await devolverInventarioPorServicio(
+          tx,
+          old.servicio_id,
+          old.cantidad
+        );
+
+        const eliminado = await tx.detalles_avaluos.update({
+          where: {
+            detalle_avaluo_id: id,
+          },
+          data: {
+            fecha_eliminacion: new Date(),
+            fecha_actualizacion: new Date(),
+          },
+        });
+
+        const montoEjecutado = await recalcularMontoEjecutado(
+          tx,
+          old.avaluo_id
+        );
+
+        return {
+          eliminado,
+          montoEjecutado,
+        };
       });
 
-      await recalcularMontoEjecutado(old.avaluo_id);
-
-      res.json({ ok: true, msg: "Eliminado correctamente." });
-
+      res.json({
+        ok: true,
+        msg: "Eliminado correctamente. El inventario fue devuelto.",
+        id: resultado.eliminado.detalle_avaluo_id,
+        monto_ejecutado: resultado.montoEjecutado,
+      });
     } catch (error) {
       console.error("Error delete:", error);
-      res.status(500).json({ ok: false, msg: "Error al eliminar." });
+
+      res.status(500).json({
+        ok: false,
+        msg: error.message || "Error al eliminar.",
+      });
     }
   }
 }

@@ -9,19 +9,30 @@ const toUI = (d) => ({
   actividad: d.actividad,
   unidadMedida: d.unidad_de_medida,
   cantidad: Number(d.cantidad),
-  precioUnitario: Number(d.precio_unitario),
 
-  costoVenta: Number(d.costo_venta),
-  iva: Number(d.iva),
-  totalCostoVenta: Number(d.total_costo_venta),
+  precioUnitario: Number(d.precio_unitario ?? 0),
+
+  costoVenta: Number(d.costo_venta ?? 0),
+  iva: Number(d.iva ?? 0),
+  totalCostoVenta: Number(d.total_costo_venta ?? 0),
 
   servicioNombre: d.Servicios?.nombre_servicio ?? "",
   servicioDescripcion: d.Servicios?.descripcion ?? "",
 });
 
+const getResponseData = (response) => {
+  return response?.data?.data ?? response?.data ?? response;
+};
+
 export const fetchDetallesAvaluos = async () => {
-  const { data } = await api("/detalle_avaluos");
-  const list = Array.isArray(data.data) ? data.data : data;
+  const response = await api("/detalle_avaluos");
+
+  const list = Array.isArray(response.data?.data)
+    ? response.data.data
+    : Array.isArray(response.data)
+    ? response.data
+    : [];
+
   return list.map(toUI);
 };
 
@@ -34,13 +45,12 @@ export const createDetalleAvaluo = async (payload) => {
     cantidad: Number(payload.cantidad),
   };
 
-
-  const res = await api("/detalle_avaluos", {
+  const response = await api("/detalle_avaluos", {
     method: "POST",
     body,
   });
 
-  return toUI(res.data);
+  return toUI(getResponseData(response));
 };
 
 export const updateDetalleAvaluo = async (id, payload) => {
@@ -49,23 +59,35 @@ export const updateDetalleAvaluo = async (id, payload) => {
       payload.servicioId !== undefined
         ? Number(payload.servicioId)
         : undefined,
-    actividad: payload.actividad ?? undefined,
-    unidad_de_medida: payload.unidadMedida ?? undefined,
+
+    actividad:
+      payload.actividad !== undefined
+        ? payload.actividad
+        : undefined,
+
+    unidad_de_medida:
+      payload.unidadMedida !== undefined
+        ? payload.unidadMedida
+        : undefined,
+
     cantidad:
       payload.cantidad !== undefined
         ? Number(payload.cantidad)
         : undefined,
   };
 
-  const res = await api(`/detalle_avaluos/${id}`, {
+  const response = await api(`/detalle_avaluos/${id}`, {
     method: "PATCH",
     body,
   });
 
-  return toUI(res.data);
+  return toUI(getResponseData(response));
 };
 
 export const deleteDetalleAvaluo = async (id) => {
-  await api(`/detalle_avaluos/${id}`, { method: "DELETE" });
+  await api(`/detalle_avaluos/${id}`, {
+    method: "DELETE",
+  });
+
   return true;
 };
