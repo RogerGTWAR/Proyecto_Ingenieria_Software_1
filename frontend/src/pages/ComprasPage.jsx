@@ -83,7 +83,7 @@ function ComprasPage() {
 
   const [busqueda, setBusqueda] = useState("");
   const [vistaTarjetas, setVistaTarjetas] = useState(false);
-  const [mostrarFlujo, setMostrarFlujo] = useState(true);
+  const [mostrarFlujo, setMostrarFlujo] = useState(false);
 
   const [vistaDetalle, setVistaDetalle] = useState(false);
   const [compraSeleccionada, setCompraSeleccionada] = useState(null);
@@ -216,7 +216,7 @@ function ComprasPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100dvh-64px)] w-full items-center justify-center bg-slate-200 px-3 sm:px-4">
+      <div className="flex h-[calc(100dvh-64px)] w-full items-center justify-center overflow-y-auto bg-slate-200 px-3 sm:px-4">
         <div className="rounded-3xl border border-slate-300 bg-slate-100 px-8 py-6 text-center shadow-xl">
           <p className="text-sm font-bold text-slate-800">
             Cargando compras...
@@ -232,7 +232,7 @@ function ComprasPage() {
 
   return (
     <div className="h-[calc(100dvh-64px)] w-full overflow-y-auto overflow-x-hidden bg-slate-200 px-3 py-4 sm:px-4 lg:px-5 xl:px-6">
-      <div className="flex min-h-full w-full flex-col gap-5 pb-6">
+      <div className="flex min-h-full w-full flex-col gap-5 pb-8">
         <section className="shrink-0 overflow-hidden rounded-3xl border border-slate-700/40 bg-slate-900 shadow-xl">
           <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-5 text-white sm:px-7 lg:px-8">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
