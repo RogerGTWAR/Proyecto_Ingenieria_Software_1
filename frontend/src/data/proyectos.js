@@ -1,67 +1,78 @@
 import { api } from "./api.js";
 
 const toUI = (p) => ({
-  id: p.proyecto_id,
-  clienteId: p.cliente_id,
-  clienteNombre: p.cliente_nombre ?? p.clientes?.nombre_empresa ?? "—",
-  nombreProyecto: p.nombre_proyecto,
-  descripcion: p.descripcion,
-  ubicacion: p.ubicacion,
-  fechaInicio: p.fecha_inicio ? p.fecha_inicio.split("T")[0] : "",
-  fechaFin: p.fecha_fin ? p.fecha_fin.split("T")[0] : "",
-  presupuestoTotal: p.presupuesto_total,
-  estado: p.estado,
+  id: p.proyecto_id ?? p.id,
+
+  clienteId: p.cliente_id ?? p.clienteId,
+
+  clienteNombre:
+    p.cliente_nombre ??
+    p.clientes?.nombre_empresa ??
+    p.clienteNombre ??
+    "—",
+
+  nombreProyecto: p.nombre_proyecto ?? p.nombreProyecto ?? "",
+  descripcion: p.descripcion ?? "",
+  ubicacion: p.ubicacion ?? "",
+
+  fechaInicio: p.fecha_inicio
+    ? p.fecha_inicio.split("T")[0]
+    : p.fechaInicio ?? "",
+
+  fechaFin: p.fecha_fin
+    ? p.fecha_fin.split("T")[0]
+    : p.fechaFin ?? "",
+
+  presupuestoTotal: Number(p.presupuesto_total ?? p.presupuestoTotal ?? 0),
+
+  estado: p.estado ?? "En Espera",
 });
 
+const toApi = (p) => ({
+  cliente_id: p.cliente_id ?? p.clienteId,
+  nombre_proyecto: p.nombre_proyecto ?? p.nombreProyecto,
+  descripcion: p.descripcion || null,
+  ubicacion: p.ubicacion || null,
+  fecha_inicio: p.fecha_inicio ?? p.fechaInicio,
+  fecha_fin: p.fecha_fin ?? p.fechaFin ?? null,
+  presupuesto_total: Number(p.presupuesto_total ?? p.presupuestoTotal ?? 0),
+  estado: p.estado ?? "En Espera",
+});
+
+const unwrap = (res) => {
+  const payload = res?.data ?? res;
+  return payload?.data ?? payload;
+};
+
 export const fetchProyectos = async () => {
-  const { data } = await api("/proyectos");
-  const list = Array.isArray(data.data) ? data.data : data;
+  const res = await api("/proyectos");
+  const payload = unwrap(res);
+  const list = Array.isArray(payload) ? payload : [];
   return list.map(toUI);
 };
 
 export const createProyecto = async (p) => {
-  const body = {
-    cliente_id: p.clienteId,
-    nombre_proyecto: p.nombreProyecto,
-    descripcion: p.descripcion || null,
-    ubicacion: p.ubicacion || null,
-    fecha_inicio: p.fechaInicio,
-    fecha_fin: p.fechaFin || null,
-    presupuesto_total: Number(p.presupuestoTotal || 0),
-    estado: p.estado,
-  };
-
-  const data = await api("/proyectos", {
+  const res = await api("/proyectos", {
     method: "POST",
-    body,
+    body: toApi(p),
   });
 
-  const payload = data.data || data;
-  return toUI(payload);
+  return toUI(unwrap(res));
 };
 
 export const updateProyecto = async (id, p) => {
-  const body = {
-    cliente_id: p.clienteId,
-    nombre_proyecto: p.nombreProyecto,
-    descripcion: p.descripcion || null,
-    ubicacion: p.ubicacion || null,
-    fecha_inicio: p.fechaInicio,
-    fecha_fin: p.fechaFin || null,
-    presupuesto_total: Number(p.presupuestoTotal || 0),
-    estado: p.estado,
-  };
-
-  const data = await api(`/proyectos/${id}`, {
+  const res = await api(`/proyectos/${id}`, {
     method: "PATCH",
-    body, 
+    body: toApi(p),
   });
 
-  const payload = data.data || data;
-  return toUI(payload);
+  return toUI(unwrap(res));
 };
 
 export const deleteProyecto = async (id) => {
-  await api(`/proyectos/${id}`, { method: "DELETE" });
+  await api(`/proyectos/${id}`, {
+    method: "DELETE",
+  });
+
   return true;
 };

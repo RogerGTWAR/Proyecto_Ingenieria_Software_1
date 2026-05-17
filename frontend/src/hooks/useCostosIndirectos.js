@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 
 import {
-  fetchCostosIndirectos,       
-  createCostoIndirecto,       
-  updateCostoIndirecto,        
-  deleteCostoIndirecto,        
+  fetchCostosIndirectos,
+  createCostoIndirecto,
+  updateCostoIndirecto,
+  deleteCostoIndirecto,
 } from "../data/costosIndirectos.js";
 
 export function useCostosIndirectos() {
@@ -15,6 +15,7 @@ export function useCostosIndirectos() {
   const load = async () => {
     try {
       setLoading(true);
+      setError("");
       const list = await fetchCostosIndirectos();
       setItems(list);
       return list;
@@ -34,8 +35,7 @@ export function useCostosIndirectos() {
   const add = async (payload) => {
     const body = {
       servicio_id: payload.servicio_id ?? payload.servicioId,
-      costo_directo_id:
-        payload.costo_directo_id ?? payload.costoDirectoId,
+      costo_directo_id: payload.costo_directo_id ?? payload.costoDirectoId,
       total_costo_directo:
         payload.total_costo_directo ?? payload.totalCostoDirecto ?? 0,
     };

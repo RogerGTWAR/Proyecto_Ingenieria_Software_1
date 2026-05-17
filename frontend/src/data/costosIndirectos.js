@@ -51,10 +51,24 @@ export const createCostoIndirecto = async (d) => {
 
 export const updateCostoIndirecto = async (id, d) => {
   const body = {
-    servicio_id: d.servicioId ? Number(d.servicioId) : undefined,
-    costo_directo_id: d.costoDirectoId ? Number(d.costoDirectoId) : undefined,
+    servicio_id:
+      d.servicio_id !== undefined
+        ? Number(d.servicio_id)
+        : d.servicioId !== undefined
+        ? Number(d.servicioId)
+        : undefined,
+
+    costo_directo_id:
+      d.costo_directo_id !== undefined
+        ? Number(d.costo_directo_id)
+        : d.costoDirectoId !== undefined
+        ? Number(d.costoDirectoId)
+        : undefined,
+
     total_costo_directo:
-      d.totalCostoDirecto !== undefined
+      d.total_costo_directo !== undefined
+        ? Number(d.total_costo_directo)
+        : d.totalCostoDirecto !== undefined
         ? Number(d.totalCostoDirecto)
         : undefined,
   };

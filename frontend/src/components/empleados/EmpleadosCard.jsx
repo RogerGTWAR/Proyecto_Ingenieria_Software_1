@@ -1,61 +1,143 @@
 import { useState } from "react";
 
-const EmpleadosCard = ({ empleados, rolNameById, onEdit, onDelete, onVerDetalles, obtenerColorRol }) => {
-  return (
-    <div className="w-full bg-[var(--color-fifth)] rounded-2xl shadow-xl shadow-black/10 overflow-hidden">
-      <div className="grid grid-cols-6 font-semibold text-[var(--color-primary)] bg-gray-100 p-3 border-b border-gray-200 rounded-t-xl">
-        <span>Nombres</span>
-        <span>Apellidos</span>
-        <span>Rol</span>
-        <span>Cédula</span>
-        <span>Correo</span>
-        <span className="text-center">Acciones</span>
+const EmpleadosCard = ({
+  empleados,
+  rolNameById,
+  onEdit,
+  onDelete,
+  onVerDetalles,
+  obtenerColorRol,
+}) => {
+  if (!empleados.length) {
+    return (
+      <div className="flex min-h-[260px] w-full items-center justify-center rounded-3xl border border-dashed border-slate-400 bg-slate-200 px-6 py-10 text-center shadow-sm">
+        <div>
+          <p className="text-sm font-bold text-slate-800">
+            No hay empleados registrados
+          </p>
+
+          <p className="mt-1 text-sm text-slate-600">
+            Registre un nuevo empleado para comenzar.
+          </p>
+        </div>
       </div>
+    );
+  }
 
-      <div className="divide-y divide-gray-200">
-        {empleados.length > 0 ? (
-          empleados.map((empleado, index) => (
-            <div
-              key={empleado.id}
-              className={`grid grid-cols-6 items-center px-3 py-2 ${
-                index % 2 === 0 ? "bg-gray-50" : "bg-white"
-              } hover:bg-gray-100 transition`}
-            >
-              <span>{empleado.nombres}</span>
-              <span>{empleado.apellidos}</span>
-              <span >{rolNameById[empleado.rolId] || "Sin rol"}</span>
-              <span>{empleado.cedula || "—"}</span>
-              <span>{empleado.correo || "Sin correo"}</span>
+  return (
+    <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+      {empleados.map((empleado) => {
+        const rolNombre = rolNameById?.[empleado.rolId] || "Sin rol";
 
-              <div className="flex justify-center gap-2">
+        return (
+          <div
+            key={empleado.id}
+            className="
+              flex
+              min-h-[360px]
+              w-full
+              flex-col
+              overflow-hidden
+              rounded-3xl
+              border
+              border-slate-300
+              bg-slate-200
+              shadow-md
+              transition
+              hover:-translate-y-1
+              hover:border-blue-400
+              hover:shadow-xl
+            "
+          >
+            <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-4 text-white">
+              <p className="text-sm font-medium text-cyan-100">
+                Empleado registrado
+              </p>
+
+              <h3 className="mt-1 truncate text-sm font-bold">
+                {empleado.nombres} {empleado.apellidos}
+              </h3>
+            </div>
+
+            <div className="flex flex-1 flex-col justify-between p-5">
+              <div className="space-y-4">
+                <InfoBox label="Rol" value={rolNombre} variant="blue" />
+
+                <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                  <InfoBox
+                    label="Cédula"
+                    value={empleado.cedula || "No registrada"}
+                  />
+
+                  <InfoBox
+                    label="Teléfono"
+                    value={empleado.telefono || "No registrado"}
+                  />
+                </div>
+
+                <InfoBox
+                  label="Correo"
+                  value={empleado.correo || "Sin correo"}
+                />
+
+                <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                  <InfoBox
+                    label="País"
+                    value={empleado.pais || "No registrado"}
+                  />
+
+                  <InfoBox
+                    label="Estado"
+                    value={empleado.estado || "Activo"}
+                    variant="green"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <button
+                  type="button"
                   onClick={() => onVerDetalles(empleado)}
-                  className="text-white text-sm px-3 py-1 rounded-md transition hover:scale-105"
-                  style={{ backgroundColor: "#1A2E81" }}
+                  className="rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-800"
                 >
                   Detalles
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => onEdit(empleado)}
-                  className="bg-white border border-gray-300 text-gray-800 text-sm px-3 py-1 rounded-md hover:bg-gray-100 hover:scale-105 transition"
+                  className="rounded-xl border border-slate-400 bg-slate-100 px-4 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-300"
                 >
                   Editar
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => onDelete(empleado)}
-                  className="bg-red-600 text-white text-sm px-3 py-1 rounded-md hover:bg-red-700 hover:scale-105 transition"
+                  className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
                 >
                   Eliminar
                 </button>
               </div>
             </div>
-          ))
-        ) : (
-          <div className="text-center text-gray-500 py-4">No hay empleados registrados.</div>
-        )}
-      </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const InfoBox = ({ label, value, variant = "default" }) => {
+  const styles = {
+    default: "border-slate-300 bg-slate-100 text-slate-800",
+    blue: "border-blue-200 bg-blue-100 text-blue-800",
+    green: "border-emerald-200 bg-emerald-100 text-emerald-800",
+  };
+
+  return (
+    <div className={`rounded-2xl border p-4 ${styles[variant]}`}>
+      <p className="text-sm font-semibold opacity-80">{label}</p>
+      <p className="mt-1 truncate text-sm font-bold">{value}</p>
     </div>
   );
 };

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 
 import {
-  fetchCostosDirectos,        
-  createCostoDirecto,        
-  updateCostoDirecto,      
-  deleteCostoDirecto,       
+  fetchCostosDirectos,
+  createCostoDirecto,
+  updateCostoDirecto,
+  deleteCostoDirecto,
 } from "../data/costosDirectos.js";
 
 export function useCostosDirectos() {
@@ -15,6 +15,7 @@ export function useCostosDirectos() {
   const load = async () => {
     try {
       setLoading(true);
+      setError("");
       const list = await fetchCostosDirectos();
       setItems(list);
       return list;
@@ -38,7 +39,10 @@ export function useCostosDirectos() {
       cantidad_material:
         payload.cantidad_material ?? payload.cantidadMaterial ?? 0,
       unidad_de_medida:
-        payload.unidad_de_medida ?? payload.unidadDeMedida ?? "",
+        payload.unidad_de_medida ??
+        payload.unidadMedida ??
+        payload.unidadDeMedida ??
+        "",
       precio_unitario:
         payload.precio_unitario ?? payload.precioUnitario ?? 0,
     };

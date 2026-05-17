@@ -1,75 +1,131 @@
 import React from "react";
 
 const MaterialesCard = ({ materiales, onEdit, onDelete, onVerDetalles }) => {
+  const money = (value) =>
+    Number(value ?? 0).toLocaleString("es-NI", {
+      style: "currency",
+      currency: "NIO",
+      minimumFractionDigits: 2,
+    });
+
   if (!materiales.length) {
     return (
-      <p className="text-gray-500 text-center mt-4 text-base">
-        No hay materiales registrados.
-      </p>
+      <div className="rounded-3xl border border-dashed border-slate-400 bg-slate-200 px-6 py-10 text-center shadow-sm">
+        <p className="text-sm font-bold text-slate-800">
+          No hay materiales registrados
+        </p>
+        <p className="mt-1 text-sm text-slate-600">
+          Agregue un nuevo material para comenzar.
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-wrap gap-4 justify-start">
-      {materiales.map((material) => (
-        <div
-          key={material.id}
-          className="bg-[#F9FAFB] border border-gray-200 rounded-2xl shadow-md 
-                     p-5 w-[290px] hover:shadow-lg hover:scale-[1.02] 
-                     transition-all duration-200"
-        >
-          <h3 className="font-semibold text-[var(--color-primary)] text-[17px] mb-2 text-center">
-            {material.nombre_material}
-          </h3>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      {materiales.map((material) => {
+        const stock = Number(material.cantidad_en_stock ?? 0);
+        const precio = Number(material.precio_unitario ?? 0);
+        const valorTotal = stock * precio;
 
-          <div className="text-[15px] text-gray-700 space-y-1 mb-2">
-            <p>
-              <strong>Categoría:</strong>{" "}
-              {material.categoriaNombre || "Sin categoría"}
-            </p>
-            <p>
-              <strong>Unidad:</strong> {material.unidad_de_medida || "—"}
-            </p>
-            <p>
-              <strong>Stock:</strong> {material.cantidad_en_stock ?? 0}
-            </p>
-            <p>
-              <strong>Precio:</strong>{" "}
-              {material.precio_unitario
-                ? Number(material.precio_unitario).toLocaleString("es-NI", {
-                    style: "currency",
-                    currency: "NIO",
-                    minimumFractionDigits: 2,
-                  })
-                : "C$ 0.00"}
-            </p>
+        return (
+          <div
+            key={material.id}
+            className="
+              overflow-hidden rounded-3xl
+              border border-slate-300
+              bg-slate-200
+              shadow-md transition
+              hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl
+            "
+          >
+            <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-cyan-900 px-5 py-4 text-white">
+              <p className="text-sm font-medium text-cyan-100">Material</p>
+
+              <h3 className="mt-1 truncate text-sm font-bold">
+                {material.nombre_material}
+              </h3>
+            </div>
+
+            <div className="space-y-4 p-5">
+              <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4">
+                <p className="text-sm font-semibold text-slate-600">
+                  Categoría
+                </p>
+                <p className="mt-1 text-sm font-bold text-slate-900">
+                  {material.categoriaNombre || "Sin categoría"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4">
+                  <p className="text-sm font-semibold text-slate-600">
+                    Unidad
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-slate-900">
+                    {material.unidad_de_medida || "—"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-blue-200 bg-blue-100 p-4">
+                  <p className="text-sm font-semibold text-blue-700">
+                    Stock
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-blue-800">
+                    {stock.toLocaleString("es-NI")}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-100 p-4">
+                  <p className="text-sm font-semibold text-emerald-700">
+                    Precio
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-emerald-800">
+                    {money(precio)}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-100 p-4">
+                  <p className="text-sm font-semibold text-emerald-700">
+                    Valor
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-emerald-800">
+                    {money(valorTotal)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={() => onVerDetalles(material)}
+                  className="rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-800"
+                >
+                  Detalles
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onEdit(material)}
+                  className="rounded-xl border border-slate-400 bg-slate-100 px-4 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-300"
+                >
+                  Editar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onDelete(material)}
+                  className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
           </div>
-
-          <div className="flex justify-center gap-2 mt-3">
-            <button
-              onClick={() => onVerDetalles(material)}
-              className="bg-[var(--color-primary)] text-white text-sm px-4 py-1.5 rounded-md hover:scale-105 transition"
-              style={{ backgroundColor: "#1A2E81" }}
-            >
-              Detalles
-            </button>
-
-            <button
-              onClick={() => onEdit(material)}
-              className="bg-white border border-gray-300 text-gray-800 text-sm px-4 py-1.5 rounded-md hover:bg-gray-100 hover:scale-105 transition"
-            >
-              Editar
-            </button>
-
-            <button
-              onClick={() => onDelete(material)}
-              className="bg-red-500 text-white text-sm px-4 py-1.5 rounded-md hover:bg-red-600 hover:scale-105 transition"
-            >
-              Eliminar
-            </button>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

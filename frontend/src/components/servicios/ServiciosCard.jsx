@@ -1,70 +1,126 @@
 import React from "react";
 
-export default function ServiciosCard({ servicios, onEdit, onDelete, onVerDetalles }) {
+export default function ServiciosCard({
+  servicios,
+  onEdit,
+  onDelete,
+  onVerDetalles,
+}) {
+  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
+
   if (!servicios.length) {
     return (
-      <p className="text-gray-500 text-center mt-4 text-base">
-        No hay servicios registrados.
-      </p>
+      <div className="flex min-h-[260px] w-full items-center justify-center rounded-3xl border border-dashed border-slate-400 bg-slate-200 px-6 py-10 text-center shadow-sm">
+        <div>
+          <p className="text-sm font-bold text-slate-800">
+            No hay servicios registrados
+          </p>
+
+          <p className="mt-1 text-sm text-slate-600">
+            Registre un nuevo servicio para comenzar.
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-wrap gap-4 justify-start">
+    <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
       {servicios.map((s) => (
         <div
           key={s.id}
-          className="bg-[#F9FAFB] border border-gray-200 rounded-2xl shadow-md 
-                     p-5 w-[310px] hover:shadow-lg hover:scale-[1.02] 
-                     transition-all duration-200"
+          className="
+            flex
+            min-h-[360px]
+            w-full
+            flex-col
+            overflow-hidden
+            rounded-3xl
+            border
+            border-slate-300
+            bg-slate-200
+            shadow-md
+            transition
+            hover:-translate-y-1
+            hover:border-blue-400
+            hover:shadow-xl
+          "
         >
-          <h3 className="font-semibold text-[var(--color-primary)] text-[17px] mb-2 text-center">
-            {s.nombreServicio}
-          </h3>
+          <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-4 text-white">
+            <p className="text-sm font-medium text-cyan-100">
+              Servicio registrado
+            </p>
 
-          <div className="text-[15px] text-gray-700 space-y-1 mb-3">
-            <p>
-              <strong>Descripción:</strong> {s.descripcion || "No especificada"}
-            </p>
-            <p>
-              <strong>Costo Directo:</strong>{" "}
-              C${s.totalCostoDirecto.toLocaleString("es-NI")}
-            </p>
-            <p>
-              <strong>Costo Indirecto:</strong>{" "}
-              C${s.totalCostoIndirecto.toLocaleString("es-NI")}
-            </p>
-            <p>
-              <strong>Costo de Venta:</strong>{" "}
-              <span className="text-green-700 font-bold">
-                C${s.costoVenta.toLocaleString("es-NI")}
-              </span>
-            </p>
+            <h3 className="mt-1 truncate text-sm font-bold">
+              {s.nombreServicio || "Sin nombre"}
+            </h3>
           </div>
 
-          <div className="flex justify-center gap-2 mt-3">
-            <button
-              onClick={() => onVerDetalles(s)}
-              className="bg-[var(--color-primary)] text-white text-sm px-4 py-1.5 rounded-md hover:scale-105 transition"
-              style={{ backgroundColor: "#1A2E81" }}
-            >
-              Detalles
-            </button>
-            <button
-              onClick={() => onEdit(s)}
-              className="bg-white border border-gray-300 text-gray-800 text-sm px-4 py-1.5 rounded-md hover:bg-gray-100 hover:scale-105 transition"
-            >
-              Editar
-            </button>
-            <button
-              onClick={() => onDelete(s)}
-              className="bg-red-500 text-white text-sm px-4 py-1.5 rounded-md hover:bg-red-600 hover:scale-105 transition"
-            >
-              Eliminar
-            </button>
+          <div className="flex flex-1 flex-col justify-between p-5">
+            <div className="space-y-4">
+              <InfoBox
+                label="Descripción"
+                value={s.descripcion || "No especificada"}
+              />
+
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                <InfoBox
+                  label="Costo Directo"
+                  value={`C$${money(s.totalCostoDirecto)}`}
+                />
+
+                <InfoBox
+                  label="Costo Indirecto"
+                  value={`C$${money(s.totalCostoIndirecto)}`}
+                />
+              </div>
+
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-100 p-4 text-emerald-800">
+                <p className="text-sm font-semibold opacity-80">
+                  Costo de Venta
+                </p>
+
+                <p className="mt-1 text-sm font-bold">
+                  C${money(s.costoVenta)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => onVerDetalles(s)}
+                className="rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-800"
+              >
+                Detalles
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onEdit(s)}
+                className="rounded-xl border border-slate-400 bg-slate-100 px-4 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-300"
+              >
+                Editar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onDelete(s)}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+              >
+                Eliminar
+              </button>
+            </div>
           </div>
         </div>
       ))}
     </div>
   );
 }
+
+const InfoBox = ({ label, value }) => (
+  <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4 text-slate-800">
+    <p className="text-sm font-semibold text-slate-600">{label}</p>
+    <p className="mt-1 text-sm font-bold text-slate-900">{value}</p>
+  </div>
+);

@@ -15,7 +15,9 @@ const toUI = (d) => ({
 
   costoMaterial: Number(d.costo_material ?? 0),
   manoObra: Number(d.mano_obra ?? 0),
-  equiposTransporteHerramientas: Number(d.equipos_transporte_herramientas ?? 0),
+  equiposTransporteHerramientas: Number(
+    d.equipos_transporte_herramientas ?? 0
+  ),
   totalCostoDirecto: Number(d.total_costo_directo ?? 0),
 
   fechaCreacion: d.fecha_creacion ?? "",
@@ -47,15 +49,40 @@ export const createCostoDirecto = async (d) => {
 
 export const updateCostoDirecto = async (id, d) => {
   const body = {
-    servicio_id: d.servicioId ? Number(d.servicioId) : undefined,
-    material_id: d.materialId ? Number(d.materialId) : undefined,
+    servicio_id:
+      d.servicio_id !== undefined
+        ? Number(d.servicio_id)
+        : d.servicioId !== undefined
+        ? Number(d.servicioId)
+        : undefined,
+
+    material_id:
+      d.material_id !== undefined
+        ? Number(d.material_id)
+        : d.materialId !== undefined
+        ? Number(d.materialId)
+        : undefined,
+
     cantidad_material:
-      d.cantidadMaterial !== undefined
+      d.cantidad_material !== undefined
+        ? Number(d.cantidad_material)
+        : d.cantidadMaterial !== undefined
         ? Number(d.cantidadMaterial)
         : undefined,
-    unidad_de_medida: d.unidadMedida ?? undefined,
+
+    unidad_de_medida:
+      d.unidad_de_medida !== undefined
+        ? d.unidad_de_medida
+        : d.unidadMedida !== undefined
+        ? d.unidadMedida
+        : undefined,
+
     precio_unitario:
-      d.precioUnitario !== undefined ? Number(d.precioUnitario) : undefined,
+      d.precio_unitario !== undefined
+        ? Number(d.precio_unitario)
+        : d.precioUnitario !== undefined
+        ? Number(d.precioUnitario)
+        : undefined,
   };
 
   const response = await api(`/costos_directos/${id}`, {

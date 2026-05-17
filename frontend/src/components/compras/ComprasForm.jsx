@@ -35,7 +35,19 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
   );
 
   useEffect(() => {
-    if (!initialData) return;
+    if (!initialData) {
+      setForm({
+        proveedor_id: "",
+        empleado_id: "",
+        numero_factura: "",
+        fecha_compra: "",
+        estado: "Pendiente",
+        observaciones: "",
+      });
+      setMaterialesAsignados([]);
+      return;
+    }
+
     if (materiales.length === 0 || detalles.length === 0) return;
 
     const compraId = Number(initialData.compra_id ?? initialData.id);
@@ -58,7 +70,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
         unidad: d.unidadDeMedida,
         cantidad: d.cantidad,
         precio_unitario: d.precio_unitario,
-        subtotal: d.cantidad * d.precio_unitario,
+        subtotal: Number(d.cantidad) * Number(d.precio_unitario),
       }));
 
     setMaterialesAsignados(asignados);
@@ -66,13 +78,17 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
 
   const empleadosFiltrados = useMemo(() => {
     if (!busquedaEmpleado.trim() || form.empleado_id) return [];
+
     return empleados.filter((e) =>
-      `${e.nombres} ${e.apellidos}`.toLowerCase().includes(busquedaEmpleado.toLowerCase())
+      `${e.nombres} ${e.apellidos}`
+        .toLowerCase()
+        .includes(busquedaEmpleado.toLowerCase())
     );
   }, [busquedaEmpleado, empleados, form.empleado_id]);
 
   const proveedoresFiltrados = useMemo(() => {
     if (!busquedaProveedor.trim() || form.proveedor_id) return [];
+
     return proveedores.filter((p) =>
       p.nombre_empresa.toLowerCase().includes(busquedaProveedor.toLowerCase())
     );
@@ -80,6 +96,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
 
   const materialesFiltrados = useMemo(() => {
     if (!busquedaMaterial.trim()) return [];
+
     return materiales.filter((m) =>
       m.nombre_material.toLowerCase().includes(busquedaMaterial.toLowerCase())
     );
@@ -87,29 +104,40 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setForm((prev) => ({ ...prev, [name]: value }));
+
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleAsignarMaterial = () => {
-    if (!materialSeleccionado)
-      return setErrors((prev) => ({
+    if (!materialSeleccionado) {
+      setErrors((prev) => ({
         ...prev,
         asignarMaterial: "Debe seleccionar un material.",
       }));
+      return;
+    }
 
-    const mat = materiales.find((m) => Number(m.id) === Number(materialSeleccionado));
+    const mat = materiales.find(
+      (m) => Number(m.id) === Number(materialSeleccionado)
+    );
+
     if (!mat) return;
 
     const existe = materialesAsignados.some(
       (m) => Number(m.material_id) === Number(mat.id)
     );
 
-    if (existe)
-      return setErrors((prev) => ({
+    if (existe) {
+      setErrors((prev) => ({
         ...prev,
         asignarMaterial: "Este material ya está asignado.",
       }));
+      return;
+    }
+
+    const precio = Number(mat.precio_unitario ?? 0);
 
     setMaterialesAsignados((prev) => [
       ...prev,
@@ -119,13 +147,14 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
         nombre: mat.nombre_material,
         unidad: mat.unidad_de_medida,
         cantidad: 1,
-        precio_unitario: mat.precio_unitario,
-        subtotal: mat.precio_unitario,
+        precio_unitario: precio,
+        subtotal: precio,
       },
     ]);
 
     setBusquedaMaterial("");
     setMaterialSeleccionado("");
+    setErrors((prev) => ({ ...prev, asignarMaterial: "" }));
   };
 
   const handleQuitarMaterial = async (mat) => {
@@ -149,12 +178,16 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
 
   const validateForm = () => {
     const e = {};
+
     if (!form.empleado_id) e.empleado_id = "Seleccione un empleado.";
     if (!form.proveedor_id) e.proveedor_id = "Seleccione un proveedor.";
     if (!form.numero_factura.trim()) e.numero_factura = "Campo obligatorio.";
     if (!form.fecha_compra) e.fecha_compra = "Seleccione una fecha.";
-    if (materialesAsignados.length === 0)
+
+    if (materialesAsignados.length === 0) {
       e.asignarMaterial = "Debe asignar al menos un material.";
+    }
+
     return e;
   };
 
@@ -162,7 +195,11 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
     e.preventDefault();
 
     const eForm = validateForm();
-    if (Object.keys(eForm).length > 0) return setErrors(eForm);
+
+    if (Object.keys(eForm).length > 0) {
+      setErrors(eForm);
+      return;
+    }
 
     const compraGuardada = await onSubmit(form);
     const compraId = Number(compraGuardada.id);
@@ -193,344 +230,471 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
     onClose();
   };
 
-  const totalCompra = materialesAsignados.reduce((a, b) => a + b.subtotal, 0);
+  const totalCompra = materialesAsignados.reduce(
+    (a, b) => a + Number(b.subtotal ?? 0),
+    0
+  );
+
+  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
+
+  const inputClass =
+    "w-full min-w-0 rounded-xl border border-slate-300 bg-slate-100 px-3 py-3 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-sm placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100 sm:px-4";
+
+  const labelClass = "mb-2 block text-sm font-semibold text-slate-700";
+  const errorClass = "mt-1 text-sm font-medium text-red-600";
 
   return (
-    <div className="fixed inset-0 flex justify-center items-start mt-[100px] z-50">
+    <div
+      className="
+        fixed left-0 right-0 bottom-0 top-16 z-40
+        flex items-center justify-center overflow-y-auto
+        bg-slate-900/35 px-4 py-6 lg:left-48
+      "
+    >
       <form
         onSubmit={handleSubmit}
         className="
-          bg-[#F9FAFB] rounded-2xl shadow-2xl
-          w-full max-w-3xl p-8
-          max-h-[90vh] overflow-y-auto
+          flex w-full max-w-6xl max-h-[calc(100dvh-96px)]
+          flex-col overflow-hidden rounded-3xl
+          border border-slate-300 bg-slate-100 shadow-2xl
         "
       >
-        <h2 className="text-2xl font-semibold text-[#1A2E81] text-center mb-6">
-          {isEdit ? "Editar Compra" : "Nueva Compra"}
-        </h2>
-
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-900 mb-1">
-            Empleado
-          </label>
-
-          {!empleadoAsignado && (
-            <input
-              type="text"
-              placeholder="Buscar empleado..."
-              value={busquedaEmpleado}
-              onChange={(e) => setBusquedaEmpleado(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
-          )}
-
-          {busquedaEmpleado && empleadosFiltrados.length > 0 && (
-            <div className="border rounded bg-white shadow max-h-40 overflow-y-auto mt-1">
-              {empleadosFiltrados.map((e) => (
-                <div
-                  key={e.id}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() =>
-                    setForm((prev) => ({ ...prev, empleado_id: e.id })) ||
-                    setBusquedaEmpleado("")
-                  }
-                >
-                  {e.nombres} {e.apellidos} — {e.rolNombre}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {empleadoAsignado && (
-            <div className="mt-3 bg-gray-100 p-3 rounded flex justify-between">
-              <p className="font-medium">
-                {empleadoAsignado.nombres} {empleadoAsignado.apellidos}
+        <div className="shrink-0 bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-5 text-white shadow-lg sm:px-7">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-medium text-cyan-100">
+                Gestión de compras
               </p>
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((prev) => ({ ...prev, empleado_id: "" }))
-                }
-                className="text-red-600 hover:underline"
-              >
-                Cambiar
-              </button>
+
+              <h2 className="mt-1 text-sm font-bold tracking-tight text-white">
+                {isEdit ? "Editar Compra" : "Nueva Compra"}
+              </h2>
             </div>
-          )}
 
-          {errors.empleado_id && (
-            <p className="text-red-600 text-sm">{errors.empleado_id}</p>
-          )}
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-900 mb-1">
-            Proveedor
-          </label>
-
-          {!proveedorAsignado && (
-            <input
-              type="text"
-              placeholder="Buscar proveedor..."
-              value={busquedaProveedor}
-              onChange={(e) => setBusquedaProveedor(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
-          )}
-
-          {busquedaProveedor && proveedoresFiltrados.length > 0 && (
-            <div className="border rounded bg-white shadow max-h-40 overflow-y-auto mt-1">
-              {proveedoresFiltrados.map((p) => (
-                <div
-                  key={p.id}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() =>
-                    setForm((prev) => ({ ...prev, proveedor_id: p.id })) ||
-                    setBusquedaProveedor("")
-                  }
-                >
-                  {p.nombre_empresa}
-                </div>
-              ))}
+            <div className="rounded-2xl border border-white/10 bg-slate-900/50 px-4 py-3 text-left shadow-sm backdrop-blur sm:text-right">
+              <p className="text-sm font-medium text-cyan-100">Total compra</p>
+              <p className="mt-1 text-sm font-bold text-white">
+                C${money(totalCompra)}
+              </p>
             </div>
-          )}
-
-          {proveedorAsignado && (
-            <div className="mt-3 bg-gray-100 p-3 rounded flex justify-between">
-              <p className="font-medium">{proveedorAsignado.nombre_empresa}</p>
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((prev) => ({ ...prev, proveedor_id: "" }))
-                }
-                className="text-red-600 hover:underline"
-              >
-                Cambiar
-              </button>
-            </div>
-          )}
-
-          {errors.proveedor_id && (
-            <p className="text-red-600 text-sm">{errors.proveedor_id}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Número Factura
-            </label>
-            <input
-              type="text"
-              name="numero_factura"
-              value={form.numero_factura}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
-            {errors.numero_factura && (
-              <p className="text-red-600 text-sm">{errors.numero_factura}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Fecha Compra
-            </label>
-            <input
-              type="date"
-              name="fecha_compra"
-              value={form.fecha_compra}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
-            {errors.fecha_compra && (
-              <p className="text-red-600 text-sm">{errors.fecha_compra}</p>
-            )}
           </div>
         </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-900 mb-1">
-            Estado
-          </label>
+        <div className="flex-1 space-y-5 overflow-y-auto bg-slate-100 p-4 sm:p-6">
+          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
+            <div className="mb-5 border-b border-slate-300 pb-4">
+              <h3 className="text-sm font-bold text-slate-900">
+                Información general
+              </h3>
 
-          <select
-            name="estado"
-            value={form.estado}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-md p-2"
-          >
-            <option value="Pendiente">Pendiente</option>
-            <option value="Pagada">Pagada</option>
-            <option value="Cancelada">Cancelada</option>
-          </select>
-        </div>
+              <p className="mt-1 text-sm text-slate-600">
+                Seleccione empleado, proveedor y datos de la factura.
+              </p>
+            </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-900 mb-1">
-            Observaciones
-          </label>
-          <textarea
-            name="observaciones"
-            value={form.observaciones}
-            onChange={handleChange}
-            rows={3}
-            className="w-full border border-gray-300 rounded-md p-2"
-          />
-        </div>
-
-        <h3 className="text-lg font-semibold text-[#1A2E81] mb-2">
-          Materiales Asignados
-        </h3>
-
-        <div className="bg-[#F9FAFB] border p-4 rounded-xl shadow-sm mb-4">
-          <div className="grid grid-cols-12 gap-3 items-end">
-            <div className="col-span-8">
-              <label className="block text-sm font-medium text-gray-800">
-                Buscar material
-              </label>
-              <input
-                type="text"
-                placeholder="Escribe para buscar..."
-                value={busquedaMaterial}
-                onChange={(e) => setBusquedaMaterial(e.target.value)}
-                className="w-full border border-gray-300 rounded-md p-2"
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+              <SearchBox
+                label="Empleado"
+                value={busquedaEmpleado}
+                onChange={setBusquedaEmpleado}
+                selected={empleadoAsignado}
+                selectedText={
+                  empleadoAsignado
+                    ? `${empleadoAsignado.nombres} ${empleadoAsignado.apellidos}`
+                    : ""
+                }
+                placeholder="Buscar empleado..."
+                error={errors.empleado_id}
+                results={empleadosFiltrados}
+                renderItem={(e) => `${e.nombres} ${e.apellidos} — ${e.rolNombre}`}
+                onSelect={(e) => {
+                  setForm((prev) => ({ ...prev, empleado_id: e.id }));
+                  setBusquedaEmpleado("");
+                }}
+                onClear={() => setForm((prev) => ({ ...prev, empleado_id: "" }))}
               />
 
-              {busquedaMaterial && (
-                <select
-                  value={materialSeleccionado}
-                  onChange={(e) => setMaterialSeleccionado(e.target.value)}
-                  className="w-full mt-2 border border-gray-300 rounded-md p-2"
-                >
-                  <option value="">Selecciona un material...</option>
-                  {materialesFiltrados.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.nombre_material} — {m.unidad_de_medida}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <SearchBox
+                label="Proveedor"
+                value={busquedaProveedor}
+                onChange={setBusquedaProveedor}
+                selected={proveedorAsignado}
+                selectedText={proveedorAsignado?.nombre_empresa || ""}
+                placeholder="Buscar proveedor..."
+                error={errors.proveedor_id}
+                results={proveedoresFiltrados}
+                renderItem={(p) => p.nombre_empresa}
+                onSelect={(p) => {
+                  setForm((prev) => ({ ...prev, proveedor_id: p.id }));
+                  setBusquedaProveedor("");
+                }}
+                onClear={() => setForm((prev) => ({ ...prev, proveedor_id: "" }))}
+              />
 
-              {errors.asignarMaterial && (
-                <p className="text-red-600 text-sm mt-1">{errors.asignarMaterial}</p>
-              )}
+              <div>
+                <label className={labelClass}>Número Factura</label>
+                <input
+                  type="text"
+                  name="numero_factura"
+                  value={form.numero_factura}
+                  onChange={handleChange}
+                  placeholder="Ejemplo: FAC-001"
+                  className={inputClass}
+                />
+                {errors.numero_factura && (
+                  <p className={errorClass}>{errors.numero_factura}</p>
+                )}
+              </div>
+
+              <div>
+                <label className={labelClass}>Fecha Compra</label>
+                <input
+                  type="date"
+                  name="fecha_compra"
+                  value={form.fecha_compra}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+                {errors.fecha_compra && (
+                  <p className={errorClass}>{errors.fecha_compra}</p>
+                )}
+              </div>
+
+              <div>
+                <label className={labelClass}>Estado</label>
+                <select
+                  name="estado"
+                  value={form.estado}
+                  onChange={handleChange}
+                  className={inputClass}
+                >
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="Pagada">Pagada</option>
+                  <option value="Cancelada">Cancelada</option>
+                </select>
+              </div>
+
+              <div className="lg:col-span-2">
+                <label className={labelClass}>Observaciones</label>
+                <textarea
+                  name="observaciones"
+                  value={form.observaciones}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Observaciones de la compra"
+                  className={`${inputClass} resize-none`}
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
+            <div className="mb-5 border-b border-slate-300 pb-4">
+              <h3 className="text-sm font-bold text-slate-900">
+                Materiales asignados
+              </h3>
+
+              <p className="mt-1 text-sm text-slate-600">
+                Agregue los materiales comprados.
+              </p>
             </div>
 
-            <div className="col-span-4">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+              <div>
+                <label className={labelClass}>Buscar material</label>
+
+                <input
+                  type="text"
+                  placeholder="Escribe para buscar..."
+                  value={busquedaMaterial}
+                  onChange={(e) => setBusquedaMaterial(e.target.value)}
+                  className={inputClass}
+                />
+
+                {busquedaMaterial && (
+                  <select
+                    value={materialSeleccionado}
+                    onChange={(e) => setMaterialSeleccionado(e.target.value)}
+                    className={`${inputClass} mt-3`}
+                  >
+                    <option value="">Selecciona un material...</option>
+                    {materialesFiltrados.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nombre_material} — {m.unidad_de_medida}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {errors.asignarMaterial && (
+                  <p className={errorClass}>{errors.asignarMaterial}</p>
+                )}
+              </div>
+
               <button
                 type="button"
                 onClick={handleAsignarMaterial}
-                className="w-full h-[42px] bg-[#1A2E81] text-white rounded-md shadow hover:bg-[#2538a3]"
+                className="
+                  h-fit rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700
+                  px-6 py-3 text-sm font-bold text-white shadow-lg
+                  transition hover:scale-[1.01] hover:shadow-xl
+                "
               >
                 Agregar
               </button>
             </div>
-          </div>
+
+            {materialesAsignados.length > 0 && (
+              <div className="mt-5 overflow-hidden rounded-3xl border border-slate-300 bg-slate-100 shadow-sm">
+                <div className="hidden overflow-x-auto xl:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-900 text-slate-100">
+                      <tr>
+                        <th className="px-4 py-4 text-left font-bold">Material</th>
+                        <th className="px-4 py-4 text-center font-bold">Unidad</th>
+                        <th className="px-4 py-4 text-center font-bold">Cantidad</th>
+                        <th className="px-4 py-4 text-center font-bold">Precio Unit.</th>
+                        <th className="px-4 py-4 text-right font-bold">Subtotal</th>
+                        <th className="px-4 py-4 text-center font-bold">Acción</th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-slate-300">
+                      {materialesAsignados.map((m) => (
+                        <tr key={m.material_id} className="bg-slate-100 hover:bg-blue-100">
+                          <td className="px-4 py-4 font-bold text-slate-900">{m.nombre}</td>
+                          <td className="px-4 py-4 text-center text-slate-700">{m.unidad}</td>
+
+                          <td className="px-4 py-4 text-center">
+                            <input
+                              type="number"
+                              value={m.cantidad}
+                              min="1"
+                              step="1"
+                              onChange={(e) => {
+                                const q = Number(e.target.value);
+                                setMaterialesAsignados((prev) =>
+                                  prev.map((x) =>
+                                    x.material_id === m.material_id
+                                      ? { ...x, cantidad: q, subtotal: q * x.precio_unitario }
+                                      : x
+                                  )
+                                );
+                              }}
+                              className="w-20 rounded-xl border border-slate-300 bg-slate-100 p-2 text-center text-sm outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                            />
+                          </td>
+
+                          <td className="px-4 py-4 text-center">
+                            <input
+                              type="number"
+                              value={m.precio_unitario}
+                              min="0.01"
+                              step="0.01"
+                              onChange={(e) => {
+                                const p = Number(e.target.value);
+                                setMaterialesAsignados((prev) =>
+                                  prev.map((x) =>
+                                    x.material_id === m.material_id
+                                      ? { ...x, precio_unitario: p, subtotal: p * x.cantidad }
+                                      : x
+                                  )
+                                );
+                              }}
+                              className="w-24 rounded-xl border border-slate-300 bg-slate-100 p-2 text-center text-sm outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                            />
+                          </td>
+
+                          <td className="px-4 py-4 text-right font-bold text-emerald-700">
+                            C${money(m.subtotal)}
+                          </td>
+
+                          <td className="px-4 py-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleQuitarMaterial(m)}
+                              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                            >
+                              Quitar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 p-3 xl:hidden">
+                  {materialesAsignados.map((m) => (
+                    <div
+                      key={m.material_id}
+                      className="rounded-2xl border border-slate-300 bg-slate-200 p-4"
+                    >
+                      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{m.nombre}</p>
+                          <p className="text-sm text-slate-600">Unidad: {m.unidad}</p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleQuitarMaterial(m)}
+                          className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                        >
+                          Quitar
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className={labelClass}>Cantidad</label>
+                          <input
+                            type="number"
+                            value={m.cantidad}
+                            min="1"
+                            step="1"
+                            onChange={(e) => {
+                              const q = Number(e.target.value);
+                              setMaterialesAsignados((prev) =>
+                                prev.map((x) =>
+                                  x.material_id === m.material_id
+                                    ? { ...x, cantidad: q, subtotal: q * x.precio_unitario }
+                                    : x
+                                )
+                              );
+                            }}
+                            className={inputClass}
+                          />
+                        </div>
+
+                        <div>
+                          <label className={labelClass}>Precio Unitario</label>
+                          <input
+                            type="number"
+                            value={m.precio_unitario}
+                            min="0.01"
+                            step="0.01"
+                            onChange={(e) => {
+                              const p = Number(e.target.value);
+                              setMaterialesAsignados((prev) =>
+                                prev.map((x) =>
+                                  x.material_id === m.material_id
+                                    ? { ...x, precio_unitario: p, subtotal: p * x.cantidad }
+                                    : x
+                                )
+                              );
+                            }}
+                            className={inputClass}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-100 p-4">
+                        <p className="text-sm font-semibold text-emerald-700">Subtotal</p>
+                        <p className="mt-1 text-sm font-bold text-emerald-900">
+                          C${money(m.subtotal)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-slate-300 bg-slate-200 p-4 text-right">
+                  <p className="text-sm font-semibold text-slate-600">Total</p>
+                  <p className="text-sm font-bold text-emerald-800">
+                    C${money(totalCompra)}
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
         </div>
 
-        {materialesAsignados.length > 0 && (
-          <div className="overflow-auto rounded-xl border bg-[#F9FAFB] shadow-sm">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-100 border-b">
-                <tr>
-                  <th className="p-3 text-left font-semibold">Material</th>
-                  <th className="p-3 text-center font-semibold">Unidad</th>
-                  <th className="p-3 text-center font-semibold">Cantidad</th>
-                  <th className="p-3 text-center font-semibold">Precio Unit.</th>
-                  <th className="p-3 text-right font-semibold">Subtotal</th>
-                  <th className="p-3 text-center"></th>
-                </tr>
-              </thead>
+        <div className="shrink-0 border-t border-slate-300 bg-slate-100 px-4 py-4 sm:px-6">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 sm:w-auto"
+            >
+              Cancelar
+            </button>
 
-              <tbody>
-                {materialesAsignados.map((m) => (
-                  <tr key={m.material_id} className="border-b hover:bg-gray-50">
-                    <td className="p-3">{m.nombre}</td>
-                    <td className="p-3 text-center">{m.unidad}</td>
-
-                    <td className="p-3 text-center">
-                      <input
-                        type="number"
-                        value={m.cantidad}
-                        min="1"
-                        step="1"
-                        onChange={(e) => {
-                          const q = Number(e.target.value);
-                          setMaterialesAsignados((prev) =>
-                            prev.map((x) =>
-                              x.material_id === m.material_id
-                                ? { ...x, cantidad: q, subtotal: q * x.precio_unitario }
-                                : x
-                            )
-                          );
-                        }}
-                        className="w-20 border rounded p-1 text-center"
-                      />
-                    </td>
-
-                    <td className="p-3 text-center">
-                      <input
-                        type="number"
-                        value={m.precio_unitario}
-                        min="0.01"
-                        step="0.01"
-                        onChange={(e) => {
-                          const p = Number(e.target.value);
-                          setMaterialesAsignados((prev) =>
-                            prev.map((x) =>
-                              x.material_id === m.material_id
-                                ? { ...x, precio_unitario: p, subtotal: p * x.cantidad }
-                                : x
-                            )
-                          );
-                        }}
-                        className="w-24 border rounded p-1 text-center"
-                      />
-                    </td>
-
-                    <td className="p-3 text-right font-semibold text-green-700">
-                      C${m.subtotal.toLocaleString("es-NI")}
-                    </td>
-
-                    <td className="p-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleQuitarMaterial(m)}
-                        className="text-red-600 hover:underline text-sm"
-                      >
-                        Quitar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="p-4 text-right font-bold text-lg text-red-700">
-              Total: C${totalCompra.toLocaleString("es-NI")}
-            </div>
+            <button
+              type="submit"
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl sm:w-auto"
+            >
+              {isEdit ? "Actualizar Compra" : "Guardar Compra"}
+            </button>
           </div>
-        )}
-
-        <div className="flex justify-center gap-6 mt-10">
-          <button
-            type="submit"
-            className="px-10 py-3 text-white rounded-md shadow-md"
-            style={{ backgroundColor: "#1A2E81" }}
-          >
-            {isEdit ? "Actualizar" : "Guardar"}
-          </button>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-10 py-3 bg-gray-300 text-gray-900 rounded-md shadow-md hover:bg-gray-400"
-          >
-            Cancelar
-          </button>
         </div>
       </form>
     </div>
   );
 }
+
+const SearchBox = ({
+  label,
+  value,
+  onChange,
+  selected,
+  selectedText,
+  placeholder,
+  error,
+  results,
+  renderItem,
+  onSelect,
+  onClear,
+}) => {
+  const inputClass =
+    "w-full min-w-0 rounded-xl border border-slate-300 bg-slate-100 px-3 py-3 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-sm placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100 sm:px-4";
+
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-semibold text-slate-700">
+        {label}
+      </label>
+
+      {!selected && (
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={inputClass}
+        />
+      )}
+
+      {value && results.length > 0 && (
+        <div className="mt-2 max-h-44 overflow-y-auto rounded-2xl border border-slate-300 bg-slate-100 shadow-lg">
+          {results.map((item) => (
+            <button
+              type="button"
+              key={item.id}
+              onClick={() => onSelect(item)}
+              className="block w-full px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-100"
+            >
+              {renderItem(item)}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {selected && (
+        <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl border border-slate-300 bg-slate-100 p-4">
+          <p className="text-sm font-bold text-slate-800">{selectedText}</p>
+
+          <button
+            type="button"
+            onClick={onClear}
+            className="rounded-xl bg-red-100 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-200"
+          >
+            Cambiar
+          </button>
+        </div>
+      )}
+
+      {error && <p className="mt-1 text-sm font-medium text-red-600">{error}</p>}
+    </div>
+  );
+};

@@ -11,15 +11,15 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
       await reloadDetalles();
       await reloadEmpleados();
     };
-    load();
-  }, [vehiculo]);
+
+    if (vehiculo) load();
+  }, [vehiculo, reloadDetalles, reloadEmpleados]);
 
   const empleadosAsignados = useMemo(() => {
     if (!vehiculo?.id) return [];
 
     const detallesVehiculo = detalles.filter(
-      (d) =>
-        Number(d.vehiculoId ?? d.vehiculo_id) === Number(vehiculo.id)
+      (d) => Number(d.vehiculoId ?? d.vehiculo_id) === Number(vehiculo.id)
     );
 
     return detallesVehiculo
@@ -27,6 +27,7 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
         const emp = empleados.find(
           (e) => Number(e.id) === Number(d.empleadoId ?? d.empleado_id)
         );
+
         if (!emp) return null;
 
         return {
@@ -40,6 +41,8 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
       .filter(Boolean);
   }, [detalles, empleados, vehiculo]);
 
+  if (!vehiculo) return null;
+
   const proveedorNombre =
     vehiculo.proveedorNombre ||
     vehiculo.proveedor ||
@@ -47,101 +50,193 @@ const VehiculosDetails = ({ vehiculo, onClose, onEdit, onDelete }) => {
     vehiculo.proveedores?.nombre_proveedor ||
     "—";
 
-  return (
-    <div className="fixed inset-0 flex justify-center items-start mt-[120px] z-50">
-      <div className="bg-[#F9FAFB] rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh]">
-        <h2 className="text-2xl font-semibold text-[var(--color-primary)] mb-4 text-center">
-          {vehiculo.marca} {vehiculo.modelo}
-        </h2>
+  const estadoClass = {
+    Disponible: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    "En Mantenimiento": "border-amber-200 bg-amber-100 text-amber-800",
+    "No Disponible": "border-red-200 bg-red-100 text-red-800",
+  };
 
-        <div className="space-y-2 text-gray-700">
-          <p>
-            <strong>Placa:</strong> {vehiculo.placa || "—"}
+  return (
+    <div
+      className="
+        fixed
+        left-0
+        right-0
+        bottom-0
+        top-16
+        z-40
+        flex
+        items-center
+        justify-center
+        overflow-y-auto
+        bg-slate-900/35
+        px-4
+        py-6
+        lg:left-48
+      "
+    >
+      <div
+        className="
+          w-full
+          max-w-5xl
+          overflow-hidden
+          rounded-3xl
+          border
+          border-slate-300
+          bg-slate-100
+          shadow-2xl
+        "
+      >
+        <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-5 text-white sm:px-7">
+          <p className="text-sm font-medium text-cyan-100">
+            Gestión de vehículos
           </p>
-          <p>
-            <strong>Proveedor:</strong> {proveedorNombre}
-          </p>
-          <p>
-            <strong>Año:</strong> {vehiculo.anio || "—"}
-          </p>
-          <p>
-            <strong>Tipo de Vehículo:</strong>{" "}
-            {vehiculo.tipo_de_vehiculo || vehiculo.tipoVehiculo || "—"}
-          </p>
-          <p>
-            <strong>Combustible:</strong>{" "}
-            {vehiculo.tipo_de_combustible || vehiculo.tipoCombustible || "—"}
-          </p>
-          <p>
-            <strong>Estado:</strong> {vehiculo.estado || "—"}
-          </p>
-          <p>
-            <strong>Fecha Registro:</strong>{" "}
-            {vehiculo.fecha_registro
-              ? new Date(vehiculo.fecha_registro).toLocaleDateString()
-              : vehiculo.fechaRegistro || "—"}
-          </p>
+
+          <h2 className="mt-1 text-sm font-bold tracking-tight text-white">
+            {vehiculo.marca || "—"} {vehiculo.modelo || ""}
+          </h2>
         </div>
 
-        <h3 className="text-lg font-semibold text-[var(--color-primary)] mt-6 mb-2">
-          Empleados Asignados
-        </h3>
+        <div className="max-h-[calc(100dvh-170px)] space-y-5 overflow-y-auto p-4 sm:p-6">
+          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
+            <div className="mb-5 border-b border-slate-300 pb-4">
+              <h3 className="text-sm font-bold text-slate-900">
+                Información general
+              </h3>
 
-        {empleadosAsignados.length > 0 ? (
-          <ul className="divide-y divide-gray-200">
-            {empleadosAsignados.map((e) => (
-              <li key={e.id} className="py-2">
-                <p className="font-medium text-gray-800">
-                  {e.nombreCompleto}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {e.fechaInicio
-                    ? new Date(e.fechaInicio).toLocaleDateString()
-                    : "Fecha no registrada"}{" "}
-                  -{" "}
-                  {e.fechaFin
-                    ? new Date(e.fechaFin).toLocaleDateString()
-                    : "En curso"}
-                </p>
-                {e.descripcion && (
-                  <p className="text-xs text-gray-500 italic">
-                    {e.descripcion}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500 italic">
-            No hay empleados asignados a este vehículo.
-          </p>
-        )}
+              <p className="mt-1 text-sm text-slate-600">
+                Datos principales del vehículo seleccionado.
+              </p>
+            </div>
 
-        <div className="flex justify-center gap-6 mt-10">
-          <button
-            onClick={() => onEdit(vehiculo)}
-            className="text-white text-base font-medium px-7 py-3 rounded-md transition hover:scale-105"
-            style={{ backgroundColor: "#1A2E81", minWidth: "130px" }}
-          >
-            Editar
-          </button>
-          <button
-            onClick={() => onDelete(vehiculo)}
-            className="bg-red-600 text-white text-base font-medium px-7 py-3 rounded-md hover:bg-red-700 transition-all"
-            style={{ minWidth: "130px" }}
-          >
-            Eliminar
-          </button>
-          <button
-            onClick={onClose}
-            className="bg-gray-300 text-gray-800 text-base font-medium px-7 py-3 rounded-md hover:bg-gray-400 transition-all"
-          >
-            Cerrar
-          </button>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <InfoBox label="Placa" value={vehiculo.placa || "—"} />
+              <InfoBox label="Proveedor" value={proveedorNombre} />
+              <InfoBox label="Año" value={vehiculo.anio || "—"} />
+              <InfoBox
+                label="Tipo de Vehículo"
+                value={vehiculo.tipo_de_vehiculo || vehiculo.tipoVehiculo || "—"}
+              />
+              <InfoBox
+                label="Combustible"
+                value={
+                  vehiculo.tipo_de_combustible ||
+                  vehiculo.tipoCombustible ||
+                  "—"
+                }
+              />
+
+              <div
+                className={`
+                  rounded-2xl border p-4
+                  ${
+                    estadoClass[vehiculo.estado] ||
+                    "border-slate-300 bg-slate-100 text-slate-800"
+                  }
+                `}
+              >
+                <p className="text-sm font-semibold opacity-80">Estado</p>
+                <p className="mt-1 text-sm font-bold">
+                  {vehiculo.estado || "—"}
+                </p>
+              </div>
+
+              <InfoBox
+                label="Fecha Registro"
+                value={
+                  vehiculo.fecha_registro
+                    ? new Date(vehiculo.fecha_registro).toLocaleDateString()
+                    : vehiculo.fechaRegistro || "—"
+                }
+              />
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
+            <div className="mb-5 border-b border-slate-300 pb-4">
+              <h3 className="text-sm font-bold text-slate-900">
+                Empleados asignados
+              </h3>
+
+              <p className="mt-1 text-sm text-slate-600">
+                Personal relacionado con este vehículo.
+              </p>
+            </div>
+
+            {empleadosAsignados.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {empleadosAsignados.map((e) => (
+                  <div
+                    key={e.id}
+                    className="rounded-2xl border border-slate-300 bg-slate-100 p-4 shadow-sm"
+                  >
+                    <p className="text-sm font-bold text-slate-900">
+                      {e.nombreCompleto}
+                    </p>
+
+                    <p className="mt-1 text-sm text-slate-600">
+                      {e.fechaInicio
+                        ? new Date(e.fechaInicio).toLocaleDateString()
+                        : "Fecha no registrada"}{" "}
+                      -{" "}
+                      {e.fechaFin
+                        ? new Date(e.fechaFin).toLocaleDateString()
+                        : "En curso"}
+                    </p>
+
+                    {e.descripcion && (
+                      <p className="mt-2 text-sm italic text-slate-500">
+                        {e.descripcion}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-400 bg-slate-100 px-6 py-8 text-center">
+                <p className="text-sm font-bold text-slate-700">
+                  No hay empleados asignados a este vehículo.
+                </p>
+              </div>
+            )}
+          </section>
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-6 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 sm:w-auto"
+            >
+              Cerrar
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onDelete(vehiculo)}
+              className="w-full rounded-2xl bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-red-700 sm:w-auto"
+            >
+              Eliminar
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onEdit(vehiculo)}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl sm:w-auto"
+            >
+              Editar
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+const InfoBox = ({ label, value }) => (
+  <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4 text-slate-800">
+    <p className="text-sm font-semibold opacity-80">{label}</p>
+    <p className="mt-1 text-sm font-bold">{value}</p>
+  </div>
+);
 
 export default VehiculosDetails;

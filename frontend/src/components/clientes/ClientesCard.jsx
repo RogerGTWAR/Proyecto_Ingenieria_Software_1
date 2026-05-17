@@ -3,57 +3,141 @@ import React from "react";
 const ClientesCard = ({ clientes, onEdit, onDelete, onVerDetalles }) => {
   if (!clientes.length) {
     return (
-      <p className="text-gray-500 text-center mt-4 text-base">
-        No hay clientes registrados.
-      </p>
+      <div className="flex min-h-[260px] w-full items-center justify-center rounded-3xl border border-dashed border-slate-400 bg-slate-200 px-6 py-10 text-center shadow-sm">
+        <div>
+          <p className="text-sm font-bold text-slate-800">
+            No hay clientes registrados
+          </p>
+
+          <p className="mt-1 text-sm text-slate-600">
+            Registre un nuevo cliente para comenzar.
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-wrap gap-3 justify-start">
+    <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
       {clientes.map((c) => (
         <div
           key={c.id}
-          className="bg-[#F9FAFB] border border-gray-200 rounded-xl shadow-sm 
-                     p-4 w-[280px] hover:shadow-md hover:scale-[1.01] 
-                     transition-all duration-200"
+          className="
+            flex
+            min-h-[330px]
+            w-full
+            flex-col
+            overflow-hidden
+            rounded-3xl
+            border
+            border-slate-300
+            bg-slate-200
+            shadow-md
+            transition
+            hover:-translate-y-1
+            hover:border-blue-400
+            hover:shadow-xl
+          "
         >
-          <h3 className="font-semibold text-[var(--color-primary)] text-[17px] mb-1">
-            {c.nombreEmpresa}
-          </h3>
-          <p className="text-[15px] text-gray-700 mb-1">
-            {c.nombreContacto || "Sin contacto"}
-          </p>
-          <p className="text-[15px] text-gray-600 mb-1">
-            Cargo: {c.cargoContacto || "—"}
-          </p>
-          <p className="text-[15px] text-gray-600 flex items-center gap-1 mb-2">
-            {c.telefono || "Sin teléfono"}
-          </p>
+          <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-4 text-white">
+            <p className="text-sm font-medium text-cyan-100">
+              Cliente registrado
+            </p>
 
-          <div className="flex justify-center gap-2 mt-3">
-            <button
-              onClick={() => onVerDetalles(c)}
-              className="text-white text-sm px-3 py-1 rounded-md transition hover:scale-105"
-              style={{ backgroundColor: "#1A2E81" }}
-            >
-              Detalles
-            </button>
-            <button
-              onClick={() => onEdit(c)}
-              className="bg-white border border-gray-300 text-gray-800 text-sm px-3 py-1 rounded-md hover:bg-gray-100 hover:scale-105 transition"
-            >
-              Editar
-            </button>
-            <button
-              onClick={() => onDelete(c)}
-              className="bg-red-600 text-white text-sm px-3 py-1 rounded-md hover:bg-red-700 hover:scale-105 transition"
-            >
-              Eliminar
-            </button>
+            <h3 className="mt-1 truncate text-sm font-bold">
+              {c.nombreEmpresa || "Sin nombre"}
+            </h3>
+          </div>
+
+          <div className="flex flex-1 flex-col justify-between p-5">
+            <div className="space-y-4">
+              <InfoBox
+                label="Contacto"
+                value={c.nombreContacto || "Sin contacto"}
+              />
+
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                <InfoBox label="Cargo" value={c.cargoContacto || "—"} />
+                <InfoBox label="Teléfono" value={c.telefono || "Sin teléfono"} />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                <InfoBox label="Ciudad" value={c.ciudad || "—"} />
+                <InfoBox label="País" value={c.pais || "—"} />
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => onVerDetalles(c)}
+                className="
+                  rounded-xl
+                  bg-blue-700
+                  px-4
+                  py-2
+                  text-sm
+                  font-bold
+                  text-white
+                  transition
+                  hover:bg-blue-800
+                "
+              >
+                Detalles
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onEdit(c)}
+                className="
+                  rounded-xl
+                  border
+                  border-slate-400
+                  bg-slate-100
+                  px-4
+                  py-2
+                  text-sm
+                  font-bold
+                  text-slate-800
+                  transition
+                  hover:bg-slate-300
+                "
+              >
+                Editar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onDelete(c)}
+                className="
+                  rounded-xl
+                  bg-red-600
+                  px-4
+                  py-2
+                  text-sm
+                  font-bold
+                  text-white
+                  transition
+                  hover:bg-red-700
+                "
+              >
+                Eliminar
+              </button>
+            </div>
           </div>
         </div>
       ))}
+    </div>
+  );
+};
+
+const InfoBox = ({ label, value }) => {
+  return (
+    <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4 text-slate-800">
+      <p className="text-sm font-semibold text-slate-600">{label}</p>
+      <p className="mt-1 truncate text-sm font-bold text-slate-900">
+        {value}
+      </p>
     </div>
   );
 };

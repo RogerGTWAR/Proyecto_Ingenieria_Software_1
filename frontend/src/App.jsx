@@ -41,7 +41,6 @@ function App() {
           {/* Dashboard — No requiere permisos especiales */}
           <Route index element={<DashboardPage />} />
 
-          {/* 🔥 TODAS ESTAS RUTAS YA VAN PROTEGIDAS POR PERMISOS 🔥 */}
           <Route path="proyectos"
             element={<PrivateRoute permiso="/proyectos" element={<ProyectosPage />} />}
           />
