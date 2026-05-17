@@ -310,15 +310,18 @@ function FormField({ label, type, name, value, placeholder, onChange }) {
 
 function PasswordRules({ reglas }) {
   return (
-    <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-      <p className="mb-2 text-xs font-bold text-slate-600">
+    <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
+      <p className="mb-2 text-center text-xs font-bold text-slate-600">
         Requisitos de contraseña
       </p>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="mx-auto grid max-w-[330px] grid-cols-3 gap-1.5">
         <RuleItem valido={reglas.longitud} texto="8 caracteres" />
         <RuleItem valido={reglas.mayuscula} texto="Mayúscula" />
         <RuleItem valido={reglas.minuscula} texto="Minúscula" />
+      </div>
+
+      <div className="mx-auto mt-1.5 grid max-w-[220px] grid-cols-2 gap-1.5">
         <RuleItem valido={reglas.numero} texto="Número" />
         <RuleItem valido={reglas.simbolo} texto="Símbolo" />
       </div>
@@ -331,12 +334,15 @@ function RuleItem({ valido, texto }) {
     <span
       className={`
         inline-flex
+        min-w-0
         items-center
+        justify-center
         gap-1
         rounded-full
         border
         px-2
         py-1
+        text-center
         text-[11px]
         font-semibold
         transition
@@ -352,6 +358,7 @@ function RuleItem({ valido, texto }) {
           flex
           h-3.5
           w-3.5
+          shrink-0
           items-center
           justify-center
           rounded-full
@@ -367,7 +374,7 @@ function RuleItem({ valido, texto }) {
         {valido ? "✓" : "•"}
       </span>
 
-      {texto}
+      <span className="truncate">{texto}</span>
     </span>
   );
 }
