@@ -17,7 +17,7 @@ export function useAuth() {
 
   const loadUser = async () => {
     try {
-      const res = await meRequest(); 
+      const res = await meRequest();
 
       if (res?.ok && res.user) {
         const usr = res.user;
@@ -46,22 +46,26 @@ export function useAuth() {
     loadUser();
   }, []);
 
- 
   const login = async (payload) => {
     await loginRequest(payload);
     await loadUser();
   };
 
-  const register = async (payload) => await registerRequest(payload);
+  const register = async (payload) => {
+    return await registerRequest(payload);
+  };
 
-  const autoRegister = async (payload) =>
-    await autoRegisterRequest(payload);
+  const autoRegister = async (payload) => {
+    return await autoRegisterRequest(payload);
+  };
 
-  const sendForgotPassword = async (usuario) =>
-    await forgotPasswordRequest({ usuario });
+  const sendForgotPassword = async (usuario) => {
+    return await forgotPasswordRequest({ usuario });
+  };
 
-  const resetPassword = async (token, contrasena) =>
-    await resetPasswordRequest({ token, contrasena });
+  const resetPassword = async (token, contrasena) => {
+    return await resetPasswordRequest({ token, contrasena });
+  };
 
   const logout = async () => {
     await logoutRequest();

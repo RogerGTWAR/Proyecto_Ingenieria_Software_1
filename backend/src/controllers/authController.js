@@ -17,8 +17,9 @@ const sanitizeUser = (u) => ({
 export const login = async (req, res) => {
   const { usuario, contrasena } = req.body;
 
-  if (!usuario || !contrasena)
+  if (!usuario || !contrasena) {
     return sendError(res, 400, "Usuario y contraseña son requeridos");
+  }
 
   try {
     const query = `
@@ -29,12 +30,17 @@ export const login = async (req, res) => {
 
     const result = await pool.query(query, [usuario]);
 
-    if (result.rowCount === 0) return sendError(res, 401, "Credenciales incorrectas");
+    if (result.rowCount === 0) {
+      return sendError(res, 401, "Credenciales incorrectas");
+    }
 
     const user = result.rows[0];
 
     const isMatch = await bcrypt.compare(contrasena, user.contrasena);
-    if (!isMatch) return sendError(res, 401, "Credenciales incorrectas");
+
+    if (!isMatch) {
+      return sendError(res, 401, "Credenciales incorrectas");
+    }
 
     const token = signToken({
       usuario_id: user.usuario_id,
@@ -46,7 +52,7 @@ export const login = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 8, 
+      maxAge: 1000 * 60 * 60 * 8,
     });
 
     return res.json({
@@ -54,7 +60,6 @@ export const login = async (req, res) => {
       msg: "Login exitoso",
       usuario: sanitizeUser(user),
     });
-
   } catch (error) {
     console.error("[LOGIN ERROR]:", error);
     return sendError(res, 500, "Error interno");
@@ -62,47 +67,81 @@ export const login = async (req, res) => {
 };
 
 export const register = async (req, res) => {
-  const { empleado_id, usuario, contrasena } = req.body;
+  const { cedula, usuario, contrasena } = req.body;
 
-  if (!empleado_id || !usuario || !contrasena)
-    return sendError(res, 400, "empleado_id, usuario y contrasena son requeridos");
+  if (!cedula || !usuario || !contrasena) {
+    return sendError(
+      res,
+      400,
+      "cedula, usuario y contrasena son requeridos"
+    );
+  }
 
   try {
     const empCheck = await pool.query(
-      "SELECT 1 FROM empleados WHERE empleado_id = $1 AND fecha_eliminacion IS NULL",
-      [empleado_id]
+      `
+      SELECT empleado_id, nombres, apellidos, cedula
+      FROM empleados
+      WHERE cedula = $1
+        AND fecha_eliminacion IS NULL
+      `,
+      [cedula.trim()]
     );
-    if (empCheck.rowCount === 0) return sendError(res, 404, "Empleado no existe");
+
+    if (empCheck.rowCount === 0) {
+      return sendError(res, 404, "No existe un empleado con esa cédula");
+    }
+
+    const empleado = empCheck.rows[0];
+    const empleado_id = empleado.empleado_id;
 
     const userByEmp = await pool.query(
-      "SELECT 1 FROM usuarios WHERE empleado_id = $1 AND fecha_eliminacion IS NULL",
+      `
+      SELECT 1
+      FROM usuarios
+      WHERE empleado_id = $1
+        AND fecha_eliminacion IS NULL
+      `,
       [empleado_id]
     );
-    if (userByEmp.rowCount > 0)
+
+    if (userByEmp.rowCount > 0) {
       return sendError(res, 400, "Ese empleado ya tiene usuario");
+    }
 
     const userByName = await pool.query(
-      "SELECT 1 FROM usuarios WHERE usuario = $1",
-      [usuario]
+      `
+      SELECT 1
+      FROM usuarios
+      WHERE usuario = $1
+      `,
+      [usuario.trim()]
     );
-    if (userByName.rowCount > 0)
+
+    if (userByName.rowCount > 0) {
       return sendError(res, 400, "Ese nombre de usuario ya existe");
+    }
 
     const hash = await bcrypt.hash(contrasena, SALT);
 
     const insert = await pool.query(
-      `INSERT INTO usuarios (empleado_id, usuario, contrasena)
-       VALUES ($1, $2, $3)
-       RETURNING usuario_id, usuario, empleado_id, fecha_creacion`,
-      [empleado_id, usuario, hash]
+      `
+      INSERT INTO usuarios (empleado_id, usuario, contrasena)
+      VALUES ($1, $2, $3)
+      RETURNING usuario_id, usuario, empleado_id, fecha_creacion
+      `,
+      [empleado_id, usuario.trim(), hash]
     );
 
     return res.json({
       ok: true,
       msg: "Usuario creado correctamente",
-      usuario: insert.rows[0],
+      usuario: {
+        ...insert.rows[0],
+        cedula: empleado.cedula,
+        empleado: `${empleado.nombres} ${empleado.apellidos}`,
+      },
     });
-
   } catch (error) {
     console.error("[REGISTER ERROR]:", error);
     return sendError(res, 500, "Error interno");
@@ -110,30 +149,42 @@ export const register = async (req, res) => {
 };
 
 export const autoRegister = async (req, res) => {
-  const { empleado_id } = req.body;
+  const { cedula } = req.body;
 
-  if (!empleado_id) return sendError(res, 400, "empleado_id requerido");
+  if (!cedula) {
+    return sendError(res, 400, "cedula requerida");
+  }
 
   try {
     const emp = await pool.query(
-      "SELECT nombres, apellidos, correo FROM empleados WHERE empleado_id = $1",
-      [empleado_id]
+      `
+      SELECT empleado_id, nombres, apellidos, correo, cedula
+      FROM empleados
+      WHERE cedula = $1
+        AND fecha_eliminacion IS NULL
+      `,
+      [cedula.trim()]
     );
 
-    if (emp.rowCount === 0)
+    if (emp.rowCount === 0) {
       return sendError(res, 404, "Empleado no encontrado");
-
-    const exists = await pool.query(
-      `SELECT 1 FROM usuarios 
-       WHERE empleado_id = $1 
-       AND fecha_eliminacion IS NULL`,
-      [empleado_id]
-    );
-
-    if (exists.rowCount > 0)
-      return sendError(res, 400, "El empleado ya tiene una cuenta");
+    }
 
     const empleado = emp.rows[0];
+
+    const exists = await pool.query(
+      `
+      SELECT 1
+      FROM usuarios
+      WHERE empleado_id = $1
+        AND fecha_eliminacion IS NULL
+      `,
+      [empleado.empleado_id]
+    );
+
+    if (exists.rowCount > 0) {
+      return sendError(res, 400, "El empleado ya tiene una cuenta");
+    }
 
     const suggestedUser = empleado.correo
       ? empleado.correo.split("@")[0]
@@ -146,19 +197,24 @@ export const autoRegister = async (req, res) => {
     const hash = await bcrypt.hash(randomPassword, SALT);
 
     const nuevo = await pool.query(
-      `INSERT INTO usuarios (empleado_id, usuario, contrasena)
-       VALUES ($1, $2, $3)
-       RETURNING usuario_id, usuario`,
-      [empleado_id, suggestedUser, hash]
+      `
+      INSERT INTO usuarios (empleado_id, usuario, contrasena)
+      VALUES ($1, $2, $3)
+      RETURNING usuario_id, usuario, empleado_id
+      `,
+      [empleado.empleado_id, suggestedUser, hash]
     );
 
     return res.json({
       ok: true,
       msg: "Cuenta creada automáticamente",
-      usuario: nuevo.rows[0],
+      usuario: {
+        ...nuevo.rows[0],
+        cedula: empleado.cedula,
+        empleado: `${empleado.nombres} ${empleado.apellidos}`,
+      },
       password_generada: randomPassword,
     });
-
   } catch (error) {
     console.error("[AUTO_REGISTER ERROR]:", error);
     return sendError(res, 500, "Error interno");
@@ -168,7 +224,9 @@ export const autoRegister = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   const { usuario } = req.body;
 
-  if (!usuario) return sendError(res, 400, "usuario requerido");
+  if (!usuario) {
+    return sendError(res, 400, "usuario requerido");
+  }
 
   try {
     const result = await pool.query(
@@ -176,8 +234,9 @@ export const forgotPassword = async (req, res) => {
       [usuario]
     );
 
-    if (result.rowCount === 0)
+    if (result.rowCount === 0) {
       return sendError(res, 404, "Usuario no encontrado");
+    }
 
     const token = signToken({ usuario_id: result.rows[0].usuario_id });
 
@@ -193,7 +252,6 @@ export const forgotPassword = async (req, res) => {
     });
 
     return res.json({ ok: true, msg: "Correo enviado" });
-
   } catch (error) {
     console.error("[FORGOT ERROR]:", error);
     return sendError(res, 500, "Error interno");
@@ -203,8 +261,9 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   const { token, contrasena } = req.body;
 
-  if (!token || !contrasena)
+  if (!token || !contrasena) {
     return sendError(res, 400, "token y contrasena requeridos");
+  }
 
   try {
     const data = verifyToken(token);
@@ -217,7 +276,6 @@ export const resetPassword = async (req, res) => {
     );
 
     return res.json({ ok: true, msg: "Contraseña actualizada" });
-
   } catch (error) {
     return sendError(res, 400, "Token inválido o expirado");
   }
@@ -248,13 +306,11 @@ export const me = async (req, res) => {
       ok: true,
       user: result.rows[0],
     });
-
   } catch (error) {
     console.error("[ME ERROR]:", error);
     return res.status(500).json({ ok: false, msg: "Error interno" });
   }
 };
-
 
 export const logout = (req, res) => {
   res.clearCookie("token");
@@ -282,7 +338,6 @@ export const getAllUsuarios = async (_req, res) => {
     const result = await pool.query(query);
 
     return res.json({ ok: true, usuarios: result.rows });
-
   } catch (error) {
     console.error("[GET ALL ERROR]:", error);
     return sendError(res, 500, "Error interno");
@@ -311,11 +366,11 @@ export const getUsuarioById = async (req, res) => {
 
     const result = await pool.query(query, [id]);
 
-    if (result.rowCount === 0)
+    if (result.rowCount === 0) {
       return sendError(res, 404, "Usuario no encontrado");
+    }
 
     return res.json({ ok: true, usuario: result.rows[0] });
-
   } catch (error) {
     console.error("[GET BY ID ERROR]:", error);
     return sendError(res, 500, "Error interno");
@@ -328,35 +383,54 @@ export const updateUsuario = async (req, res) => {
 
   try {
     const exists = await pool.query(
-      `SELECT usuario_id FROM usuarios 
-       WHERE usuario_id = $1 AND fecha_eliminacion IS NULL`,
+      `
+      SELECT usuario_id
+      FROM usuarios 
+      WHERE usuario_id = $1
+        AND fecha_eliminacion IS NULL
+      `,
       [id]
     );
 
-    if (exists.rowCount === 0)
+    if (exists.rowCount === 0) {
       return sendError(res, 404, "Usuario no encontrado");
+    }
 
     if (empleado_id) {
       const emp = await pool.query(
-        "SELECT 1 FROM empleados WHERE empleado_id = $1 AND fecha_eliminacion IS NULL",
+        `
+        SELECT 1
+        FROM empleados
+        WHERE empleado_id = $1
+          AND fecha_eliminacion IS NULL
+        `,
         [empleado_id]
       );
-      if (emp.rowCount === 0)
+
+      if (emp.rowCount === 0) {
         return sendError(res, 400, "El empleado no existe");
+      }
     }
 
-    const userExists = await pool.query(
-      `SELECT 1 FROM usuarios 
-       WHERE usuario = $1 
-       AND usuario_id != $2 
-       AND fecha_eliminacion IS NULL`,
-      [usuario, id]
-    );
+    if (usuario) {
+      const userExists = await pool.query(
+        `
+        SELECT 1
+        FROM usuarios 
+        WHERE usuario = $1 
+          AND usuario_id != $2 
+          AND fecha_eliminacion IS NULL
+        `,
+        [usuario.trim(), id]
+      );
 
-    if (userExists.rowCount > 0)
-      return sendError(res, 400, "Ese nombre de usuario ya está en uso");
+      if (userExists.rowCount > 0) {
+        return sendError(res, 400, "Ese nombre de usuario ya está en uso");
+      }
+    }
 
     let hash = null;
+
     if (contrasena && contrasena.trim() !== "") {
       hash = await bcrypt.hash(contrasena, SALT);
     }
@@ -374,12 +448,12 @@ export const updateUsuario = async (req, res) => {
 
     const result = await pool.query(updateQuery, [
       empleado_id || null,
-      usuario || null,
+      usuario ? usuario.trim() : null,
       hash,
       id,
     ]);
 
-    if (rol_id) {
+    if (rol_id && empleado_id) {
       await pool.query(
         "UPDATE empleados SET rol_id = $1 WHERE empleado_id = $2",
         [rol_id, empleado_id]
@@ -391,7 +465,6 @@ export const updateUsuario = async (req, res) => {
       msg: "Usuario actualizado correctamente",
       usuario: result.rows[0],
     });
-
   } catch (error) {
     console.error("[UPDATE USER ERROR]:", error);
     return sendError(res, 500, "Error interno");
@@ -403,13 +476,18 @@ export const deleteUsuario = async (req, res) => {
 
   try {
     const old = await pool.query(
-      `SELECT 1 FROM usuarios 
-       WHERE usuario_id = $1 AND fecha_eliminacion IS NULL`,
+      `
+      SELECT 1
+      FROM usuarios 
+      WHERE usuario_id = $1
+        AND fecha_eliminacion IS NULL
+      `,
       [id]
     );
 
-    if (old.rowCount === 0)
+    if (old.rowCount === 0) {
       return sendError(res, 404, "Usuario no encontrado");
+    }
 
     const query = `
       UPDATE usuarios 
@@ -423,7 +501,6 @@ export const deleteUsuario = async (req, res) => {
       ok: true,
       msg: "Usuario eliminado",
     });
-
   } catch (error) {
     console.error("[DELETE USER ERROR]:", error);
     return sendError(res, 500, "Error interno");

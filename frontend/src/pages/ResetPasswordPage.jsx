@@ -1,20 +1,14 @@
 import { useState } from "react";
-import { useAuth } from "../hooks/useAuth";
-import { Link, useNavigate } from "react-router-dom";
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { Link } from "react-router-dom";
 
-export default function LoginPage() {
-  const navigate = useNavigate();
-  const { login } = useAuth();
-
+export default function ResetPasswordPage() {
   const [form, setForm] = useState({
     usuario: "",
-    contrasena: "",
   });
 
-  const [showPw, setShowPw] = useState(false);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -22,20 +16,32 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setError("");
+      setSuccess("");
 
-      await login({
-        usuario: form.usuario.trim(),
-        contrasena: form.contrasena,
-      });
+      /*
+        Aquí puedes conectar tu API real.
 
-      navigate("/");
-    } catch (err) {
-      setError(
-        err.message ||
-          "No se pudo iniciar sesión. Revise sus credenciales e intente nuevamente."
+        Ejemplo:
+        await fetch("http://localhost:3000/api/auth/reset-password", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(form),
+        });
+      */
+
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      setSuccess(
+        "Solicitud enviada. Revise las instrucciones para recuperar su contraseña."
       );
 
-      setTimeout(() => setError(""), 4500);
+      setForm({
+        usuario: "",
+      });
+    } catch (err) {
+      setError(err.message || "No se pudo enviar la solicitud.");
     } finally {
       setLoading(false);
     }
@@ -67,34 +73,34 @@ export default function LoginPage() {
 
               <div className="mt-12">
                 <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-200">
-                  Sistema ACSA
+                  Recuperación
                 </p>
 
                 <h1 className="mt-4 text-4xl font-black leading-tight tracking-tight text-white">
-                  Bienvenido al panel administrativo
+                  Recupera el acceso a tu cuenta
                 </h1>
 
                 <p className="mt-4 max-w-md text-sm leading-6 text-slate-300">
-                  Plataforma para gestionar proyectos, personal, inventario,
-                  compras, servicios, avalúos y recursos de construcción.
+                  Ingresa tu usuario o correo registrado para iniciar el proceso
+                  de recuperación de contraseña.
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3">
               <InfoBox
-                title="Gestión centralizada"
-                text="Administra módulos clave desde un solo sistema."
+                title="Proceso seguro"
+                text="La recuperación ayuda a proteger el acceso al sistema."
               />
 
               <InfoBox
-                title="Acceso por usuario"
-                text="Inicia sesión con credenciales seguras."
+                title="Cuenta vinculada"
+                text="La solicitud se asocia al usuario registrado."
               />
 
               <InfoBox
-                title="Control operativo"
-                text="Consulta información importante de forma rápida."
+                title="Acceso administrativo"
+                text="Recupera tus credenciales para volver al panel."
               />
             </div>
           </section>
@@ -115,37 +121,40 @@ export default function LoginPage() {
                 </p>
 
                 <h1 className="mt-1 text-2xl font-black text-slate-900">
-                  Iniciar sesión
+                  Recuperar contraseña
                 </h1>
               </div>
 
               <div className="hidden lg:block">
                 <p className="text-sm font-semibold text-blue-700">
-                  Acceso al sistema
+                  Recuperación de acceso
                 </p>
 
                 <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
-                  Iniciar sesión
+                  Restablecer contraseña
                 </h2>
 
                 <p className="mt-2 text-sm text-slate-600">
-                  Ingrese sus credenciales para acceder al panel.
+                  Escriba su usuario o correo para solicitar la recuperación.
                 </p>
               </div>
 
+              {success && (
+                <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 shadow-sm">
+                  {success}
+                </div>
+              )}
+
               {error && (
-                <MessageBox
-                  tipo="error"
-                  titulo="No se pudo iniciar sesión"
-                  texto={error}
-                  onClose={() => setError("")}
-                />
+                <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 shadow-sm">
+                  {error}
+                </div>
               )}
 
               <form onSubmit={onSubmit} className="mt-8 space-y-5">
                 <div>
                   <label className="mb-2 block text-sm font-bold text-slate-700">
-                    Usuario
+                    Usuario o correo
                   </label>
 
                   <input
@@ -155,7 +164,7 @@ export default function LoginPage() {
                     onChange={(e) =>
                       setForm({ ...form, usuario: e.target.value })
                     }
-                    placeholder="Ingrese su usuario"
+                    placeholder="Ingrese su usuario o correo"
                     required
                     className="
                       w-full
@@ -177,79 +186,6 @@ export default function LoginPage() {
                       focus:ring-blue-100
                     "
                   />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-bold text-slate-700">
-                    Contraseña
-                  </label>
-
-                  <div className="relative">
-                    <input
-                      type={showPw ? "text" : "password"}
-                      name="contrasena"
-                      value={form.contrasena}
-                      onChange={(e) =>
-                        setForm({ ...form, contrasena: e.target.value })
-                      }
-                      placeholder="Ingrese su contraseña"
-                      required
-                      className="
-                        w-full
-                        rounded-2xl
-                        border
-                        border-slate-300
-                        bg-slate-100
-                        px-4
-                        py-3
-                        pr-12
-                        text-sm
-                        text-slate-800
-                        shadow-sm
-                        outline-none
-                        transition
-                        placeholder:text-slate-400
-                        focus:border-blue-700
-                        focus:bg-white
-                        focus:ring-4
-                        focus:ring-blue-100
-                      "
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => setShowPw((prev) => !prev)}
-                      className="
-                        absolute
-                        inset-y-0
-                        right-3
-                        flex
-                        items-center
-                        justify-center
-                        text-slate-500
-                        transition
-                        hover:text-blue-800
-                      "
-                      aria-label={
-                        showPw ? "Ocultar contraseña" : "Mostrar contraseña"
-                      }
-                    >
-                      {showPw ? (
-                        <EyeSlashIcon className="h-5 w-5" />
-                      ) : (
-                        <EyeIcon className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-
-                  <div className="mt-3 text-right">
-                    <Link
-                      to="/reset-password"
-                      className="text-sm font-bold text-blue-800 transition hover:text-cyan-700 hover:underline"
-                    >
-                      ¿Olvidaste tu contraseña?
-                    </Link>
-                  </div>
                 </div>
 
                 <button
@@ -278,20 +214,29 @@ export default function LoginPage() {
                     disabled:hover:scale-100
                   "
                 >
-                  {loading ? "Ingresando..." : "Entrar"}
+                  {loading ? "Enviando solicitud..." : "Enviar solicitud"}
                 </button>
               </form>
 
               <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-center shadow-sm">
                 <p className="text-sm text-slate-600">
-                  ¿No tiene cuenta?{" "}
+                  ¿Recordaste tu contraseña?{" "}
                   <Link
-                    to="/signup"
+                    to="/login"
                     className="font-bold text-blue-800 transition hover:text-cyan-700 hover:underline"
                   >
-                    Crear una cuenta
+                    Iniciar sesión
                   </Link>
                 </p>
+              </div>
+
+              <div className="mt-4 text-center">
+                <Link
+                  to="/signup"
+                  className="text-sm font-bold text-slate-600 transition hover:text-blue-800 hover:underline"
+                >
+                  Crear una cuenta nueva
+                </Link>
               </div>
             </div>
           </section>
@@ -306,75 +251,6 @@ function InfoBox({ title, text }) {
     <div className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-sm backdrop-blur">
       <p className="text-sm font-bold text-white">{title}</p>
       <p className="mt-1 text-sm leading-5 text-cyan-100">{text}</p>
-    </div>
-  );
-}
-
-function MessageBox({ tipo, titulo, texto, onClose }) {
-  const isError = tipo === "error";
-
-  return (
-    <div
-      className={`
-        mt-6
-        flex
-        items-start
-        gap-3
-        rounded-2xl
-        border
-        px-4
-        py-3
-        shadow-sm
-        ${
-          isError
-            ? "border-red-200 bg-red-50 text-red-800"
-            : "border-emerald-200 bg-emerald-50 text-emerald-800"
-        }
-      `}
-    >
-      <div
-        className={`
-          mt-0.5
-          flex
-          h-8
-          w-8
-          shrink-0
-          items-center
-          justify-center
-          rounded-xl
-          text-sm
-          font-black
-          ${isError ? "bg-red-600 text-white" : "bg-emerald-600 text-white"}
-        `}
-      >
-        {isError ? "!" : "✓"}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-black">{titulo}</p>
-        <p className="mt-1 text-sm leading-5">{texto}</p>
-      </div>
-
-      <button
-        type="button"
-        onClick={onClose}
-        className="
-          flex
-          h-7
-          w-7
-          shrink-0
-          items-center
-          justify-center
-          rounded-xl
-          text-sm
-          font-black
-          transition
-          hover:bg-black/5
-        "
-        aria-label="Cerrar mensaje"
-      >
-        ×
-      </button>
     </div>
   );
 }

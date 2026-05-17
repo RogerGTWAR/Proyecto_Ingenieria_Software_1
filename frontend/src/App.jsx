@@ -23,15 +23,15 @@ import NoAutorizado from "./pages/NoAutorizado.jsx"
 
 import ReportesPage from './pages/ReportesPage.jsx'
 import UsuariosPage from './pages/UsuariosPage.jsx'
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
 
 function App() {
   return (
     <Routes>
-      {/* LOGIN / SIGNUP */}
     <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-      {/* PÁGINA DE ACCESO DENEGADO */}
       <Route path="/no-autorizado" element={<NoAutorizado />} />
 
       {/* TODAS LAS DEMÁS RUTAS REQUIEREN LOGIN */}

@@ -7,17 +7,17 @@ export const loginRequest = async ({ usuario, contrasena }) => {
   });
 };
 
-export const registerRequest = async ({ empleado_id, usuario, contrasena }) => {
+export const registerRequest = async ({ cedula, usuario, contrasena }) => {
   return await api("/auth/register", {
     method: "POST",
-    body: { empleado_id, usuario, contrasena },
+    body: { cedula, usuario, contrasena },
   });
 };
 
-export const autoRegisterRequest = async ({ empleado_id }) => {
+export const autoRegisterRequest = async ({ cedula }) => {
   return await api("/auth/auto-register", {
     method: "POST",
-    body: { empleado_id },
+    body: { cedula },
   });
 };
 
@@ -37,7 +37,7 @@ export const resetPasswordRequest = async ({ token, contrasena }) => {
 
 export const meRequest = async () => {
   const res = await api("/auth/me");
-  return res; 
+  return res;
 };
 
 export const logoutRequest = async () => {
