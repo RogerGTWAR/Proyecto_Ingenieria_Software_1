@@ -167,14 +167,14 @@ export default function DashboardPage() {
     .slice(0, 6);
 
   return (
-    <div className="h-full w-full overflow-hidden bg-slate-200">
+    <div className="h-full w-full overflow-hidden bg-gradient-to-br from-sky-100 via-cyan-50 to-emerald-100">
       <div className="h-full w-full overflow-y-auto overflow-x-hidden px-3 py-5 sm:px-5 lg:px-8">
         <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-6 pb-10">
-          <section className="overflow-hidden rounded-[2rem] border border-slate-700/40 bg-slate-950 shadow-xl">
-            <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-6 text-white sm:px-7 lg:px-8">
+          <section className="overflow-hidden rounded-[2rem] border border-cyan-300 bg-slate-950 shadow-2xl shadow-cyan-900/20">
+            <div className="bg-gradient-to-r from-slate-950 via-blue-900 to-cyan-700 px-5 py-6 text-white sm:px-7 lg:px-8">
               <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-cyan-100">
+                  <p className="text-sm font-bold uppercase tracking-wide text-cyan-200">
                     Panel Administrativo
                   </p>
 
@@ -182,7 +182,7 @@ export default function DashboardPage() {
                     Dashboard Principal
                   </h1>
 
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-cyan-50">
                     Resumen general de proyectos, avalúos, clientes, inventario,
                     servicios, vehículos y compras del sistema ACONSA.
                   </p>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
               firstValue={avaluosValidos.length}
               secondLabel="Monto"
               secondValue={`C$${money(montoAvaluosValidos)}`}
-              variant="green"
+              variant="emerald"
             />
 
             <MainMetric
@@ -266,7 +266,7 @@ export default function DashboardPage() {
               firstValue={materialesBajoStock}
               secondLabel="Valor"
               secondValue={`C$${money(valorInventario)}`}
-              variant="purple"
+              variant="violet"
             />
 
             <MainMetric
@@ -277,7 +277,7 @@ export default function DashboardPage() {
               firstValue={`C$${money(totalCostoDirectoServicios)}`}
               secondLabel="Registrados"
               secondValue={totalServicios}
-              variant="emerald"
+              variant="green"
             />
 
             <MainMetric
@@ -288,7 +288,7 @@ export default function DashboardPage() {
               firstValue={vehiculosDisponibles}
               secondLabel="Mantenimiento"
               secondValue={vehiculosMantenimiento}
-              variant="cyan"
+              variant="sky"
             />
 
             <MainMetric
@@ -331,7 +331,7 @@ export default function DashboardPage() {
               title="Materiales bajo stock"
               value={materialesBajoStock}
               text="Requieren revisión de inventario"
-              variant="purple"
+              variant="violet"
             />
           </section>
 
@@ -342,29 +342,33 @@ export default function DashboardPage() {
               badge={`${proyectosRecientes.length} registro(s)`}
             >
               <div className="max-h-[520px] overflow-y-auto overflow-x-auto pr-1">
-                <div className="hidden min-w-[780px] overflow-hidden rounded-3xl border border-slate-300 bg-slate-200 xl:block">
+                <div className="hidden min-w-[780px] overflow-hidden rounded-3xl border border-cyan-200 bg-white xl:block">
                   <table className="w-full text-sm">
-                    <thead className="sticky top-0 z-10 bg-slate-950 text-slate-100">
+                    <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-950 to-cyan-800 text-white">
                       <tr>
                         <th className="px-5 py-4 text-left font-bold">
                           Proyecto
                         </th>
+
                         <th className="px-5 py-4 text-center font-bold">
                           Estado
                         </th>
+
                         <th className="px-5 py-4 text-right font-bold">
                           Presupuesto
                         </th>
+
                         <th className="px-5 py-4 text-center font-bold">
                           Inicio
                         </th>
+
                         <th className="px-5 py-4 text-center font-bold">
                           Avalúos
                         </th>
                       </tr>
                     </thead>
 
-                    <tbody className="divide-y divide-slate-300">
+                    <tbody className="divide-y divide-cyan-100">
                       {proyectosRecientes.length > 0 ? (
                         proyectosRecientes.map((p, index) => {
                           const cantidadAvaluos = avaluos.filter(
@@ -375,20 +379,16 @@ export default function DashboardPage() {
                             <tr
                               key={p.id}
                               className={`
-                                transition
-                                ${
-                                  index % 2 === 0
-                                    ? "bg-slate-100"
-                                    : "bg-slate-200"
-                                }
-                                hover:bg-blue-100
+                                transition hover:bg-cyan-100
+                                ${index % 2 === 0 ? "bg-white" : "bg-cyan-50"}
                               `}
                             >
                               <td className="px-5 py-4">
                                 <p className="font-bold text-slate-900">
                                   {p.nombreProyecto || "—"}
                                 </p>
-                                <p className="mt-1 text-sm text-slate-600">
+
+                                <p className="mt-1 text-sm font-medium text-slate-600">
                                   {p.clienteNombre || "Sin cliente"}
                                 </p>
                               </td>
@@ -401,12 +401,12 @@ export default function DashboardPage() {
                                 C${money(p.presupuestoTotal)}
                               </td>
 
-                              <td className="px-5 py-4 text-center text-slate-700">
+                              <td className="px-5 py-4 text-center font-medium text-slate-700">
                                 {p.fechaInicio || "—"}
                               </td>
 
                               <td className="px-5 py-4 text-center">
-                                <span className="rounded-full border border-blue-200 bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
+                                <span className="rounded-full border border-cyan-300 bg-cyan-100 px-3 py-1 text-sm font-bold text-cyan-800">
                                   {cantidadAvaluos}
                                 </span>
                               </td>
@@ -437,14 +437,14 @@ export default function DashboardPage() {
                       return (
                         <div
                           key={p.id}
-                          className="rounded-2xl border border-slate-300 bg-slate-200 p-4"
+                          className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-md"
                         >
-                          <div className="mb-4 border-b border-slate-300 pb-3">
+                          <div className="mb-4 border-b border-cyan-100 pb-3">
                             <p className="text-sm font-bold text-slate-900">
                               {p.nombreProyecto || "—"}
                             </p>
 
-                            <p className="mt-1 text-sm text-slate-600">
+                            <p className="mt-1 text-sm font-medium text-slate-600">
                               {p.clienteNombre || "Sin cliente"}
                             </p>
                           </div>
@@ -463,8 +463,8 @@ export default function DashboardPage() {
                               value={p.fechaInicio || "—"}
                             />
 
-                            <div className="rounded-xl border border-slate-300 bg-slate-100 p-3">
-                              <p className="text-sm font-semibold text-slate-600">
+                            <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-3">
+                              <p className="text-sm font-semibold text-cyan-800">
                                 Estado
                               </p>
 
@@ -590,10 +590,12 @@ export default function DashboardPage() {
 }
 
 const HeroStat = ({ label, value, description }) => (
-  <div className="rounded-3xl border border-white/10 bg-slate-950/45 px-5 py-4 shadow-lg backdrop-blur">
-    <p className="text-sm font-medium text-cyan-100">{label}</p>
+  <div className="rounded-3xl border border-white/20 bg-white/15 px-5 py-4 shadow-lg backdrop-blur transition hover:bg-white/20">
+    <p className="text-sm font-bold text-cyan-100">{label}</p>
+
     <p className="mt-2 truncate text-lg font-extrabold text-white">{value}</p>
-    <p className="mt-1 text-sm text-slate-300">{description}</p>
+
+    <p className="mt-1 text-sm font-medium text-cyan-50">{description}</p>
   </div>
 );
 
@@ -608,38 +610,89 @@ const MainMetric = ({
   variant = "blue",
 }) => {
   const styles = {
-    blue: "border-blue-200 bg-blue-100 text-blue-800",
-    green: "border-emerald-200 bg-emerald-100 text-emerald-800",
-    cyan: "border-cyan-200 bg-cyan-100 text-cyan-800",
-    amber: "border-amber-200 bg-amber-100 text-amber-800",
-    purple: "border-purple-200 bg-purple-100 text-purple-800",
-    emerald: "border-emerald-200 bg-emerald-100 text-emerald-800",
-    red: "border-red-200 bg-red-100 text-red-800",
+    blue: {
+      card: "border-blue-300 bg-gradient-to-br from-white via-blue-50 to-blue-100",
+      label: "border-blue-400 bg-blue-600 text-white",
+      value: "text-blue-800",
+      shadow: "hover:shadow-blue-300/40",
+    },
+    emerald: {
+      card: "border-emerald-300 bg-gradient-to-br from-white via-emerald-50 to-emerald-100",
+      label: "border-emerald-400 bg-emerald-600 text-white",
+      value: "text-emerald-800",
+      shadow: "hover:shadow-emerald-300/40",
+    },
+    cyan: {
+      card: "border-cyan-300 bg-gradient-to-br from-white via-cyan-50 to-cyan-100",
+      label: "border-cyan-400 bg-cyan-600 text-white",
+      value: "text-cyan-800",
+      shadow: "hover:shadow-cyan-300/40",
+    },
+    amber: {
+      card: "border-amber-300 bg-gradient-to-br from-white via-amber-50 to-amber-100",
+      label: "border-amber-400 bg-amber-500 text-white",
+      value: "text-amber-800",
+      shadow: "hover:shadow-amber-300/40",
+    },
+    violet: {
+      card: "border-violet-300 bg-gradient-to-br from-white via-violet-50 to-violet-100",
+      label: "border-violet-400 bg-violet-600 text-white",
+      value: "text-violet-800",
+      shadow: "hover:shadow-violet-300/40",
+    },
+    green: {
+      card: "border-green-300 bg-gradient-to-br from-white via-green-50 to-green-100",
+      label: "border-green-400 bg-green-600 text-white",
+      value: "text-green-800",
+      shadow: "hover:shadow-green-300/40",
+    },
+    sky: {
+      card: "border-sky-300 bg-gradient-to-br from-white via-sky-50 to-sky-100",
+      label: "border-sky-400 bg-sky-600 text-white",
+      value: "text-sky-800",
+      shadow: "hover:shadow-sky-300/40",
+    },
+    red: {
+      card: "border-red-300 bg-gradient-to-br from-white via-red-50 to-red-100",
+      label: "border-red-400 bg-red-600 text-white",
+      value: "text-red-800",
+      shadow: "hover:shadow-red-300/40",
+    },
   };
 
+  const current = styles[variant] || styles.blue;
+
   return (
-    <div className="min-h-[190px] rounded-3xl border border-slate-300 bg-slate-100 p-5 shadow-md transition hover:-translate-y-1 hover:shadow-xl">
+    <div
+      className={`
+        min-h-[190px] rounded-3xl border p-5 shadow-md transition
+        hover:-translate-y-1 hover:shadow-xl
+        ${current.card} ${current.shadow}
+      `}
+    >
       <div className="flex items-start justify-between gap-4">
-        <div className={`rounded-2xl border px-4 py-2 ${styles[variant]}`}>
+        <div className={`rounded-2xl border px-4 py-2 shadow-sm ${current.label}`}>
           <p className="text-sm font-bold">{title}</p>
         </div>
 
-        <p className="text-2xl font-extrabold text-slate-900">{value}</p>
+        <p className={`text-2xl font-extrabold ${current.value}`}>{value}</p>
       </div>
 
-      <p className="mt-4 text-sm text-slate-600">{subtitle}</p>
+      <p className="mt-4 text-sm font-semibold text-slate-700">{subtitle}</p>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-slate-300 bg-slate-200 p-3">
+        <div className="rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm">
           <p className="text-sm font-semibold text-slate-600">{firstLabel}</p>
-          <p className="mt-1 truncate text-sm font-bold text-slate-900">
+
+          <p className="mt-1 truncate text-sm font-extrabold text-slate-900">
             {firstValue}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-300 bg-slate-200 p-3">
+        <div className="rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm">
           <p className="text-sm font-semibold text-slate-600">{secondLabel}</p>
-          <p className="mt-1 truncate text-sm font-bold text-slate-900">
+
+          <p className="mt-1 truncate text-sm font-extrabold text-slate-900">
             {secondValue}
           </p>
         </div>
@@ -650,36 +703,44 @@ const MainMetric = ({
 
 const StatusCard = ({ title, value, text, variant = "blue" }) => {
   const styles = {
-    blue: "border-blue-200 bg-blue-100 text-blue-800",
-    red: "border-red-200 bg-red-100 text-red-800",
-    amber: "border-amber-200 bg-amber-100 text-amber-800",
-    purple: "border-purple-200 bg-purple-100 text-purple-800",
+    blue: "border-blue-300 bg-gradient-to-br from-blue-500 to-blue-700 text-white",
+    red: "border-red-300 bg-gradient-to-br from-red-500 to-red-700 text-white",
+    amber:
+      "border-amber-300 bg-gradient-to-br from-amber-400 to-orange-600 text-white",
+    violet:
+      "border-violet-300 bg-gradient-to-br from-violet-500 to-purple-700 text-white",
   };
 
   return (
     <div
       className={`
-        min-h-[130px] rounded-3xl border p-5 shadow-md transition hover:-translate-y-1 hover:shadow-xl
-        ${styles[variant]}
+        min-h-[130px] rounded-3xl border p-5 shadow-md
+        transition hover:-translate-y-1 hover:shadow-xl
+        ${styles[variant] || styles.blue}
       `}
     >
-      <p className="text-sm font-semibold opacity-80">{title}</p>
-      <p className="mt-2 text-2xl font-extrabold">{value}</p>
-      <p className="mt-1 text-sm opacity-80">{text}</p>
+      <p className="text-sm font-bold text-white/90">{title}</p>
+
+      <p className="mt-2 text-2xl font-extrabold text-white">{value}</p>
+
+      <p className="mt-1 text-sm font-medium text-white/85">{text}</p>
     </div>
   );
 };
 
 const Panel = ({ title, description, badge, children }) => (
-  <section className="rounded-3xl border border-slate-300 bg-slate-100 p-4 shadow-md sm:p-5">
-    <div className="mb-5 flex flex-col gap-3 border-b border-slate-300 pb-4 sm:flex-row sm:items-center sm:justify-between">
+  <section className="rounded-3xl border border-cyan-200 bg-white p-4 shadow-lg shadow-cyan-900/10 sm:p-5">
+    <div className="mb-5 flex flex-col gap-3 border-b border-cyan-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h2 className="text-sm font-extrabold text-slate-900">{title}</h2>
-        <p className="mt-1 text-sm text-slate-600">{description}</p>
+        <h2 className="text-sm font-extrabold text-cyan-900">{title}</h2>
+
+        <p className="mt-1 text-sm font-medium text-slate-600">
+          {description}
+        </p>
       </div>
 
       {badge && (
-        <span className="w-fit rounded-full border border-blue-200 bg-blue-100 px-4 py-2 text-sm font-bold text-blue-800">
+        <span className="w-fit rounded-full border border-cyan-300 bg-cyan-100 px-4 py-2 text-sm font-bold text-cyan-800">
           {badge}
         </span>
       )}
@@ -692,33 +753,34 @@ const Panel = ({ title, description, badge, children }) => (
 const MiniBox = ({ label, value, green = false }) => (
   <div
     className={`
-      rounded-xl border p-3
+      rounded-xl border p-3 shadow-sm
       ${
         green
-          ? "border-emerald-200 bg-emerald-100 text-emerald-800"
-          : "border-slate-300 bg-slate-100 text-slate-800"
+          ? "border-emerald-300 bg-emerald-100 text-emerald-800"
+          : "border-cyan-200 bg-cyan-50 text-cyan-800"
       }
     `}
   >
-    <p className="text-sm font-semibold opacity-80">{label}</p>
-    <p className="mt-1 truncate text-sm font-bold">{value}</p>
+    <p className="text-sm font-bold opacity-80">{label}</p>
+
+    <p className="mt-1 truncate text-sm font-extrabold">{value}</p>
   </div>
 );
 
 const EstadoBadge = ({ estado }) => {
   const styles = {
-    Activo: "border-emerald-200 bg-emerald-100 text-emerald-800",
-    "En Espera": "border-amber-200 bg-amber-100 text-amber-800",
-    Completado: "border-blue-200 bg-blue-100 text-blue-800",
-    Cancelado: "border-red-200 bg-red-100 text-red-800",
-    "En ejecución": "border-emerald-200 bg-emerald-100 text-emerald-800",
+    Activo: "border-emerald-300 bg-emerald-100 text-emerald-800",
+    "En Espera": "border-amber-300 bg-amber-100 text-amber-800",
+    Completado: "border-blue-300 bg-blue-100 text-blue-800",
+    Cancelado: "border-red-300 bg-red-100 text-red-800",
+    "En ejecución": "border-emerald-300 bg-emerald-100 text-emerald-800",
   };
 
   return (
     <span
       className={`
         rounded-full border px-3 py-1 text-sm font-bold
-        ${styles[estado] || "border-slate-300 bg-slate-100 text-slate-800"}
+        ${styles[estado] || "border-cyan-300 bg-cyan-100 text-cyan-800"}
       `}
     >
       {estado || "—"}
@@ -731,40 +793,52 @@ const ProgressItem = ({ label, value, total, variant = "green" }) => {
     total > 0 ? Math.round((Number(value) / Number(total)) * 100) : 0;
 
   const styles = {
-    green: "bg-emerald-600",
-    amber: "bg-amber-500",
-    red: "bg-red-600",
+    green: "from-emerald-400 to-emerald-600",
+    amber: "from-amber-400 to-orange-500",
+    red: "from-red-400 to-red-600",
+  };
+
+  const textStyles = {
+    green: "text-emerald-800",
+    amber: "text-amber-800",
+    red: "text-red-800",
   };
 
   return (
-    <div className="rounded-2xl border border-slate-300 bg-slate-200 p-4">
+    <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <p className="text-sm font-bold text-slate-800">{label}</p>
+        <p className={`text-sm font-extrabold ${textStyles[variant]}`}>
+          {label}
+        </p>
 
         <p className="text-sm font-bold text-slate-700">
           {value}/{total || 0}
         </p>
       </div>
 
-      <div className="h-3 overflow-hidden rounded-full bg-slate-300">
+      <div className="h-3 overflow-hidden rounded-full bg-white">
         <div
-          className={`h-full rounded-full ${styles[variant]}`}
+          className={`h-full rounded-full bg-gradient-to-r ${styles[variant]}`}
           style={{ width: `${percent}%` }}
         />
       </div>
 
-      <p className="mt-2 text-sm text-slate-600">{percent}% del total</p>
+      <p className="mt-2 text-sm font-semibold text-slate-600">
+        {percent}% del total
+      </p>
     </div>
   );
 };
 
 const InfoListItem = ({ title, subtitle, badge, green = false }) => (
-  <div className="rounded-2xl border border-slate-300 bg-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50">
+  <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm transition hover:border-cyan-400 hover:bg-cyan-100">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
-        <p className="truncate text-sm font-bold text-slate-900">{title}</p>
+        <p className="truncate text-sm font-extrabold text-slate-900">
+          {title}
+        </p>
 
-        <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
+        <p className="mt-1 text-sm font-medium text-slate-600">{subtitle}</p>
       </div>
 
       <span
@@ -772,8 +846,8 @@ const InfoListItem = ({ title, subtitle, badge, green = false }) => (
           w-fit shrink-0 rounded-full border px-3 py-1 text-sm font-bold
           ${
             green
-              ? "border-emerald-200 bg-emerald-100 text-emerald-800"
-              : "border-blue-200 bg-blue-100 text-blue-800"
+              ? "border-emerald-300 bg-emerald-100 text-emerald-800"
+              : "border-cyan-300 bg-cyan-100 text-cyan-800"
           }
         `}
       >
@@ -784,7 +858,7 @@ const InfoListItem = ({ title, subtitle, badge, green = false }) => (
 );
 
 const EmptyBox = ({ text }) => (
-  <div className="rounded-2xl border border-dashed border-slate-400 bg-slate-200 px-6 py-8 text-center">
-    <p className="text-sm font-bold text-slate-700">{text}</p>
+  <div className="rounded-2xl border border-dashed border-cyan-300 bg-cyan-50 px-6 py-8 text-center">
+    <p className="text-sm font-bold text-cyan-800">{text}</p>
   </div>
 );

@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 
+import InicioPage from './pages/InicioPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import ProyectosPage from './pages/ProyectosPage.jsx'
 import VehiculosPage from './pages/VehiculosPage.jsx'
@@ -39,8 +40,16 @@ function App() {
         <Route path="/" element={<Layout />}>
 
           {/* Dashboard — No requiere permisos especiales */}
-          <Route index element={<DashboardPage />} />
+          <Route index element={<InicioPage />} />
 
+          <Route
+            path="inicio"
+            element={<InicioPage />}
+          />
+
+          <Route path="dashboard"
+            element={<PrivateRoute permiso="/dashboard" element={<DashboardPage />} />}
+          />
           <Route path="proyectos"
             element={<PrivateRoute permiso="/proyectos" element={<ProyectosPage />} />}
           />

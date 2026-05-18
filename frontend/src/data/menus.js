@@ -1,6 +1,5 @@
 import { api } from "./api.js";
 
-
 const toUI = (d) => ({
   id: d.id_menu,
   nombre: d.nombre ?? "",
@@ -11,12 +10,33 @@ const toUI = (d) => ({
   show: d.show ?? true,
 });
 
-
 function extract(res) {
   if (Array.isArray(res?.data)) return res.data;
   if (Array.isArray(res)) return res;
   return [];
 }
+
+const normalizeParentId = (value) => {
+  if (value === "" || value === undefined || value === null) {
+    return null;
+  }
+
+  return Number(value);
+};
+
+const normalizeBody = (d) => {
+  const esSubmenu = d.esSubmenu ?? d.es_submenu ?? false;
+  const parentId = normalizeParentId(d.parentId ?? d.id_menu_parent);
+
+  return {
+    nombre: d.nombre,
+    es_submenu: Boolean(esSubmenu),
+    url: d.url?.trim() ? d.url.trim() : null,
+    id_menu_parent: parentId,
+    estado: d.estado ?? true,
+    show: d.show ?? true,
+  };
+};
 
 export const fetchMenus = async () => {
   const res = await api("/menus");
@@ -24,16 +44,8 @@ export const fetchMenus = async () => {
   return list.map(toUI);
 };
 
-
 export const createMenu = async (d) => {
-  const body = {
-    nombre: d.nombre,
-    es_submenu: !!d.esSubmenu,
-    url: d.url || null,
-    id_menu_parent: d.parentId || null,
-    estado: d.estado ?? true,
-    show: d.show ?? true,
-  };
+  const body = normalizeBody(d);
 
   const res = await api("/menus", {
     method: "POST",
@@ -43,16 +55,8 @@ export const createMenu = async (d) => {
   return toUI(res.data);
 };
 
-
 export const updateMenu = async (id, d) => {
-  const body = {
-    nombre: d.nombre,
-    es_submenu: d.esSubmenu,
-    url: d.url ?? undefined,
-    id_menu_parent: d.parentId ?? undefined,
-    estado: d.estado ?? undefined,
-    show: d.show ?? undefined,
-  };
+  const body = normalizeBody(d);
 
   const res = await api(`/menus/${id}`, {
     method: "PATCH",
@@ -67,12 +71,10 @@ export const deleteMenu = async (id) => {
   return true;
 };
 
-
 export const fetchMenuTree = async () => {
   const res = await api("/menus/tree/all/data");
   return res.data ?? [];
 };
-
 
 export const fetchMenuByUser = async (usuarioId) => {
   const res = await api(`/menus/usuario/${usuarioId}`);

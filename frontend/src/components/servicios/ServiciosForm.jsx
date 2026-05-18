@@ -3,6 +3,18 @@ import { useMateriales } from "../../hooks/useMateriales";
 import { useCostosDirectos } from "../../hooks/useCostosDirectos";
 import { useCostosIndirectos } from "../../hooks/useCostosIndirectos";
 
+const DESCRIPCION_PORCENTAJES = {
+  costoMaterial: "Cantidad × precio unitario",
+  manoObra: "40% del costo material",
+  equipos: "10% del costo material",
+  totalDirecto: "Material + mano de obra + equipos",
+  costoDirectoBase: "Base para calcular indirectos",
+  administracion: "5% del costo directo",
+  operacion: "10% del costo directo",
+  utilidad: "15% del costo directo",
+  totalIndirecto: "Administración + operación + utilidad",
+};
+
 export default function ServiciosForm({
   onSubmit,
   onClose,
@@ -169,9 +181,7 @@ export default function ServiciosForm({
   const totalServicio = totalDirectos + totalIndirectos;
 
   const materialesFiltrados = materiales.filter((m) =>
-    getMaterialNombre(m)
-      .toLowerCase()
-      .includes(busquedaMaterial.toLowerCase())
+    getMaterialNombre(m).toLowerCase().includes(busquedaMaterial.toLowerCase())
   );
 
   const inputClass =
@@ -403,7 +413,10 @@ export default function ServiciosForm({
         null;
 
       if (indirectoActualizado && !primerCostoDirectoId) {
-        alert("No se pudo obtener el ID del costo directo.");
+        setErrors((prev) => ({
+          ...prev,
+          general: "No se pudo obtener el ID del costo directo.",
+        }));
         return;
       }
 
@@ -440,8 +453,10 @@ export default function ServiciosForm({
       await reloadIndirectos();
       onClose();
     } catch (error) {
-      console.error("Error al guardar servicio con costos:", error);
-      alert(error.message || "Error al guardar el servicio.");
+      setErrors((prev) => ({
+        ...prev,
+        general: error.message || "Error al guardar el servicio.",
+      }));
     }
   };
 
@@ -475,16 +490,24 @@ export default function ServiciosForm({
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <SummaryBox label="Directos" value={`C$${money(totalDirectos)}`} />
+
               <SummaryBox
                 label="Indirectos"
                 value={`C$${money(totalIndirectos)}`}
               />
+
               <SummaryBox label="Total" value={`C$${money(totalServicio)}`} />
             </div>
           </div>
         </div>
 
         <div className="flex-1 space-y-5 overflow-y-auto bg-slate-100 p-4 sm:p-6">
+          {errors.general && (
+            <div className="rounded-2xl border border-red-200 bg-red-100 px-5 py-4 text-sm font-bold text-red-700">
+              {errors.general}
+            </div>
+          )}
+
           <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
             <div className="mb-5 border-b border-slate-300 pb-4">
               <h3 className="text-sm font-bold text-slate-900">
@@ -539,6 +562,16 @@ export default function ServiciosForm({
                 <p className="mt-1 text-sm text-slate-600">
                   Agregue materiales, cantidades y precios del servicio.
                 </p>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-blue-200 bg-blue-100 px-3 py-1 text-xs font-bold text-blue-800">
+                    Mano de obra: 40% del costo material
+                  </span>
+
+                  <span className="rounded-full border border-cyan-200 bg-cyan-100 px-3 py-1 text-xs font-bold text-cyan-800">
+                    Equipos: 10% del costo material
+                  </span>
+                </div>
               </div>
 
               <div className="w-full xl:max-w-xl">
@@ -607,27 +640,47 @@ export default function ServiciosForm({
                         <th className="px-4 py-4 text-left font-bold">
                           Material
                         </th>
+
                         <th className="px-4 py-4 text-center font-bold">
                           Cant.
                         </th>
+
                         <th className="px-4 py-4 text-center font-bold">
                           U/M
                         </th>
+
                         <th className="px-4 py-4 text-right font-bold">
                           P. Unit
                         </th>
+
                         <th className="px-4 py-4 text-right font-bold">
                           Material
+                          <span className="block text-xs font-semibold text-slate-300">
+                            Cantidad × precio
+                          </span>
                         </th>
+
                         <th className="px-4 py-4 text-right font-bold">
                           Mano Obra
+                          <span className="block text-xs font-semibold text-slate-300">
+                            40% del costo material
+                          </span>
                         </th>
+
                         <th className="px-4 py-4 text-right font-bold">
                           Equipos
+                          <span className="block text-xs font-semibold text-slate-300">
+                            10% del costo material
+                          </span>
                         </th>
+
                         <th className="px-4 py-4 text-right font-bold">
                           Total
+                          <span className="block text-xs font-semibold text-slate-300">
+                            Material + mano obra + equipos
+                          </span>
                         </th>
+
                         <th className="px-4 py-4 text-center font-bold">
                           Acción
                         </th>
@@ -800,21 +853,25 @@ export default function ServiciosForm({
                       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <MiniBox
                           label="Costo Material"
+                          porcentaje={DESCRIPCION_PORCENTAJES.costoMaterial}
                           value={`C$${money(d.costo_material)}`}
                         />
 
                         <MiniBox
                           label="Mano de Obra"
+                          porcentaje={DESCRIPCION_PORCENTAJES.manoObra}
                           value={`C$${money(d.mano_obra)}`}
                         />
 
                         <MiniBox
                           label="Equipos"
+                          porcentaje={DESCRIPCION_PORCENTAJES.equipos}
                           value={`C$${money(d.equipos)}`}
                         />
 
                         <MiniBox
                           label="Total"
+                          porcentaje={DESCRIPCION_PORCENTAJES.totalDirecto}
                           value={`C$${money(d.total)}`}
                           variant="green"
                         />
@@ -841,6 +898,20 @@ export default function ServiciosForm({
                 <p className="mt-1 text-sm text-slate-600">
                   Genere administración, operación y utilidad.
                 </p>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
+                    Administración: 5% del costo directo
+                  </span>
+
+                  <span className="rounded-full border border-teal-200 bg-teal-100 px-3 py-1 text-xs font-bold text-teal-800">
+                    Operación: 10% del costo directo
+                  </span>
+
+                  <span className="rounded-full border border-lime-200 bg-lime-100 px-3 py-1 text-xs font-bold text-lime-800">
+                    Utilidad: 15% del costo directo
+                  </span>
+                </div>
               </div>
 
               <button
@@ -882,26 +953,33 @@ export default function ServiciosForm({
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
                       <MiniBox
                         label="C. Directo"
+                        porcentaje={
+                          DESCRIPCION_PORCENTAJES.costoDirectoBase
+                        }
                         value={`C$${money(ci.total_costo_directo)}`}
                       />
 
                       <MiniBox
                         label="Administración"
+                        porcentaje={DESCRIPCION_PORCENTAJES.administracion}
                         value={`C$${money(ci.administracion)}`}
                       />
 
                       <MiniBox
                         label="Operación"
+                        porcentaje={DESCRIPCION_PORCENTAJES.operacion}
                         value={`C$${money(ci.operacion)}`}
                       />
 
                       <MiniBox
                         label="Utilidad"
+                        porcentaje={DESCRIPCION_PORCENTAJES.utilidad}
                         value={`C$${money(ci.utilidad)}`}
                       />
 
                       <MiniBox
                         label="Total"
+                        porcentaje={DESCRIPCION_PORCENTAJES.totalIndirecto}
                         value={`C$${money(ci.total)}`}
                         variant="green"
                       />
@@ -949,7 +1027,7 @@ const SummaryBox = ({ label, value }) => (
   </div>
 );
 
-const MiniBox = ({ label, value, variant = "default" }) => {
+const MiniBox = ({ label, value, porcentaje, variant = "default" }) => {
   const styles = {
     default: "border-slate-300 bg-slate-200 text-slate-800",
     green: "border-emerald-200 bg-emerald-100 text-emerald-800",
@@ -958,6 +1036,13 @@ const MiniBox = ({ label, value, variant = "default" }) => {
   return (
     <div className={`rounded-xl border p-3 ${styles[variant]}`}>
       <p className="text-sm font-semibold opacity-80">{label}</p>
+
+      {porcentaje && (
+        <p className="mt-1 text-xs font-bold text-blue-700">
+          {porcentaje}
+        </p>
+      )}
+
       <p className="mt-1 text-sm font-bold">{value}</p>
     </div>
   );

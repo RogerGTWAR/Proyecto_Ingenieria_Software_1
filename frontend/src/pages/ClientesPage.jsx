@@ -86,7 +86,7 @@ function ClientesPage() {
   const [clienteAEliminar, setClienteAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const [vistaTarjetas, setVistaTarjetas] = useState(true);
+  const [vistaTarjetas, setVistaTarjetas] = useState(false);
 
   const [mostrarFlujo, setMostrarFlujo] = useState(false);
 

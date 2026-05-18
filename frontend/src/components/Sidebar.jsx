@@ -4,10 +4,11 @@ import { Link, useLocation } from "react-router-dom";
 const Sidebar = () => {
   const location = useLocation();
 
-  const [openAdministracion, setOpenAdministracion] = useState(false);
-  const [openClientesProyectos, setOpenClientesProyectos] = useState(false);
-  const [openInventarioCompras, setOpenInventarioCompras] = useState(false);
   const [openSistema, setOpenSistema] = useState(false);
+  const [openProyectos, setOpenProyectos] = useState(false);
+  const [openInventario, setOpenInventario] = useState(false);
+  const [openAdministracion, setOpenAdministracion] = useState(false);
+  const [openPanelReportes, setOpenPanelReportes] = useState(false);
 
   const [permisos, setPermisos] = useState([]);
 
@@ -57,13 +58,7 @@ const Sidebar = () => {
     return permisos.includes(url);
   };
 
-  const administracionItems = [
-    {
-      id: "empleados",
-      link: "/empleados",
-      label: "Empleados",
-      icon: "icons/employee.svg",
-    },
+  const sistemaItems = [
     {
       id: "usuarios",
       link: "/usuarios",
@@ -76,20 +71,20 @@ const Sidebar = () => {
       label: "Permisos",
       icon: "icons/permisos.svg",
     },
+    {
+      id: "menus",
+      link: "/menus",
+      label: "Menús",
+      icon: "icons/menu.svg",
+    },
   ];
 
-  const clientesProyectosItems = [
+  const proyectosItems = [
     {
       id: "clientes",
       link: "/clientes",
       label: "Clientes",
       icon: "icons/clients.svg",
-    },
-    {
-      id: "proyectos",
-      link: "/proyectos",
-      label: "Proyectos",
-      icon: "icons/projects.svg",
     },
     {
       id: "avaluos",
@@ -103,9 +98,15 @@ const Sidebar = () => {
       label: "Servicios",
       icon: "icons/tool.svg",
     },
+    {
+      id: "proyectos",
+      link: "/proyectos",
+      label: "Proyectos",
+      icon: "icons/projects.svg",
+    },
   ];
 
-  const inventarioComprasItems = [
+  const inventarioItems = [
     {
       id: "proveedores",
       link: "/proveedores",
@@ -124,6 +125,15 @@ const Sidebar = () => {
       label: "Inventario",
       icon: "icons/inventory.svg",
     },
+  ];
+
+  const administracionItems = [
+    {
+      id: "empleados",
+      link: "/empleados",
+      label: "Empleados",
+      icon: "icons/employee.svg",
+    },
     {
       id: "vehiculos",
       link: "/vehiculos",
@@ -132,18 +142,12 @@ const Sidebar = () => {
     },
   ];
 
-  const sistemaItems = [
+  const panelReportesItems = [
     {
       id: "dashboard",
-      link: "/",
+      link: "/dashboard",
       label: "Dashboard",
       icon: "icons/dashboard.svg",
-    },
-    {
-      id: "menus",
-      link: "/menus",
-      label: "Menús",
-      icon: "icons/menu.svg",
     },
     {
       id: "reportes",
@@ -157,14 +161,18 @@ const Sidebar = () => {
     return items.filter((item) => tienePermiso(item.link));
   };
 
-  const administracionFiltrado = filtrarPorPermiso(administracionItems);
-  const clientesProyectosFiltrado = filtrarPorPermiso(clientesProyectosItems);
-  const inventarioComprasFiltrado = filtrarPorPermiso(inventarioComprasItems);
   const sistemaFiltrado = filtrarPorPermiso(sistemaItems);
+  const proyectosFiltrado = filtrarPorPermiso(proyectosItems);
+  const inventarioFiltrado = filtrarPorPermiso(inventarioItems);
+  const administracionFiltrado = filtrarPorPermiso(administracionItems);
+  const panelReportesFiltrado = filtrarPorPermiso(panelReportesItems);
 
   const isGroupActive = (items) => {
     return items.some((item) => location.pathname === item.link);
   };
+
+  const isInicioActive =
+    location.pathname === "/" || location.pathname === "/inicio";
 
   const renderGrupo = (titulo, icono, abierto, cambiarEstado, items) => {
     if (items.length === 0) return null;
@@ -288,9 +296,17 @@ const Sidebar = () => {
   };
 
   const mobileItems = [
-    ...clientesProyectosFiltrado,
-    ...inventarioComprasFiltrado,
+    {
+      id: "inicio",
+      link: "/inicio",
+      label: "Inicio",
+      icon: "icons/dashboard.svg",
+    },
+    ...proyectosFiltrado,
+    ...inventarioFiltrado,
+    ...administracionFiltrado,
     ...sistemaFiltrado,
+    ...panelReportesFiltrado,
   ];
 
   return (
@@ -338,36 +354,92 @@ const Sidebar = () => {
 
         <nav className="flex-1 overflow-y-auto px-2.5 pb-5">
           <ul className="space-y-2">
+            <li>
+              <Link
+                to="/inicio"
+                title="Inicio"
+                className={`
+                  flex
+                  w-full
+                  items-center
+                  gap-2
+                  rounded-2xl
+                  px-2.5
+                  py-3
+                  text-left
+                  text-sm
+                  font-bold
+                  transition
+                  ${
+                    isInicioActive
+                      ? "bg-white/15 text-white shadow-sm"
+                      : "text-blue-100 hover:bg-white/10 hover:text-white"
+                  }
+                `}
+              >
+                <span
+                  className={`
+                    flex
+                    h-9
+                    w-9
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    ${isInicioActive ? "bg-cyan-400/20" : "bg-white/10"}
+                  `}
+                >
+                  <img
+                    className="h-5 w-5 brightness-0 invert"
+                    src="icons/dashboard.svg"
+                    alt=""
+                  />
+                </span>
+
+                <span className="min-w-0 flex-1 whitespace-normal break-words leading-4">
+                  Inicio
+                </span>
+              </Link>
+            </li>
+
+            {renderGrupo(
+              "Sistema",
+              "icons/menu.svg",
+              openSistema,
+              setOpenSistema,
+              sistemaFiltrado
+            )}
+
+            {renderGrupo(
+              "Proyectos",
+              "icons/projects.svg",
+              openProyectos,
+              setOpenProyectos,
+              proyectosFiltrado
+            )}
+
+            {renderGrupo(
+              "Inventario",
+              "icons/inventory.svg",
+              openInventario,
+              setOpenInventario,
+              inventarioFiltrado
+            )}
+
             {renderGrupo(
               "Administración",
-              "icons/menu.svg",
+              "icons/employee.svg",
               openAdministracion,
               setOpenAdministracion,
               administracionFiltrado
             )}
 
             {renderGrupo(
-              "Clientes y Proyectos",
-              "icons/projects.svg",
-              openClientesProyectos,
-              setOpenClientesProyectos,
-              clientesProyectosFiltrado
-            )}
-
-            {renderGrupo(
-              "Inventario y Compras",
-              "icons/inventory.svg",
-              openInventarioCompras,
-              setOpenInventarioCompras,
-              inventarioComprasFiltrado
-            )}
-
-            {renderGrupo(
-              "Sistema",
+              "Panel y reportes",
               "icons/dashboard.svg",
-              openSistema,
-              setOpenSistema,
-              sistemaFiltrado
+              openPanelReportes,
+              setOpenPanelReportes,
+              panelReportesFiltrado
             )}
           </ul>
         </nav>
@@ -406,7 +478,9 @@ const Sidebar = () => {
       >
         <div className="grid grid-cols-5 gap-2">
           {mobileItems.slice(0, 5).map((item) => {
-            const activo = location.pathname === item.link;
+            const activo =
+              location.pathname === item.link ||
+              (item.id === "inicio" && location.pathname === "/");
 
             return (
               <Link

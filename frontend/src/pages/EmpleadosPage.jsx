@@ -84,7 +84,7 @@ function EmpleadosPage() {
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroRol, setFiltroRol] = useState("all");
-  const [vistaTarjetas, setVistaTarjetas] = useState(true);
+  const [vistaTarjetas, setVistaTarjetas] = useState(false);
   const [mostrarFlujo, setMostrarFlujo] = useState(false);
 
   const [vistaDetalle, setVistaDetalle] = useState(false);

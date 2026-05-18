@@ -1,6 +1,18 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useCostosDirectos } from "../../hooks/useCostosDirectos";
 import { useCostosIndirectos } from "../../hooks/useCostosIndirectos";
+
+const DESCRIPCION_PORCENTAJES = {
+  costoMaterial: "Cantidad × precio unitario",
+  manoObra: "40% del costo material",
+  equipos: "10% del costo material",
+  totalDirecto: "Material + mano de obra + equipos",
+  costoDirectoBase: "Base para calcular indirectos",
+  administracion: "5% del costo directo",
+  operacion: "10% del costo directo",
+  utilidad: "15% del costo directo",
+  totalIndirecto: "Administración + operación + utilidad",
+};
 
 export default function ServiciosDetails({
   servicio,
@@ -8,6 +20,8 @@ export default function ServiciosDetails({
   onEdit,
   onDelete,
 }) {
+  const [mostrarPorcentajes, setMostrarPorcentajes] = useState(false);
+
   const { items: directos, reload: reloadDirectos } = useCostosDirectos();
   const { items: indirectos, reload: reloadIndirectos } = useCostosIndirectos();
 
@@ -15,6 +29,7 @@ export default function ServiciosDetails({
     if (servicio) {
       reloadDirectos();
       reloadIndirectos();
+      setMostrarPorcentajes(false);
     }
   }, [servicio]);
 
@@ -101,6 +116,20 @@ export default function ServiciosDetails({
                 <p className="mt-1 text-sm text-slate-600">
                   Materiales, mano de obra y equipos asignados al servicio.
                 </p>
+
+                <button
+                  type="button"
+                  onClick={() => setMostrarPorcentajes((prev) => !prev)}
+                  className="
+                    mt-3 rounded-xl border border-blue-200 bg-blue-100
+                    px-4 py-2 text-xs font-bold text-blue-800
+                    transition hover:bg-blue-200
+                  "
+                >
+                  {mostrarPorcentajes
+                    ? "Ocultar porcentajes"
+                    : "Mostrar porcentajes"}
+                </button>
               </div>
 
               <span className="w-fit rounded-full border border-blue-200 bg-blue-100 px-4 py-2 text-sm font-bold text-blue-800">
@@ -124,7 +153,8 @@ export default function ServiciosDetails({
                       </h4>
 
                       <p className="text-sm text-slate-600">
-                        Costo directo calculado por material, mano de obra y equipos.
+                        Costo directo calculado por material, mano de obra y
+                        equipos.
                       </p>
                     </div>
 
@@ -141,21 +171,41 @@ export default function ServiciosDetails({
 
                       <MiniBox
                         label="C. Material"
+                        porcentaje={
+                          mostrarPorcentajes
+                            ? DESCRIPCION_PORCENTAJES.costoMaterial
+                            : null
+                        }
                         value={`C$${money(d.costoMaterial)}`}
                       />
 
                       <MiniBox
                         label="Mano de Obra"
+                        porcentaje={
+                          mostrarPorcentajes
+                            ? DESCRIPCION_PORCENTAJES.manoObra
+                            : null
+                        }
                         value={`C$${money(d.manoObra)}`}
                       />
 
                       <MiniBox
                         label="Equipos"
+                        porcentaje={
+                          mostrarPorcentajes
+                            ? DESCRIPCION_PORCENTAJES.equipos
+                            : null
+                        }
                         value={`C$${money(d.equiposTransporteHerramientas)}`}
                       />
 
                       <MiniBox
                         label="Total"
+                        porcentaje={
+                          mostrarPorcentajes
+                            ? DESCRIPCION_PORCENTAJES.totalDirecto
+                            : null
+                        }
                         value={`C$${money(d.totalCostoDirecto)}`}
                         variant="green"
                       />
@@ -176,7 +226,8 @@ export default function ServiciosDetails({
                 </h3>
 
                 <p className="mt-1 text-sm text-slate-600">
-                  Este servicio maneja un único registro de administración, operación y utilidad.
+                  Este servicio maneja un único registro de administración,
+                  operación y utilidad.
                 </p>
               </div>
 
@@ -198,7 +249,8 @@ export default function ServiciosDetails({
                   </p>
 
                   <h4 className="mt-1 text-sm font-bold">
-                    Total indirecto: C${money(indirectoServicio.totalCostoIndirecto)}
+                    Total indirecto: C$
+                    {money(indirectoServicio.totalCostoIndirecto)}
                   </h4>
                 </div>
 
@@ -206,42 +258,71 @@ export default function ServiciosDetails({
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
                     <BigCostBox
                       label="Costo Directo Base"
+                      porcentaje={
+                        mostrarPorcentajes
+                          ? DESCRIPCION_PORCENTAJES.costoDirectoBase
+                          : null
+                      }
                       value={`C$${money(indirectoServicio.totalCostoDirecto)}`}
                     />
 
                     <BigCostBox
                       label="Administración"
+                      porcentaje={
+                        mostrarPorcentajes
+                          ? DESCRIPCION_PORCENTAJES.administracion
+                          : null
+                      }
                       value={`C$${money(indirectoServicio.administracion)}`}
                     />
 
                     <BigCostBox
                       label="Operación"
+                      porcentaje={
+                        mostrarPorcentajes
+                          ? DESCRIPCION_PORCENTAJES.operacion
+                          : null
+                      }
                       value={`C$${money(indirectoServicio.operacion)}`}
                     />
 
                     <BigCostBox
                       label="Utilidad"
+                      porcentaje={
+                        mostrarPorcentajes
+                          ? DESCRIPCION_PORCENTAJES.utilidad
+                          : null
+                      }
                       value={`C$${money(indirectoServicio.utilidad)}`}
                     />
 
                     <BigCostBox
                       label="Total Indirecto"
-                      value={`C$${money(indirectoServicio.totalCostoIndirecto)}`}
+                      porcentaje={
+                        mostrarPorcentajes
+                          ? DESCRIPCION_PORCENTAJES.totalIndirecto
+                          : null
+                      }
+                      value={`C$${money(
+                        indirectoServicio.totalCostoIndirecto
+                      )}`}
                       variant="green"
                     />
                   </div>
 
-                  <div className="mt-4 rounded-2xl border border-slate-300 bg-slate-200 p-4">
-                    <p className="text-sm font-semibold text-slate-700">
-                      Interpretación
-                    </p>
+                  {mostrarPorcentajes && (
+                    <div className="mt-4 rounded-2xl border border-slate-300 bg-slate-200 p-4">
+                      <p className="text-sm font-semibold text-slate-700">
+                        Interpretación
+                      </p>
 
-                    <p className="mt-1 text-sm text-slate-600">
-                      El costo indirecto se calcula sobre el costo directo base,
-                      sumando administración, operación y utilidad para obtener
-                      el total indirecto del servicio.
-                    </p>
-                  </div>
+                      <p className="mt-1 text-sm text-slate-600">
+                        El costo indirecto se calcula sobre el costo directo
+                        base. Administración representa el 5%, operación el 10%
+                        y utilidad el 15% del costo directo del servicio.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -296,7 +377,7 @@ const InfoBox = ({ label, value, variant = "default" }) => {
   );
 };
 
-const MiniBox = ({ label, value, variant = "default" }) => {
+const MiniBox = ({ label, value, porcentaje, variant = "default" }) => {
   const styles = {
     default: "border-slate-300 bg-slate-200 text-slate-800",
     green: "border-emerald-200 bg-emerald-100 text-emerald-800",
@@ -305,25 +386,34 @@ const MiniBox = ({ label, value, variant = "default" }) => {
   return (
     <div className={`rounded-xl border p-3 ${styles[variant]}`}>
       <p className="text-sm font-semibold opacity-80">{label}</p>
+
+      {porcentaje && (
+        <p className="mt-1 text-xs font-bold text-blue-700">
+          {porcentaje}
+        </p>
+      )}
+
       <p className="mt-1 text-sm font-bold">{value}</p>
     </div>
   );
 };
 
-const BigCostBox = ({ label, value, variant = "default" }) => {
+const BigCostBox = ({ label, value, porcentaje, variant = "default" }) => {
   const styles = {
     default: "border-slate-300 bg-slate-200 text-slate-800",
     green: "border-emerald-200 bg-emerald-100 text-emerald-800",
   };
 
   return (
-    <div
-      className={`
-        rounded-2xl border p-4
-        ${styles[variant]}
-      `}
-    >
+    <div className={`rounded-2xl border p-4 ${styles[variant]}`}>
       <p className="text-sm font-semibold opacity-80">{label}</p>
+
+      {porcentaje && (
+        <p className="mt-1 text-xs font-bold text-blue-700">
+          {porcentaje}
+        </p>
+      )}
+
       <p className="mt-2 text-sm font-extrabold">{value}</p>
     </div>
   );

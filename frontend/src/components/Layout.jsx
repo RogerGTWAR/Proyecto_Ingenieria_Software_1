@@ -8,6 +8,10 @@ const Layout = () => {
   const getTitle = (pathname) => {
     switch (pathname) {
       case "/":
+        return "Inicio";
+      case "/inicio":
+        return "Inicio";
+      case "/dashboard":
         return "Dashboard";
       case "/proyectos":
         return "Proyectos";
@@ -36,7 +40,7 @@ const Layout = () => {
       case "/usuarios":
         return "Usuarios";
       default:
-        return "Dashboard";
+        return "Inicio";
     }
   };
 

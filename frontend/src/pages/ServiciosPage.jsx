@@ -77,7 +77,7 @@ function ServiciosPage() {
   const { reload: reloadIndirectos } = useCostosIndirectos();
 
   const [busqueda, setBusqueda] = useState("");
-  const [vistaTarjetas, setVistaTarjetas] = useState(true);
+  const [vistaTarjetas, setVistaTarjetas] = useState(false);
   const [mostrarFlujo, setMostrarFlujo] = useState(false);
 
   const [vistaDetalle, setVistaDetalle] = useState(false);
