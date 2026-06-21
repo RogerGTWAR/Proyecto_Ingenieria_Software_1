@@ -14,64 +14,76 @@ const toUI = (e) => ({
   telefono: e.telefono ?? "",
   correo: e.correo ?? "",
   reportes: e.reportes ?? null,
+  estado: e.fecha_eliminacion ? "Inactivo" : "Activo",
 });
 
+const extractPayload = (res) => {
+  if (res?.data?.data) return res.data.data;
+  if (res?.data) return res.data;
+  return res;
+};
+
 export const fetchEmpleados = async () => {
-  const { data } = await api("/empleados");
-  return (data ?? []).map(toUI);
+  const res = await api("/empleados");
+
+  const data = extractPayload(res);
+  const list = Array.isArray(data) ? data : [];
+
+  return list.map(toUI);
 };
 
-export const createEmpleado = async (u) => {
+export const createEmpleado = async (empleado) => {
   const body = {
-    nombres: u.nombres,
-    apellidos: u.apellidos,
-    cedula: u.cedula,
-    rol_id: Number(u.rol_id ?? u.rolId),
-    fecha_nacimiento: u.fecha_nacimiento,
-    fecha_contratacion: u.fecha_contratacion,
-    direccion: u.direccion,
-    pais: u.pais,
-    telefono: u.telefono,
-    correo: u.correo,
-    reportes: u.reportes ? Number(u.reportes) : null,
+    nombres: empleado.nombres,
+    apellidos: empleado.apellidos,
+    cedula: empleado.cedula,
+    rol_id: Number(empleado.rol_id ?? empleado.rolId),
+    fecha_nacimiento: empleado.fecha_nacimiento,
+    fecha_contratacion: empleado.fecha_contratacion,
+    direccion: empleado.direccion,
+    pais: empleado.pais,
+    telefono: empleado.telefono,
+    correo: empleado.correo,
+    reportes: empleado.reportes ? Number(empleado.reportes) : null,
   };
 
-  const { data } = await api("/empleados", {
+  const res = await api("/empleados", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body,
   });
 
-  return toUI(data);
+  const payload = extractPayload(res);
+  return toUI(payload);
 };
 
-export const updateEmpleado = async (id, u) => {
+export const updateEmpleado = async (id, empleado) => {
   const body = {
-    ...(u.nombres && { nombres: u.nombres }),
-    ...(u.apellidos && { apellidos: u.apellidos }),
-    ...(u.cedula && { cedula: u.cedula }),
-    ...(u.rol_id ?? u.rolId
-      ? { rol_id: Number(u.rol_id ?? u.rolId) }
-      : {}),
-    ...(u.fecha_nacimiento && { fecha_nacimiento: u.fecha_nacimiento }),
-    ...(u.fecha_contratacion && { fecha_contratacion: u.fecha_contratacion }),
-    ...(u.direccion && { direccion: u.direccion }),
-    ...(u.pais && { pais: u.pais }),
-    ...(u.telefono && { telefono: u.telefono }),
-    ...(u.correo && { correo: u.correo }),
-    ...(u.reportes && { reportes: Number(u.reportes) }),
+    nombres: empleado.nombres,
+    apellidos: empleado.apellidos,
+    cedula: empleado.cedula,
+    rol_id: Number(empleado.rol_id ?? empleado.rolId),
+    fecha_nacimiento: empleado.fecha_nacimiento,
+    fecha_contratacion: empleado.fecha_contratacion,
+    direccion: empleado.direccion,
+    pais: empleado.pais,
+    telefono: empleado.telefono,
+    correo: empleado.correo,
+    reportes: empleado.reportes ? Number(empleado.reportes) : null,
   };
 
-  const { data } = await api(`/empleados/${id}`, {
+  const res = await api(`/empleados/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
     body,
   });
 
-  return toUI(data);
+  const payload = extractPayload(res);
+  return toUI(payload);
 };
 
 export const deleteEmpleado = async (id) => {
-  await api(`/empleados/${id}`, { method: "DELETE" });
+  await api(`/empleados/${id}`, {
+    method: "DELETE",
+  });
+
   return true;
 };

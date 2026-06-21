@@ -19,9 +19,11 @@ const EmpleadosForm = ({
     fecha_contratacion: "",
     estado: "Activo",
     rolId: "",
+    reportes: "",
   });
 
   const [errors, setErrors] = useState({});
+  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -41,6 +43,7 @@ const EmpleadosForm = ({
           : "",
         estado: initialData.estado || "Activo",
         rolId: initialData.rolId || "",
+        reportes: initialData.reportes || "",
       });
     }
   }, [initialData]);
@@ -48,40 +51,84 @@ const EmpleadosForm = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: "",
+    }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
+  const validate = () => {
     const newErrors = {};
 
+    const letrasRegex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/;
     const cedulaRegex = /^[0-9]{13}[A-Za-z]$/;
-    if (!cedulaRegex.test(formData.cedula)) {
+    const telefonoRegex = /^[0-9]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const nombres = formData.nombres.trim();
+    const apellidos = formData.apellidos.trim();
+    const cedula = formData.cedula.trim();
+    const telefono = formData.telefono.trim();
+    const correo = formData.correo.trim();
+
+    if (!nombres) {
+      newErrors.nombres = "Los nombres son obligatorios.";
+    } else if (nombres.length < 2) {
+      newErrors.nombres = "Los nombres deben tener al menos 2 caracteres.";
+    } else if (!letrasRegex.test(nombres)) {
+      newErrors.nombres = "Los nombres solo deben contener letras.";
+    }
+
+    if (!apellidos) {
+      newErrors.apellidos = "Los apellidos son obligatorios.";
+    } else if (apellidos.length < 2) {
+      newErrors.apellidos = "Los apellidos deben tener al menos 2 caracteres.";
+    } else if (!letrasRegex.test(apellidos)) {
+      newErrors.apellidos = "Los apellidos solo deben contener letras.";
+    }
+
+    if (!cedula) {
+      newErrors.cedula = "La cédula es obligatoria.";
+    } else if (!cedulaRegex.test(cedula)) {
       newErrors.cedula =
-        "La cédula debe tener el formato 2410102061000L (13 dígitos más una letra).";
+        "La cédula debe tener 13 dígitos y una letra. Ejemplo: 2410102061000L.";
     }
 
-    if (!formData.telefono || formData.telefono.trim().length < 8) {
+    if (!telefono) {
+      newErrors.telefono = "El teléfono es obligatorio.";
+    } else if (!telefonoRegex.test(telefono)) {
+      newErrors.telefono = "El teléfono debe contener solo números.";
+    } else if (telefono.length < 8) {
       newErrors.telefono = "El teléfono debe tener al menos 8 dígitos.";
+    } else if (telefono.length > 15) {
+      newErrors.telefono = "El teléfono no debe superar los 15 dígitos.";
     }
 
-    const emailRegex = /^\S+@\S+\.\S+$/;
-    if (!emailRegex.test(formData.correo)) {
-      newErrors.correo = "Ingrese un correo válido. Debe incluir @.";
+    if (!correo) {
+      newErrors.correo = "El correo es obligatorio.";
+    } else if (!emailRegex.test(correo)) {
+      newErrors.correo = "Ingrese un correo válido. Ejemplo: empleado@correo.com.";
+    }
+
+    if (!formData.rolId) {
+      newErrors.rolId = "Debe seleccionar un rol.";
     }
 
     if (!formData.fecha_nacimiento) {
       newErrors.fecha_nacimiento = "Debe ingresar la fecha de nacimiento.";
     } else {
       const nacimiento = new Date(formData.fecha_nacimiento);
-      if (
-        nacimiento < new Date("1970-01-01") ||
-        nacimiento > new Date("2020-12-31")
-      ) {
+      const minNacimiento = new Date("1950-01-01");
+      const hoy = new Date();
+
+      if (nacimiento < minNacimiento || nacimiento > hoy) {
         newErrors.fecha_nacimiento =
-          "La fecha de nacimiento debe estar entre 1970 y 2020.";
+          "La fecha de nacimiento debe ser válida y no puede ser futura.";
       }
     }
 
@@ -89,21 +136,45 @@ const EmpleadosForm = ({
       newErrors.fecha_contratacion = "Debe ingresar la fecha de contratación.";
     } else {
       const contratacion = new Date(formData.fecha_contratacion);
-      if (
-        contratacion < new Date("2000-01-01") ||
-        contratacion > new Date("2030-12-31")
-      ) {
+      const minContratacion = new Date("2000-01-01");
+      const hoy = new Date();
+
+      if (contratacion < minContratacion || contratacion > hoy) {
         newErrors.fecha_contratacion =
-          "La fecha de contratación debe estar entre 2000 y 2030.";
+          "La fecha de contratación debe estar entre el año 2000 y la fecha actual.";
+      }
+
+      if (formData.fecha_nacimiento) {
+        const nacimiento = new Date(formData.fecha_nacimiento);
+
+        if (contratacion <= nacimiento) {
+          newErrors.fecha_contratacion =
+            "La fecha de contratación debe ser posterior a la fecha de nacimiento.";
+        }
       }
     }
+
+    return newErrors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (guardando) return;
+
+    const newErrors = validate();
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    onSubmit(formData);
+    try {
+      setGuardando(true);
+      await onSubmit(formData);
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const inputClass =
@@ -188,9 +259,11 @@ const EmpleadosForm = ({
                   name="nombres"
                   value={formData.nombres}
                   onChange={handleChange}
-                  required
                   className={inputClass}
                 />
+                {errors.nombres && (
+                  <p className={errorClass}>{errors.nombres}</p>
+                )}
               </div>
 
               <div>
@@ -200,9 +273,11 @@ const EmpleadosForm = ({
                   name="apellidos"
                   value={formData.apellidos}
                   onChange={handleChange}
-                  required
                   className={inputClass}
                 />
+                {errors.apellidos && (
+                  <p className={errorClass}>{errors.apellidos}</p>
+                )}
               </div>
 
               <div>
@@ -212,6 +287,7 @@ const EmpleadosForm = ({
                   name="cedula"
                   value={formData.cedula}
                   onChange={handleChange}
+                  placeholder="Ejemplo: 2410102061000L"
                   className={inputClass}
                 />
                 {errors.cedula && (
@@ -226,6 +302,7 @@ const EmpleadosForm = ({
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleChange}
+                  placeholder="Ejemplo: 88889999"
                   className={inputClass}
                 />
                 {errors.telefono && (
@@ -240,6 +317,7 @@ const EmpleadosForm = ({
                   name="pais"
                   value={formData.pais}
                   onChange={handleChange}
+                  placeholder="Ejemplo: Nicaragua"
                   className={inputClass}
                 />
               </div>
@@ -279,6 +357,7 @@ const EmpleadosForm = ({
                   name="correo"
                   value={formData.correo}
                   onChange={handleChange}
+                  placeholder="Ejemplo: empleado@correo.com"
                   className={inputClass}
                 />
                 {errors.correo && (
@@ -292,7 +371,6 @@ const EmpleadosForm = ({
                   name="rolId"
                   value={formData.rolId}
                   onChange={handleChange}
-                  required
                   className={inputClass}
                 >
                   <option value="">Seleccione un rol</option>
@@ -302,6 +380,9 @@ const EmpleadosForm = ({
                     </option>
                   ))}
                 </select>
+                {errors.rolId && (
+                  <p className={errorClass}>{errors.rolId}</p>
+                )}
               </div>
 
               <div>
@@ -338,6 +419,7 @@ const EmpleadosForm = ({
                   name="direccion"
                   value={formData.direccion}
                   onChange={handleChange}
+                  placeholder="Dirección del empleado"
                   className={inputClass}
                 />
               </div>
@@ -350,16 +432,18 @@ const EmpleadosForm = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 sm:w-auto"
             >
-              {isEdit ? "Actualizar" : "Guardar"}
+              {guardando ? "Guardando..." : isEdit ? "Actualizar" : "Guardar"}
             </button>
           </div>
         </div>

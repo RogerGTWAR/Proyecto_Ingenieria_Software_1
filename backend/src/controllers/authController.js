@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { pool } from "../config/db.js";
 import { signToken, verifyToken } from "../config/jwt.js";
 import Mailer from "../utils/Mailer.js";
+import { registrarAlerta } from "../utils/registrarAlerta.js";
 
 const SALT = 10;
 
@@ -31,6 +32,14 @@ export const login = async (req, res) => {
     const result = await pool.query(query, [usuario]);
 
     if (result.rowCount === 0) {
+      await registrarAlerta({
+        tipo: "Login fallido",
+        titulo: "Intento de inicio de sesión",
+        mensaje: `Se intentó iniciar sesión con el usuario "${usuario}", pero no existe o está eliminado.`,
+        modulo: "Autenticación",
+        prioridad: "Alta",
+      });
+
       return sendError(res, 401, "Credenciales incorrectas");
     }
 
@@ -39,6 +48,16 @@ export const login = async (req, res) => {
     const isMatch = await bcrypt.compare(contrasena, user.contrasena);
 
     if (!isMatch) {
+      await registrarAlerta({
+        usuario_id: user.usuario_id,
+        tipo: "Login fallido",
+        titulo: "Contraseña incorrecta",
+        mensaje: `El usuario "${user.usuario}" intentó iniciar sesión con una contraseña incorrecta.`,
+        modulo: "Autenticación",
+        referencia_id: user.usuario_id,
+        prioridad: "Alta",
+      });
+
       return sendError(res, 401, "Credenciales incorrectas");
     }
 
@@ -53,6 +72,16 @@ export const login = async (req, res) => {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 1000 * 60 * 60 * 8,
+    });
+
+    await registrarAlerta({
+      usuario_id: user.usuario_id,
+      tipo: "Inicio de sesión",
+      titulo: "Inicio de sesión exitoso",
+      mensaje: `El usuario "${user.usuario}" inició sesión correctamente.`,
+      modulo: "Autenticación",
+      referencia_id: user.usuario_id,
+      prioridad: "Baja",
     });
 
     return res.json({
@@ -133,11 +162,23 @@ export const register = async (req, res) => {
       [empleado_id, usuario.trim(), hash]
     );
 
+    const nuevoUsuario = insert.rows[0];
+
+    await registrarAlerta({
+      usuario_id: nuevoUsuario.usuario_id,
+      tipo: "Registro creado",
+      titulo: "Nuevo usuario registrado",
+      mensaje: `Se creó el usuario "${nuevoUsuario.usuario}" para el empleado ${empleado.nombres} ${empleado.apellidos}.`,
+      modulo: "Usuarios",
+      referencia_id: nuevoUsuario.usuario_id,
+      prioridad: "Media",
+    });
+
     return res.json({
       ok: true,
       msg: "Usuario creado correctamente",
       usuario: {
-        ...insert.rows[0],
+        ...nuevoUsuario,
         cedula: empleado.cedula,
         empleado: `${empleado.nombres} ${empleado.apellidos}`,
       },
@@ -205,11 +246,23 @@ export const autoRegister = async (req, res) => {
       [empleado.empleado_id, suggestedUser, hash]
     );
 
+    const nuevoUsuario = nuevo.rows[0];
+
+    await registrarAlerta({
+      usuario_id: nuevoUsuario.usuario_id,
+      tipo: "Registro creado",
+      titulo: "Cuenta creada automáticamente",
+      mensaje: `Se creó automáticamente la cuenta "${nuevoUsuario.usuario}" para ${empleado.nombres} ${empleado.apellidos}.`,
+      modulo: "Usuarios",
+      referencia_id: nuevoUsuario.usuario_id,
+      prioridad: "Media",
+    });
+
     return res.json({
       ok: true,
       msg: "Cuenta creada automáticamente",
       usuario: {
-        ...nuevo.rows[0],
+        ...nuevoUsuario,
         cedula: empleado.cedula,
         empleado: `${empleado.nombres} ${empleado.apellidos}`,
       },
@@ -230,7 +283,7 @@ export const forgotPassword = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT usuario_id FROM usuarios WHERE usuario = $1",
+      "SELECT usuario_id, usuario FROM usuarios WHERE usuario = $1",
       [usuario]
     );
 
@@ -238,7 +291,9 @@ export const forgotPassword = async (req, res) => {
       return sendError(res, 404, "Usuario no encontrado");
     }
 
-    const token = signToken({ usuario_id: result.rows[0].usuario_id });
+    const user = result.rows[0];
+
+    const token = signToken({ usuario_id: user.usuario_id });
 
     const link = `${process.env.FRONTEND_URL}/recuperar?token=${token}`;
 
@@ -249,6 +304,16 @@ export const forgotPassword = async (req, res) => {
         <p>Has solicitado cambiar tu contraseña.</p>
         <p><a href="${link}">Haz clic aquí para continuar</a></p>
       `,
+    });
+
+    await registrarAlerta({
+      usuario_id: user.usuario_id,
+      tipo: "Recuperación de contraseña",
+      titulo: "Solicitud de recuperación",
+      mensaje: `El usuario "${user.usuario}" solicitó restablecer su contraseña.`,
+      modulo: "Autenticación",
+      referencia_id: user.usuario_id,
+      prioridad: "Media",
     });
 
     return res.json({ ok: true, msg: "Correo enviado" });
@@ -274,6 +339,16 @@ export const resetPassword = async (req, res) => {
       "UPDATE usuarios SET contrasena = $1 WHERE usuario_id = $2",
       [hash, data.usuario_id]
     );
+
+    await registrarAlerta({
+      usuario_id: data.usuario_id,
+      tipo: "Contraseña actualizada",
+      titulo: "Contraseña restablecida",
+      mensaje: "Se restableció correctamente la contraseña de un usuario.",
+      modulo: "Autenticación",
+      referencia_id: data.usuario_id,
+      prioridad: "Media",
+    });
 
     return res.json({ ok: true, msg: "Contraseña actualizada" });
   } catch (error) {
@@ -312,7 +387,22 @@ export const me = async (req, res) => {
   }
 };
 
-export const logout = (req, res) => {
+export const logout = async (req, res) => {
+  const usuarioId = req.user?.usuario_id ?? null;
+  const usuario = req.user?.usuario ?? "Usuario";
+
+  if (usuarioId) {
+    await registrarAlerta({
+      usuario_id: usuarioId,
+      tipo: "Cierre de sesión",
+      titulo: "Sesión cerrada",
+      mensaje: `El usuario "${usuario}" cerró sesión.`,
+      modulo: "Autenticación",
+      referencia_id: usuarioId,
+      prioridad: "Baja",
+    });
+  }
+
   res.clearCookie("token");
   return res.json({ ok: true, msg: "Sesión cerrada" });
 };
@@ -384,7 +474,7 @@ export const updateUsuario = async (req, res) => {
   try {
     const exists = await pool.query(
       `
-      SELECT usuario_id
+      SELECT usuario_id, usuario
       FROM usuarios 
       WHERE usuario_id = $1
         AND fecha_eliminacion IS NULL
@@ -395,6 +485,8 @@ export const updateUsuario = async (req, res) => {
     if (exists.rowCount === 0) {
       return sendError(res, 404, "Usuario no encontrado");
     }
+
+    const usuarioAnterior = exists.rows[0];
 
     if (empleado_id) {
       const emp = await pool.query(
@@ -460,6 +552,16 @@ export const updateUsuario = async (req, res) => {
       );
     }
 
+    await registrarAlerta({
+      usuario_id: Number(id),
+      tipo: "Registro actualizado",
+      titulo: "Usuario actualizado",
+      mensaje: `Se actualizó el usuario "${usuarioAnterior.usuario}".`,
+      modulo: "Usuarios",
+      referencia_id: Number(id),
+      prioridad: "Media",
+    });
+
     return res.json({
       ok: true,
       msg: "Usuario actualizado correctamente",
@@ -477,7 +579,7 @@ export const deleteUsuario = async (req, res) => {
   try {
     const old = await pool.query(
       `
-      SELECT 1
+      SELECT usuario_id, usuario
       FROM usuarios 
       WHERE usuario_id = $1
         AND fecha_eliminacion IS NULL
@@ -489,6 +591,8 @@ export const deleteUsuario = async (req, res) => {
       return sendError(res, 404, "Usuario no encontrado");
     }
 
+    const usuarioEliminado = old.rows[0];
+
     const query = `
       UPDATE usuarios 
       SET fecha_eliminacion = NOW()
@@ -496,6 +600,16 @@ export const deleteUsuario = async (req, res) => {
     `;
 
     await pool.query(query, [id]);
+
+    await registrarAlerta({
+      usuario_id: Number(id),
+      tipo: "Registro eliminado",
+      titulo: "Usuario eliminado",
+      mensaje: `Se eliminó el usuario "${usuarioEliminado.usuario}".`,
+      modulo: "Usuarios",
+      referencia_id: Number(id),
+      prioridad: "Alta",
+    });
 
     return res.json({
       ok: true,

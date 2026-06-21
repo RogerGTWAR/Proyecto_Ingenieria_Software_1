@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useClientes } from "../../hooks/useClientes";
 import { useEmpleados } from "../../hooks/useEmpleados";
 import { useDetallesEmpleados } from "../../hooks/useDetallesEmpleados";
@@ -9,6 +9,14 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   const { items: detalles, add, edit, remove, reload } = useDetallesEmpleados();
 
   const [errors, setErrors] = useState({});
+  const [guardando, setGuardando] = useState(false);
+
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "error",
+    title: "",
+    message: "",
+  });
 
   const [form, setForm] = useState({
     id: "",
@@ -25,6 +33,24 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   const [empleadosAsignados, setEmpleadosAsignados] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState("");
+
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "error",
+      title: "",
+      message: "",
+    });
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -56,6 +82,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
           return {
             id: emp?.id ?? d.empleado_id ?? d.empleadoId,
+            detalleId: d.id,
             nombre: emp
               ? `${emp.nombres} ${emp.apellidos}`
               : `Empleado #${d.empleado_id ?? d.empleadoId}`,
@@ -121,6 +148,8 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   );
 
   const handleAsignarEmpleado = () => {
+    if (guardando) return;
+
     if (!empleadoSeleccionado) {
       setErrors((prev) => ({
         ...prev,
@@ -133,7 +162,13 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       (e) => Number(e.id) === Number(empleadoSeleccionado)
     );
 
-    if (!empleado) return;
+    if (!empleado) {
+      setErrors((prev) => ({
+        ...prev,
+        asignar: "El empleado seleccionado no existe.",
+      }));
+      return;
+    }
 
     const yaAsignado = empleadosAsignados.some(
       (e) => Number(e.id) === Number(empleado.id)
@@ -151,6 +186,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       ...prev,
       {
         id: empleado.id,
+        detalleId: null,
         nombre: `${empleado.nombres} ${empleado.apellidos}`,
         rol: empleado.rolNombre ?? "Sin rol",
         fecha: new Date().toISOString(),
@@ -167,6 +203,8 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   };
 
   const handleQuitarEmpleado = async (id) => {
+    if (guardando) return;
+
     try {
       const detalleExistente = detalles.find(
         (d) =>
@@ -183,8 +221,11 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
         prev.filter((e) => Number(e.id) !== Number(id))
       );
     } catch (error) {
-      console.error("Error al eliminar detalle:", error);
-      alert("No se pudo quitar el empleado asignado.");
+      mostrarMensaje(
+        "error",
+        "Error al quitar empleado",
+        error.message || "No se pudo quitar el empleado asignado."
+      );
     }
   };
 
@@ -197,10 +238,18 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
     if (!form.nombreProyecto.trim()) {
       newErrors.nombreProyecto = "El nombre del proyecto es obligatorio.";
+    } else if (form.nombreProyecto.trim().length < 3) {
+      newErrors.nombreProyecto =
+        "El nombre del proyecto debe tener al menos 3 caracteres.";
+    }
+
+    if (!form.ubicacion.trim()) {
+      newErrors.ubicacion = "La ubicación es obligatoria.";
     }
 
     if (!form.presupuestoTotal || Number(form.presupuestoTotal) <= 0) {
-      newErrors.presupuestoTotal = "Debe ingresar un presupuesto válido.";
+      newErrors.presupuestoTotal =
+        "Debe ingresar un presupuesto mayor que cero.";
     }
 
     const minFecha = new Date("2000-01-01");
@@ -234,20 +283,35 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       }
     }
 
+    if (!form.estado) {
+      newErrors.estado = "Seleccione un estado.";
+    }
+
     return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (guardando) return;
+
     const newErrors = validateForm();
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+
+      mostrarMensaje(
+        "error",
+        "Revise los datos del proyecto",
+        "Hay campos pendientes o valores inválidos. Revise el formulario antes de guardar."
+      );
+
       return;
     }
 
     try {
+      setGuardando(true);
+
       const proyectoGuardado = await onSubmit({
         ...form,
         clienteId: form.clienteId,
@@ -257,7 +321,13 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       const proyectoId = Number(proyectoGuardado?.id ?? form.id);
 
       if (!proyectoId) {
-        alert("No se pudo obtener el ID del proyecto guardado.");
+        mostrarMensaje(
+          "error",
+          "Error al guardar proyecto",
+          "No se pudo obtener el ID del proyecto guardado."
+        );
+
+        setGuardando(false);
         return;
       }
 
@@ -287,8 +357,13 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       await reload();
       onClose();
     } catch (error) {
-      console.error("Error al guardar proyecto:", error);
-      alert("No se pudo guardar el proyecto.");
+      mostrarMensaje(
+        "error",
+        "Error al guardar proyecto",
+        error.message || "No se pudo guardar el proyecto."
+      );
+    } finally {
+      setGuardando(false);
     }
   };
 
@@ -368,6 +443,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                   name="clienteId"
                   value={form.clienteId}
                   onChange={handleChange}
+                  disabled={guardando}
                   className={inputClass}
                 >
                   <option value="">Seleccione un cliente</option>
@@ -391,6 +467,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                   name="estado"
                   value={form.estado}
                   onChange={handleChange}
+                  disabled={guardando}
                   className={inputClass}
                 >
                   <option value="En Espera">En Espera</option>
@@ -398,6 +475,10 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                   <option value="Completado">Completado</option>
                   <option value="Cancelado">Cancelado</option>
                 </select>
+
+                {errors.estado && (
+                  <p className={errorClass}>{errors.estado}</p>
+                )}
               </div>
 
               <div className="min-w-0">
@@ -408,6 +489,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                   name="nombreProyecto"
                   value={form.nombreProyecto}
                   onChange={handleChange}
+                  disabled={guardando}
                   placeholder="Ejemplo: Construcción de bodega"
                   className={inputClass}
                 />
@@ -425,9 +507,14 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                   name="ubicacion"
                   value={form.ubicacion}
                   onChange={handleChange}
+                  disabled={guardando}
                   placeholder="Ejemplo: Managua, Nicaragua"
                   className={inputClass}
                 />
+
+                {errors.ubicacion && (
+                  <p className={errorClass}>{errors.ubicacion}</p>
+                )}
               </div>
 
               <div className="min-w-0 md:col-span-2">
@@ -437,6 +524,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                   name="descripcion"
                   value={form.descripcion}
                   onChange={handleChange}
+                  disabled={guardando}
                   rows={3}
                   placeholder="Descripción breve del proyecto"
                   className={`${inputClass} resize-none`}
@@ -451,6 +539,9 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                   name="presupuestoTotal"
                   value={form.presupuestoTotal}
                   onChange={handleChange}
+                  disabled={guardando}
+                  min="0"
+                  step="0.01"
                   placeholder="Ejemplo: 150000"
                   className={inputClass}
                 />
@@ -469,6 +560,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                     name="fechaInicio"
                     value={form.fechaInicio}
                     onChange={handleChange}
+                    disabled={guardando}
                     className={inputClass}
                   />
 
@@ -485,6 +577,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                     name="fechaFin"
                     value={form.fechaFin}
                     onChange={handleChange}
+                    disabled={guardando}
                     className={inputClass}
                   />
 
@@ -520,6 +613,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                   placeholder="Buscar empleado..."
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
+                  disabled={guardando}
                   className={inputClass}
                 />
 
@@ -527,6 +621,7 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                   <select
                     value={empleadoSeleccionado}
                     onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
+                    disabled={guardando}
                     className={`${inputClass} mt-3`}
                   >
                     <option value="">Seleccionar empleado...</option>
@@ -547,7 +642,8 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               <button
                 type="button"
                 onClick={handleAsignarEmpleado}
-                className="h-fit rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl"
+                disabled={guardando}
+                className="h-fit rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
               >
                 Asignar
               </button>
@@ -590,7 +686,8 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
                     <button
                       type="button"
                       onClick={() => handleQuitarEmpleado(e.id)}
-                      className="w-full rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 sm:w-auto"
+                      disabled={guardando}
+                      className="w-full rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                     >
                       Quitar
                     </button>
@@ -606,20 +703,85 @@ const ProyectosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 sm:w-auto"
             >
-              {isEdit ? "Actualizar Proyecto" : "Guardar Proyecto"}
+              {guardando
+                ? "Guardando..."
+                : isEdit
+                ? "Actualizar Proyecto"
+                : "Guardar Proyecto"}
             </button>
           </div>
         </div>
       </form>
+
+      {modalMensaje.open && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+          <div
+            className={`
+              w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+              ${
+                modalMensaje.type === "error"
+                  ? "border-red-200"
+                  : "border-emerald-200"
+              }
+            `}
+          >
+            <div className="px-6 py-6">
+              <div className="flex items-start gap-4">
+                <div
+                  className={`
+                    flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+                    ${
+                      modalMensaje.type === "error"
+                        ? "bg-red-100 text-red-600"
+                        : "bg-emerald-100 text-emerald-600"
+                    }
+                  `}
+                >
+                  {modalMensaje.type === "error" ? "!" : "✓"}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-black text-slate-900">
+                    {modalMensaje.title}
+                  </h3>
+
+                  <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                    {modalMensaje.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+              <button
+                type="button"
+                onClick={cerrarMensaje}
+                className={`
+                  rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+                  ${
+                    modalMensaje.type === "error"
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-emerald-600 hover:bg-emerald-700"
+                  }
+                `}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

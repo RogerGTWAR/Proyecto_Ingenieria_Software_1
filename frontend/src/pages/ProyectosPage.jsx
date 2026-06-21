@@ -89,6 +89,31 @@ function ProyectosPage() {
   const [proyectoAEliminar, setProyectoAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+  };
+
   const proyectosFiltrados = (proyectos || []).filter((p) => {
     const q = busqueda.toLowerCase();
 
@@ -125,14 +150,33 @@ function ProyectosPage() {
 
       if (modoEdicion && proyectoAEditar) {
         proyectoGuardado = await edit(proyectoAEditar.id, data);
-        setProyectoSeleccionado(proyectoGuardado);
+
+        if (
+          vistaDetalle &&
+          proyectoSeleccionado?.id === proyectoAEditar.id
+        ) {
+          setProyectoSeleccionado(proyectoGuardado);
+        }
+
+        mostrarMensaje(
+          "success",
+          "Proyecto actualizado",
+          "El proyecto se actualizó correctamente."
+        );
       } else {
         proyectoGuardado = await add(data);
+
+        mostrarMensaje(
+          "success",
+          "Proyecto creado",
+          "El proyecto se registró correctamente."
+        );
       }
 
       if (!proyectoGuardado || !proyectoGuardado.id) {
-        alert("No se pudo obtener el ID del proyecto guardado.");
-        return null;
+        throw new Error(
+          "El sistema guardó la información, pero no devolvió el ID del proyecto."
+        );
       }
 
       await reload();
@@ -140,8 +184,12 @@ function ProyectosPage() {
 
       return proyectoGuardado;
     } catch (error) {
-      console.error("Error al guardar proyecto:", error);
-      alert("No se pudo guardar el proyecto.");
+      mostrarMensaje(
+        "error",
+        "Error al guardar proyecto",
+        error.message || "No se pudo guardar el proyecto."
+      );
+
       return null;
     }
   };
@@ -175,13 +223,23 @@ function ProyectosPage() {
       await remove(proyectoAEliminar.id);
       await reload();
       await reloadDetalles();
-      setVistaDetalle(false);
-    } catch (e) {
-      console.error("Error al eliminar proyecto:", e);
-      alert("Error al eliminar el proyecto.");
+
+      mostrarMensaje(
+        "success",
+        "Proyecto eliminado",
+        "El proyecto se eliminó correctamente."
+      );
+
+      cerrarEliminar();
+      cerrarDetalles();
+    } catch (error) {
+      mostrarMensaje(
+        "error",
+        "Error al eliminar proyecto",
+        error.message || "No se pudo eliminar el proyecto."
+      );
     } finally {
       setIsDeleting(false);
-      cerrarEliminar();
     }
   };
 
@@ -422,7 +480,10 @@ function ProyectosPage() {
 
         {vistaDetalle && proyectoSeleccionado && (
           <ProyectosDetails
-            proyecto={proyectoSeleccionado}
+            proyecto={
+              proyectos.find((p) => p.id === proyectoSeleccionado.id) ||
+              proyectoSeleccionado
+            }
             onClose={cerrarDetalles}
             onEdit={editarProyecto}
             onDelete={abrirEliminar}
@@ -446,6 +507,65 @@ function ProyectosPage() {
             itemName={proyectoAEliminar?.nombreProyecto || ""}
             loading={isDeleting}
           />
+        )}
+
+        {modalMensaje.open && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+            <div
+              className={`
+                w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+                ${
+                  modalMensaje.type === "error"
+                    ? "border-red-200"
+                    : "border-emerald-200"
+                }
+              `}
+            >
+              <div className="px-6 py-6">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`
+                      flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+                      ${
+                        modalMensaje.type === "error"
+                          ? "bg-red-100 text-red-600"
+                          : "bg-emerald-100 text-emerald-600"
+                      }
+                    `}
+                  >
+                    {modalMensaje.type === "error" ? "!" : "✓"}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-black text-slate-900">
+                      {modalMensaje.title}
+                    </h3>
+
+                    <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                      {modalMensaje.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={cerrarMensaje}
+                  className={`
+                    rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+                    ${
+                      modalMensaje.type === "error"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                    }
+                  `}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMateriales } from "../../hooks/useMateriales";
 import { useCostosDirectos } from "../../hooks/useCostosDirectos";
 import { useCostosIndirectos } from "../../hooks/useCostosIndirectos";
@@ -38,6 +38,14 @@ export default function ServiciosForm({
   } = useCostosIndirectos();
 
   const [errors, setErrors] = useState({});
+  const [guardando, setGuardando] = useState(false);
+
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "error",
+    title: "",
+    message: "",
+  });
 
   const [form, setForm] = useState({
     id: "",
@@ -51,8 +59,25 @@ export default function ServiciosForm({
   const [costosDirectosAsignados, setCostosDirectosAsignados] = useState([]);
   const [costosIndirectosAsignados, setCostosIndirectosAsignados] = useState([]);
 
-  const getMaterialNombre = (m) =>
-    m.nombre_material ?? m.nombreMaterial ?? "";
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "error",
+      title: "",
+      message: "",
+    });
+  };
+
+  const getMaterialNombre = (m) => m.nombre_material ?? m.nombreMaterial ?? "";
 
   const getMaterialUnidad = (m) =>
     m.unidad_de_medida ?? m.unidadMedida ?? m.unidadDeMedida ?? "";
@@ -208,6 +233,8 @@ export default function ServiciosForm({
   };
 
   const handleAsignarMaterial = () => {
+    if (guardando) return;
+
     if (!materialSeleccionado) {
       setErrors((prev) => ({
         ...prev,
@@ -220,7 +247,13 @@ export default function ServiciosForm({
       (m) => Number(m.id) === Number(materialSeleccionado)
     );
 
-    if (!mat) return;
+    if (!mat) {
+      setErrors((prev) => ({
+        ...prev,
+        asignarMaterial: "El material seleccionado no existe.",
+      }));
+      return;
+    }
 
     const existe = costosDirectosAsignados.some(
       (c) => Number(c.materialId) === Number(mat.id)
@@ -236,6 +269,15 @@ export default function ServiciosForm({
 
     const cantidad = 1;
     const precio = getMaterialPrecio(mat);
+
+    if (precio <= 0) {
+      setErrors((prev) => ({
+        ...prev,
+        asignarMaterial:
+          "El material seleccionado debe tener un precio mayor que cero.",
+      }));
+      return;
+    }
 
     const calculado = calcularDirecto(cantidad, precio);
 
@@ -261,6 +303,8 @@ export default function ServiciosForm({
   };
 
   const actualizarDirecto = (index, campo, valor) => {
+    if (guardando) return;
+
     setCostosDirectosAsignados((prev) => {
       const copia = [...prev];
 
@@ -286,6 +330,8 @@ export default function ServiciosForm({
   };
 
   const quitarDirecto = (id) => {
+    if (guardando) return;
+
     setCostosDirectosAsignados((prev) => {
       const nuevos = prev.filter((m) => Number(m.materialId) !== Number(id));
       recalcularIndirectosDesdeDirectos(nuevos);
@@ -294,11 +340,22 @@ export default function ServiciosForm({
   };
 
   const generarIndirectos = () => {
+    if (guardando) return;
+
     if (costosDirectosAsignados.length === 0) {
       setErrors((prev) => ({
         ...prev,
         asignarMaterial:
           "Debe asignar al menos un costo directo antes de generar indirectos.",
+      }));
+      return;
+    }
+
+    if (totalDirectos <= 0) {
+      setErrors((prev) => ({
+        ...prev,
+        asignarMaterial:
+          "El total de costos directos debe ser mayor que cero.",
       }));
       return;
     }
@@ -312,17 +369,27 @@ export default function ServiciosForm({
         ...calculado,
       },
     ]);
+
+    setErrors((prev) => ({
+      ...prev,
+      asignarMaterial: "",
+      indirectos: "",
+    }));
   };
 
   const quitarIndirecto = () => {
+    if (guardando) return;
     setCostosIndirectosAsignados([]);
   };
 
   const validate = () => {
     const er = {};
+    const nombre = form.nombreServicio.trim();
 
-    if (!form.nombreServicio.trim()) {
+    if (!nombre) {
       er.nombreServicio = "El nombre es obligatorio.";
+    } else if (nombre.length < 3) {
+      er.nombreServicio = "El nombre debe tener al menos 3 caracteres.";
     }
 
     if (costosDirectosAsignados.length === 0) {
@@ -333,13 +400,29 @@ export default function ServiciosForm({
       (d) =>
         Number(d.materialId) <= 0 ||
         Number(d.cantidad_material) <= 0 ||
-        Number(d.precio_unitario) < 0 ||
+        Number(d.precio_unitario) <= 0 ||
+        Number(d.total) <= 0 ||
         !d.unidad_de_medida
     );
 
     if (directoInvalido) {
       er.asignarMaterial =
-        "Revise los costos directos. Cantidad, unidad y precio son obligatorios.";
+        "Revise los costos directos. Cantidad, unidad y precio deben ser válidos y mayores que cero.";
+    }
+
+    if (totalDirectos <= 0) {
+      er.asignarMaterial =
+        "El total de costos directos debe ser mayor que cero.";
+    }
+
+    if (costosIndirectosAsignados.length === 0) {
+      er.indirectos =
+        "Debe generar los costos indirectos antes de guardar el servicio.";
+    }
+
+    if (costosIndirectosAsignados.length > 0 && totalIndirectos <= 0) {
+      er.indirectos =
+        "El total de costos indirectos debe ser mayor que cero.";
     }
 
     return er;
@@ -348,32 +431,40 @@ export default function ServiciosForm({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (guardando) return;
+
     const er = validate();
 
     if (Object.keys(er).length > 0) {
       setErrors(er);
+
+      mostrarMensaje(
+        "error",
+        "Revise los datos del servicio",
+        "Hay campos pendientes o valores inválidos. Revise el formulario antes de guardar."
+      );
+
       return;
     }
 
     try {
-      const indirectoActualizado =
-        costosIndirectosAsignados.length > 0
-          ? calcularIndirecto(totalDirectos)
-          : null;
+      setGuardando(true);
 
-      const totalIndirectoFinal = indirectoActualizado
-        ? indirectoActualizado.total
-        : 0;
+      const indirectoActualizado = calcularIndirecto(totalDirectos);
+      const totalIndirectoFinal = indirectoActualizado.total;
 
       const saved = await onSubmit({
         id: form.id,
-        nombreServicio: form.nombreServicio,
-        descripcion: form.descripcion,
+        nombreServicio: form.nombreServicio.trim(),
+        descripcion: form.descripcion.trim(),
         totalCostoDirecto: Number(totalDirectos),
         totalCostoIndirecto: Number(totalIndirectoFinal),
       });
 
-      if (!saved) return;
+      if (!saved || !saved.id) {
+        setGuardando(false);
+        return;
+      }
 
       const servicioId = saved.id;
       const costosDirectosGuardados = [];
@@ -412,51 +503,64 @@ export default function ServiciosForm({
         costosDirectosAsignados[0]?.id ??
         null;
 
-      if (indirectoActualizado && !primerCostoDirectoId) {
+      if (!primerCostoDirectoId) {
         setErrors((prev) => ({
           ...prev,
           general: "No se pudo obtener el ID del costo directo.",
         }));
+
+        mostrarMensaje(
+          "error",
+          "Error al guardar servicio",
+          "No se pudo obtener el ID del costo directo para registrar los costos indirectos."
+        );
+
+        setGuardando(false);
         return;
       }
 
-      if (indirectoActualizado) {
-        const indirectoBase = costosIndirectosAsignados[0];
+      const indirectoBase = costosIndirectosAsignados[0];
 
-        const payloadIndirecto = {
-          servicio_id: Number(servicioId),
-          servicioId: Number(servicioId),
+      const payloadIndirecto = {
+        servicio_id: Number(servicioId),
+        servicioId: Number(servicioId),
 
-          costo_directo_id: Number(
-            indirectoBase?.costo_directo_id ??
-              indirectoBase?.costoDirectoId ??
-              primerCostoDirectoId
-          ),
-          costoDirectoId: Number(
-            indirectoBase?.costo_directo_id ??
-              indirectoBase?.costoDirectoId ??
-              primerCostoDirectoId
-          ),
+        costo_directo_id: Number(
+          indirectoBase?.costo_directo_id ??
+            indirectoBase?.costoDirectoId ??
+            primerCostoDirectoId
+        ),
+        costoDirectoId: Number(
+          indirectoBase?.costo_directo_id ??
+            indirectoBase?.costoDirectoId ??
+            primerCostoDirectoId
+        ),
 
-          total_costo_directo: Number(totalDirectos),
-          totalCostoDirecto: Number(totalDirectos),
-        };
+        total_costo_directo: Number(totalDirectos),
+        totalCostoDirecto: Number(totalDirectos),
+      };
 
-        if (indirectoBase?.id) {
-          await editIndirecto(indirectoBase.id, payloadIndirecto);
-        } else {
-          await addIndirecto(payloadIndirecto);
-        }
+      if (indirectoBase?.id) {
+        await editIndirecto(indirectoBase.id, payloadIndirecto);
+      } else {
+        await addIndirecto(payloadIndirecto);
       }
 
       await reloadDirectos();
       await reloadIndirectos();
+
       onClose();
     } catch (error) {
+      const mensaje = error.message || "Error al guardar el servicio.";
+
       setErrors((prev) => ({
         ...prev,
-        general: error.message || "Error al guardar el servicio.",
+        general: mensaje,
       }));
+
+      mostrarMensaje("error", "Error al guardar servicio", mensaje);
+    } finally {
+      setGuardando(false);
     }
   };
 
@@ -528,6 +632,7 @@ export default function ServiciosForm({
                   name="nombreServicio"
                   value={form.nombreServicio}
                   onChange={handleChange}
+                  disabled={guardando}
                   placeholder="Ejemplo: Albañilería básica"
                   className={inputClass}
                 />
@@ -544,6 +649,7 @@ export default function ServiciosForm({
                   name="descripcion"
                   value={form.descripcion}
                   onChange={handleChange}
+                  disabled={guardando}
                   rows={2}
                   placeholder="Descripción breve del servicio"
                   className={`${inputClass} resize-none`}
@@ -584,6 +690,7 @@ export default function ServiciosForm({
                       placeholder="Buscar material..."
                       value={busquedaMaterial}
                       onChange={(e) => setBusquedaMaterial(e.target.value)}
+                      disabled={guardando}
                       className={inputClass}
                     />
 
@@ -594,6 +701,7 @@ export default function ServiciosForm({
                         onChange={(e) =>
                           setMaterialSeleccionado(e.target.value)
                         }
+                        disabled={guardando}
                       >
                         <option value="">Seleccionar material...</option>
 
@@ -617,10 +725,12 @@ export default function ServiciosForm({
                   <button
                     type="button"
                     onClick={handleAsignarMaterial}
+                    disabled={guardando}
                     className="
                       h-fit rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700
                       px-6 py-3 text-sm font-bold text-white shadow-lg
                       transition hover:scale-[1.01] hover:shadow-xl
+                      disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100
                     "
                   >
                     Asignar
@@ -712,6 +822,7 @@ export default function ServiciosForm({
                                     : Number(e.target.value)
                                 )
                               }
+                              disabled={guardando}
                               className={`w-24 text-center ${inputTableClass}`}
                             />
                           </td>
@@ -735,6 +846,7 @@ export default function ServiciosForm({
                                     : Number(e.target.value)
                                 )
                               }
+                              disabled={guardando}
                               className={`w-28 text-right ${inputTableClass}`}
                             />
                           </td>
@@ -759,7 +871,8 @@ export default function ServiciosForm({
                             <button
                               type="button"
                               onClick={() => quitarDirecto(d.materialId)}
-                              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                              disabled={guardando}
+                              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               Quitar
                             </button>
@@ -800,7 +913,8 @@ export default function ServiciosForm({
                         <button
                           type="button"
                           onClick={() => quitarDirecto(d.materialId)}
-                          className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                          disabled={guardando}
+                          className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Quitar
                         </button>
@@ -824,6 +938,7 @@ export default function ServiciosForm({
                                   : Number(e.target.value)
                               )
                             }
+                            disabled={guardando}
                             className={inputClass}
                           />
                         </div>
@@ -845,6 +960,7 @@ export default function ServiciosForm({
                                   : Number(e.target.value)
                               )
                             }
+                            disabled={guardando}
                             className={inputClass}
                           />
                         </div>
@@ -912,15 +1028,21 @@ export default function ServiciosForm({
                     Utilidad: 15% del costo directo
                   </span>
                 </div>
+
+                {errors.indirectos && (
+                  <p className={errorClass}>{errors.indirectos}</p>
+                )}
               </div>
 
               <button
                 type="button"
                 onClick={generarIndirectos}
+                disabled={guardando}
                 className="
                   w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600
                   px-6 py-3 text-sm font-bold text-white shadow-lg
                   transition hover:scale-[1.01] hover:shadow-xl sm:w-auto
+                  disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100
                 "
               >
                 Generar Automáticamente
@@ -944,7 +1066,8 @@ export default function ServiciosForm({
                       <button
                         type="button"
                         onClick={quitarIndirecto}
-                        className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                        disabled={guardando}
+                        className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Quitar
                       </button>
@@ -1002,20 +1125,85 @@ export default function ServiciosForm({
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 sm:w-auto"
             >
-              {isEdit ? "Actualizar Servicio" : "Guardar Servicio"}
+              {guardando
+                ? "Guardando..."
+                : isEdit
+                ? "Actualizar Servicio"
+                : "Guardar Servicio"}
             </button>
           </div>
         </div>
       </form>
+
+      {modalMensaje.open && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+          <div
+            className={`
+              w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+              ${
+                modalMensaje.type === "error"
+                  ? "border-red-200"
+                  : "border-emerald-200"
+              }
+            `}
+          >
+            <div className="px-6 py-6">
+              <div className="flex items-start gap-4">
+                <div
+                  className={`
+                    flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+                    ${
+                      modalMensaje.type === "error"
+                        ? "bg-red-100 text-red-600"
+                        : "bg-emerald-100 text-emerald-600"
+                    }
+                  `}
+                >
+                  {modalMensaje.type === "error" ? "!" : "✓"}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-black text-slate-900">
+                    {modalMensaje.title}
+                  </h3>
+
+                  <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                    {modalMensaje.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+              <button
+                type="button"
+                onClick={cerrarMensaje}
+                className={`
+                  rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+                  ${
+                    modalMensaje.type === "error"
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-emerald-600 hover:bg-emerald-700"
+                  }
+                `}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

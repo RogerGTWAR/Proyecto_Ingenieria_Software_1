@@ -22,11 +22,13 @@ export default function ClientesTable({
         <table className="w-full text-sm">
           <thead className="bg-slate-900 text-slate-100">
             <tr>
-              <th className="px-4 py-4 text-left font-bold">Empresa</th>
+              <th className="px-4 py-4 text-left font-bold">Tipo</th>
+              <th className="px-4 py-4 text-left font-bold">Identificación</th>
+              <th className="px-4 py-4 text-left font-bold">Cliente</th>
               <th className="px-4 py-4 text-left font-bold">Contacto</th>
-              <th className="px-4 py-4 text-left font-bold">Cargo</th>
               <th className="px-4 py-4 text-left font-bold">Ciudad</th>
               <th className="px-4 py-4 text-left font-bold">Teléfono</th>
+              <th className="px-4 py-4 text-left font-bold">Correo</th>
               <th className="px-4 py-4 text-center font-bold">Acciones</th>
             </tr>
           </thead>
@@ -42,6 +44,14 @@ export default function ClientesTable({
                 `}
               >
                 <td className="px-4 py-4 font-bold text-slate-900">
+                  {c.tipoCliente || "—"}
+                </td>
+
+                <td className="px-4 py-4 text-slate-700">
+                  {c.numeroIdentificacion || "—"}
+                </td>
+
+                <td className="px-4 py-4 font-bold text-slate-900">
                   {c.nombreEmpresa || "—"}
                 </td>
 
@@ -50,15 +60,15 @@ export default function ClientesTable({
                 </td>
 
                 <td className="px-4 py-4 text-slate-700">
-                  {c.cargoContacto || "—"}
-                </td>
-
-                <td className="px-4 py-4 text-slate-700">
                   {c.ciudad || "—"}
                 </td>
 
                 <td className="px-4 py-4 text-slate-700">
                   {c.telefono || "—"}
+                </td>
+
+                <td className="px-4 py-4 text-slate-700">
+                  {c.correo || "—"}
                 </td>
 
                 <td className="px-4 py-4">
@@ -106,14 +116,22 @@ export default function ClientesTable({
               </h3>
 
               <p className="text-sm text-slate-600">
+                {c.tipoCliente || "Cliente"} ·{" "}
                 {c.nombreContacto || "Sin contacto"}
               </p>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <MiniBox label="Cargo" value={c.cargoContacto || "—"} />
+              <MiniBox
+                label="Identificación"
+                value={c.numeroIdentificacion || "—"}
+              />
+
               <MiniBox label="Ciudad" value={c.ciudad || "—"} />
+
               <MiniBox label="Teléfono" value={c.telefono || "—"} />
+
+              <MiniBox label="Correo" value={c.correo || "—"} />
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -151,6 +169,6 @@ export default function ClientesTable({
 const MiniBox = ({ label, value }) => (
   <div className="rounded-xl border border-slate-300 bg-slate-200 p-3 text-slate-800">
     <p className="text-sm font-semibold opacity-80">{label}</p>
-    <p className="mt-1 text-sm font-bold">{value}</p>
+    <p className="mt-1 break-words text-sm font-bold">{value}</p>
   </div>
 );

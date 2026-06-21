@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import {
   fetchProyectos,
   createProyecto,
@@ -17,12 +18,13 @@ export function useProyectos() {
       setError("");
 
       const list = await fetchProyectos();
-      setItems(list);
+      const safeList = Array.isArray(list) ? list : [];
 
-      return list;
-    } catch (e) {
-      console.error("Error al cargar proyectos:", e);
-      setError(e.message);
+      setItems(safeList);
+
+      return safeList;
+    } catch (error) {
+      setError(error.message || "Error al cargar proyectos");
       return [];
     } finally {
       setLoading(false);
@@ -45,7 +47,9 @@ export function useProyectos() {
     const updated = await updateProyecto(id, payload);
 
     setItems((prev) =>
-      prev.map((p) => (Number(p.id) === Number(id) ? updated : p))
+      prev.map((proyecto) =>
+        Number(proyecto.id) === Number(id) ? updated : proyecto
+      )
     );
 
     return updated;
@@ -54,7 +58,11 @@ export function useProyectos() {
   const remove = async (id) => {
     await deleteProyecto(id);
 
-    setItems((prev) => prev.filter((p) => Number(p.id) !== Number(id)));
+    setItems((prev) =>
+      prev.filter((proyecto) => Number(proyecto.id) !== Number(id))
+    );
+
+    return true;
   };
 
   return {

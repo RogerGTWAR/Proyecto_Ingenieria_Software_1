@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+
 import {
   fetchCompras,
   createCompra,
@@ -14,12 +15,15 @@ export function useCompras() {
   const load = async () => {
     try {
       setLoading(true);
+      setError("");
+
       const list = await fetchCompras();
-      setItems(list);
-      return list;
-    } catch (e) {
-      console.error("Error al cargar compras:", e);
-      setError(e.message);
+      const safeList = Array.isArray(list) ? list : [];
+
+      setItems(safeList);
+      return safeList;
+    } catch (error) {
+      setError(error.message || "Error al cargar compras");
       return [];
     } finally {
       setLoading(false);
@@ -32,20 +36,41 @@ export function useCompras() {
 
   const add = async (payload) => {
     const created = await createCompra(payload);
+
     setItems((prev) => [created, ...prev]);
+
     return created;
   };
 
   const edit = async (id, payload) => {
     const updated = await updateCompra(id, payload);
-    setItems((prev) => prev.map((c) => (c.id === id ? updated : c)));
+
+    setItems((prev) =>
+      prev.map((compra) =>
+        Number(compra.id) === Number(id) ? updated : compra
+      )
+    );
+
     return updated;
   };
 
   const remove = async (id) => {
     await deleteCompra(id);
-    setItems((prev) => prev.filter((c) => c.id !== id));
+
+    setItems((prev) =>
+      prev.filter((compra) => Number(compra.id) !== Number(id))
+    );
+
+    return true;
   };
 
-  return { items, loading, error, reload: load, add, edit, remove };
+  return {
+    items,
+    loading,
+    error,
+    reload: load,
+    add,
+    edit,
+    remove,
+  };
 }

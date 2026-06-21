@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import {
   fetchMateriales,
   createMaterial,
@@ -15,10 +16,15 @@ export function useMateriales() {
     try {
       setLoading(true);
       setError("");
+
       const list = await fetchMateriales();
-      setItems(list);
-    } catch (e) {
-      setError(e.message || "Error al cargar materiales");
+      const safeList = Array.isArray(list) ? list : [];
+
+      setItems(safeList);
+      return safeList;
+    } catch (error) {
+      setError(error.message || "Error al cargar materiales");
+      return [];
     } finally {
       setLoading(false);
     }
@@ -30,18 +36,41 @@ export function useMateriales() {
 
   const add = async (payload) => {
     const created = await createMaterial(payload);
+
     setItems((prev) => [created, ...prev]);
+
+    return created;
   };
 
   const edit = async (id, payload) => {
     const updated = await updateMaterial(id, payload);
-    setItems((prev) => prev.map((m) => (m.id === id ? updated : m)));
+
+    setItems((prev) =>
+      prev.map((material) =>
+        Number(material.id) === Number(id) ? updated : material
+      )
+    );
+
+    return updated;
   };
 
   const remove = async (id) => {
     await deleteMaterial(id);
-    setItems((prev) => prev.filter((m) => m.id !== id));
+
+    setItems((prev) =>
+      prev.filter((material) => Number(material.id) !== Number(id))
+    );
+
+    return true;
   };
 
-  return { items, loading, error, reload: load, add, edit, remove };
+  return {
+    items,
+    loading,
+    error,
+    reload: load,
+    add,
+    edit,
+    remove,
+  };
 }

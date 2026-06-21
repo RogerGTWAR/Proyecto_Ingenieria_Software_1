@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import {
   fetchEmpleados,
   createEmpleado,
@@ -7,7 +8,7 @@ import {
 } from "../data/empleados.js";
 
 export function useEmpleados() {
-  const [items, setItems] = useState([]); 
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -15,10 +16,15 @@ export function useEmpleados() {
     try {
       setLoading(true);
       setError("");
+
       const list = await fetchEmpleados();
-      setItems(list);
-    } catch (e) {
-      setError(e.message || "Error al cargar empleados");
+      const safeList = Array.isArray(list) ? list : [];
+
+      setItems(safeList);
+      return safeList;
+    } catch (error) {
+      setError(error.message || "Error al cargar empleados");
+      return [];
     } finally {
       setLoading(false);
     }
@@ -30,18 +36,37 @@ export function useEmpleados() {
 
   const add = async (payloadUI) => {
     const created = await createEmpleado(payloadUI);
+
     setItems((prev) => [created, ...prev]);
+
+    return created;
   };
 
   const edit = async (id, payloadUI) => {
     const updated = await updateEmpleado(id, payloadUI);
-    setItems((prev) => prev.map((e) => (e.id === id ? updated : e)));
+
+    setItems((prev) =>
+      prev.map((empleado) => (empleado.id === id ? updated : empleado))
+    );
+
+    return updated;
   };
 
   const remove = async (id) => {
     await deleteEmpleado(id);
-    setItems((prev) => prev.filter((e) => e.id !== id));
+
+    setItems((prev) => prev.filter((empleado) => empleado.id !== id));
+
+    return true;
   };
 
-  return { items, loading, error, reload: load, add, edit, remove };
+  return {
+    items,
+    loading,
+    error,
+    reload: load,
+    add,
+    edit,
+    remove,
+  };
 }

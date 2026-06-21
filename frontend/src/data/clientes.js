@@ -2,6 +2,8 @@ import { api } from "./api.js";
 
 const toUI = (c) => ({
   id: c.cliente_id,
+  tipoCliente: c.tipo_cliente ?? "",
+  numeroIdentificacion: c.numero_identificacion ?? "",
   nombreEmpresa: c.nombre_empresa ?? "",
   nombreContacto: c.nombre_contacto ?? "",
   cargoContacto: c.cargo_contacto ?? "",
@@ -9,58 +11,75 @@ const toUI = (c) => ({
   ciudad: c.ciudad ?? "",
   pais: c.pais ?? "",
   telefono: c.telefono ?? "",
+  correo: c.correo ?? "",
 });
 
+const extractPayload = (res) => {
+  if (res?.data?.data) return res.data.data;
+  if (res?.data) return res.data;
+  return res;
+};
+
 export const fetchClientes = async () => {
-  const { data } = await api("/clientes");
-  const list = Array.isArray(data) ? data : data?.data || [];
+  const res = await api("/clientes");
+
+  const data = extractPayload(res);
+  const list = Array.isArray(data) ? data : [];
+
   return list.map(toUI);
 };
 
-export const createCliente = async (u) => {
+export const createCliente = async (cliente) => {
   const body = {
-    cliente_id: String(u.id).trim(),       
-    nombre_empresa: u.nombreEmpresa,
-    nombre_contacto: u.nombreContacto,
-    cargo_contacto: u.cargoContacto,
-    direccion: u.direccion,
-    ciudad: u.ciudad,
-    pais: u.pais,
-    telefono: u.telefono,
+    cliente_id: String(cliente.id ?? "").trim(),
+    tipo_cliente: cliente.tipoCliente,
+    numero_identificacion: cliente.numeroIdentificacion,
+    nombre_empresa: cliente.nombreEmpresa,
+    nombre_contacto: cliente.nombreContacto,
+    cargo_contacto: cliente.cargoContacto,
+    direccion: cliente.direccion,
+    ciudad: cliente.ciudad,
+    pais: cliente.pais,
+    telefono: cliente.telefono,
+    correo: cliente.correo,
   };
 
-  const { data } = await api("/clientes", {
+  const res = await api("/clientes", {
     method: "POST",
-    headers: { "Content-Type": "application/json" }, 
     body,
   });
 
-  const payload = data?.data || data; 
+  const payload = extractPayload(res);
   return toUI(payload);
 };
 
-export const updateCliente = async (id, u) => {
+export const updateCliente = async (id, cliente) => {
   const body = {
-    nombre_empresa: u.nombreEmpresa,
-    nombre_contacto: u.nombreContacto,
-    cargo_contacto: u.cargoContacto,
-    direccion: u.direccion,
-    ciudad: u.ciudad,
-    pais: u.pais,
-    telefono: u.telefono,
+    tipo_cliente: cliente.tipoCliente,
+    numero_identificacion: cliente.numeroIdentificacion,
+    nombre_empresa: cliente.nombreEmpresa,
+    nombre_contacto: cliente.nombreContacto,
+    cargo_contacto: cliente.cargoContacto,
+    direccion: cliente.direccion,
+    ciudad: cliente.ciudad,
+    pais: cliente.pais,
+    telefono: cliente.telefono,
+    correo: cliente.correo,
   };
 
-  const { data } = await api(`/clientes/${id}`, {
+  const res = await api(`/clientes/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
     body,
   });
 
-  const payload = data?.data || data;
+  const payload = extractPayload(res);
   return toUI(payload);
 };
 
 export const deleteCliente = async (id) => {
-  await api(`/clientes/${id}`, { method: "DELETE" });
+  await api(`/clientes/${id}`, {
+    method: "DELETE",
+  });
+
   return true;
 };

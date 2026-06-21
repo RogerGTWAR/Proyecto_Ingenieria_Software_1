@@ -60,14 +60,19 @@ const ClientesDetails = ({ cliente, onClose, onEdit, onDelete }) => {
               <InfoBox label="ID" value={cliente.id || "—"} />
 
               <InfoBox
-                label="Empresa"
-                value={cliente.nombreEmpresa || "—"}
+                label="Tipo de Cliente"
+                value={cliente.tipoCliente || "—"}
+                variant="blue"
               />
 
               <InfoBox
-                label="Dirección"
-                value={cliente.direccion || "—"}
+                label="Número de Identificación"
+                value={cliente.numeroIdentificacion || "—"}
               />
+
+              <InfoBox label="Cliente" value={cliente.nombreEmpresa || "—"} />
+
+              <InfoBox label="Dirección" value={cliente.direccion || "—"} />
 
               <InfoBox label="Ciudad" value={cliente.ciudad || "—"} />
 
@@ -76,6 +81,12 @@ const ClientesDetails = ({ cliente, onClose, onEdit, onDelete }) => {
               <InfoBox
                 label="Teléfono"
                 value={cliente.telefono || "—"}
+                variant="blue"
+              />
+
+              <InfoBox
+                label="Correo"
+                value={cliente.correo || "—"}
                 variant="blue"
               />
             </div>
@@ -88,7 +99,7 @@ const ClientesDetails = ({ cliente, onClose, onEdit, onDelete }) => {
               </h3>
 
               <p className="mt-1 text-sm text-slate-600">
-                Persona de contacto relacionada con la empresa.
+                Persona de contacto relacionada con el cliente.
               </p>
             </div>
 
@@ -189,7 +200,7 @@ const InfoBox = ({ label, value, variant = "default" }) => {
   return (
     <div className={`rounded-2xl border p-4 ${styles[variant]}`}>
       <p className="text-sm font-semibold opacity-80">{label}</p>
-      <p className="mt-1 text-sm font-bold">{value}</p>
+      <p className="mt-1 break-words text-sm font-bold">{value}</p>
     </div>
   );
 };

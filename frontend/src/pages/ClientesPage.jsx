@@ -8,8 +8,6 @@ import ClientesTable from "../components/clientes/ClientesTable";
 import ClientesForm from "../components/clientes/ClientesForm";
 import ClientesDetails from "../components/clientes/ClientesDetails";
 
-import ActionFeedback from "../components/ui/ActionFeedback";
-
 import { useClientes } from "../hooks/useClientes";
 
 const flujoModulos = [
@@ -87,18 +85,43 @@ function ClientesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [vistaTarjetas, setVistaTarjetas] = useState(false);
-
   const [mostrarFlujo, setMostrarFlujo] = useState(false);
 
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+  };
 
   const clientesFiltrados = (clientes || []).filter((c) => {
     const q = busqueda.toLowerCase();
 
     return (
       c.nombreEmpresa?.toLowerCase().includes(q) ||
-      c.nombreContacto?.toLowerCase().includes(q)
+      c.nombreContacto?.toLowerCase().includes(q) ||
+      c.tipoCliente?.toLowerCase().includes(q) ||
+      c.numeroIdentificacion?.toLowerCase().includes(q) ||
+      c.correo?.toLowerCase().includes(q) ||
+      c.telefono?.toLowerCase().includes(q)
     );
   });
 
@@ -125,6 +148,8 @@ function ClientesPage() {
     try {
       const datos = {
         id: data.id,
+        tipoCliente: data.tipoCliente,
+        numeroIdentificacion: data.numeroIdentificacion,
         nombreEmpresa: data.nombreEmpresa,
         nombreContacto: data.nombreContacto,
         cargoContacto: data.cargoContacto,
@@ -132,6 +157,7 @@ function ClientesPage() {
         ciudad: data.ciudad,
         pais: data.pais,
         telefono: data.telefono,
+        correo: data.correo,
       };
 
       if (modoEdicion && clienteAEditar) {
@@ -141,16 +167,28 @@ function ClientesPage() {
           setClienteSeleccionado(actualizado);
         }
 
-        setFeedbackMessage("Cliente actualizado con éxito");
+        mostrarMensaje(
+          "success",
+          "Cliente actualizado",
+          "El cliente se actualizó correctamente."
+        );
       } else {
         await add(datos);
-        setFeedbackMessage("Cliente creado con éxito");
+
+        mostrarMensaje(
+          "success",
+          "Cliente creado",
+          "El cliente se registró correctamente."
+        );
       }
 
-      setFeedbackOpen(true);
       cerrarFormulario();
     } catch (error) {
-      console.error("Error al guardar cliente:", error);
+      mostrarMensaje(
+        "error",
+        "Error al guardar cliente",
+        error.message || "No se pudo guardar el cliente."
+      );
     }
   };
 
@@ -182,27 +220,33 @@ function ClientesPage() {
     try {
       await remove(clienteAEliminar.id);
 
-      setFeedbackMessage("Cliente eliminado con éxito");
-      setFeedbackOpen(true);
+      mostrarMensaje(
+        "success",
+        "Cliente eliminado",
+        "El cliente se eliminó correctamente."
+      );
 
       cerrarEliminar();
       cerrarDetalles();
     } catch (error) {
-      console.error("Error al eliminar cliente:", error);
+      mostrarMensaje(
+        "error",
+        "Error al eliminar cliente",
+        error.message || "No se pudo eliminar el cliente."
+      );
     } finally {
       setIsDeleting(false);
     }
   };
 
   const totalClientes = clientes.length;
-
   const clientesConTelefono = clientes.filter((c) => c.telefono).length;
-
   const clientesConContacto = clientes.filter((c) => c.nombreContacto).length;
+  const clientesConCorreo = clientes.filter((c) => c.correo).length;
 
   if (loading) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-slate-200 px-4">
+      <div className="flex min-h-screen w-full items-center justify-center bg-slate-200 px-4">
         <div className="rounded-3xl border border-slate-300 bg-slate-100 px-8 py-6 text-center shadow-xl">
           <p className="text-sm font-bold text-slate-800">
             Cargando clientes...
@@ -219,19 +263,21 @@ function ClientesPage() {
   return (
     <div
       className="
-        h-full
+        min-h-screen
         w-full
         min-w-0
-        overflow-hidden
+        overflow-x-hidden
+        overflow-y-auto
         bg-slate-200
         px-3
         py-4
+        pb-8
         sm:px-4
         lg:px-5
         xl:px-6
       "
     >
-      <div className="flex h-full w-full min-w-0 flex-col gap-5 overflow-hidden">
+      <div className="flex w-full min-w-0 flex-col gap-5">
         <section
           className="
             w-full
@@ -254,17 +300,16 @@ function ClientesPage() {
                 </h1>
 
                 <p className="mt-2 text-sm text-slate-300">
-                  Administración de clientes registrados, contactos y datos de
-                  ubicación.
+                  Administración de clientes registrados, contactos, tipo de
+                  cliente y datos de ubicación.
                 </p>
               </div>
 
-              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 xl:w-[520px]">
+              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:w-[680px]">
                 <HeaderBox label="Clientes" value={totalClientes} />
-
                 <HeaderBox label="Con contacto" value={clientesConContacto} />
-
                 <HeaderBox label="Con teléfono" value={clientesConTelefono} />
+                <HeaderBox label="Con correo" value={clientesConCorreo} />
               </div>
             </div>
           </div>
@@ -311,7 +356,7 @@ function ClientesPage() {
 
               <input
                 type="text"
-                placeholder="Buscar por empresa o contacto..."
+                placeholder="Buscar por cliente, contacto, identificación, correo o teléfono..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 className="
@@ -401,11 +446,8 @@ function ClientesPage() {
         <section
           className="
             flex
-            min-h-0
             w-full
-            flex-1
             flex-col
-            overflow-hidden
             rounded-3xl
             border
             border-slate-300
@@ -431,7 +473,7 @@ function ClientesPage() {
             </span>
           </div>
 
-          <div className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden pr-1">
+          <div className="w-full overflow-x-auto overflow-y-visible pr-1">
             <div className="w-full min-w-0">
               {vistaTarjetas ? (
                 <ClientesCard
@@ -480,11 +522,64 @@ function ClientesPage() {
           />
         )}
 
-        <ActionFeedback
-          open={feedbackOpen}
-          onClose={() => setFeedbackOpen(false)}
-          message={feedbackMessage}
-        />
+        {modalMensaje.open && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+            <div
+              className={`
+                w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+                ${
+                  modalMensaje.type === "error"
+                    ? "border-red-200"
+                    : "border-emerald-200"
+                }
+              `}
+            >
+              <div className="px-6 py-6">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`
+                      flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+                      ${
+                        modalMensaje.type === "error"
+                          ? "bg-red-100 text-red-600"
+                          : "bg-emerald-100 text-emerald-600"
+                      }
+                    `}
+                  >
+                    {modalMensaje.type === "error" ? "!" : "✓"}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-black text-slate-900">
+                      {modalMensaje.title}
+                    </h3>
+
+                    <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                      {modalMensaje.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={cerrarMensaje}
+                  className={`
+                    rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+                    ${
+                      modalMensaje.type === "error"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                    }
+                  `}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

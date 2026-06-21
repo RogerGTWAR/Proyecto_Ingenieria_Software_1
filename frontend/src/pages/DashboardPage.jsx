@@ -166,581 +166,561 @@ export default function DashboardPage() {
     .sort((a, b) => Number(b.costoVenta ?? 0) - Number(a.costoVenta ?? 0))
     .slice(0, 6);
 
+  const alertas =
+    proyectosCancelados + vehiculosNoDisponibles + comprasPendientes;
+
   return (
-    <div className="h-full w-full overflow-hidden bg-gradient-to-br from-sky-100 via-cyan-50 to-emerald-100">
-      <div className="h-full w-full overflow-y-auto overflow-x-hidden px-3 py-5 sm:px-5 lg:px-8">
-        <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-6 pb-10">
-          <section className="overflow-hidden rounded-[2rem] border border-cyan-300 bg-slate-950 shadow-2xl shadow-cyan-900/20">
-            <div className="bg-gradient-to-r from-slate-950 via-blue-900 to-cyan-700 px-5 py-6 text-white sm:px-7 lg:px-8">
-              <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-                <div className="min-w-0">
-                  <p className="text-sm font-bold uppercase tracking-wide text-cyan-200">
-                    Panel Administrativo
-                  </p>
-
-                  <h1 className="mt-2 text-xl font-extrabold tracking-tight text-white sm:text-2xl">
-                    Dashboard Principal
-                  </h1>
-
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-cyan-50">
-                    Resumen general de proyectos, avalúos, clientes, inventario,
-                    servicios, vehículos y compras del sistema ACONSA.
-                  </p>
-                </div>
-
-                <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 xl:w-[720px]">
-                  <HeroStat
-                    label="Presupuesto válido"
-                    value={`C$${money(presupuestoValido)}`}
-                    description="Sin proyectos cancelados"
-                  />
-
-                  <HeroStat
-                    label="Avalúos válidos"
-                    value={`C$${money(montoAvaluosValidos)}`}
-                    description={`${avaluosValidos.length} avalúo(s)`}
-                  />
-
-                  <HeroStat
-                    label="Valor inventario"
-                    value={`C$${money(valorInventario)}`}
-                    description={`${totalMateriales} material(es)`}
+    <div className="h-[calc(100dvh-64px)] w-full overflow-y-auto overflow-x-hidden bg-slate-200 px-3 py-4 sm:px-4 lg:px-5 xl:px-6">
+      <div className="flex min-h-full w-full min-w-0 flex-col gap-5 pb-8">
+        <section className="w-full shrink-0 overflow-hidden rounded-3xl border border-slate-700/40 bg-slate-900 shadow-xl">
+          <div className="w-full bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-6 text-white sm:px-7 lg:px-8">
+            <div className="flex w-full flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+              <div className="min-w-0 flex-1">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-3xl border border-white/10 bg-white/10 shadow-sm">
+                  <img
+                    src="/icons/dashboard.svg"
+                    alt="Dashboard"
+                    className="h-7 w-7 brightness-0 invert"
                   />
                 </div>
+
+                <p className="text-sm font-medium text-cyan-100">
+                  Panel administrativo
+                </p>
+
+                <h1 className="mt-1 text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+                  Dashboard Principal
+                </h1>
+
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+                  Resumen general de proyectos, avalúos, clientes, inventario,
+                  servicios, vehículos y compras del sistema ACONSA.
+                </p>
+              </div>
+
+              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 xl:w-[680px]">
+                <HeaderBox
+                  label="Presupuesto válido"
+                  value={`C$${money(presupuestoValido)}`}
+                  text="Sin proyectos cancelados"
+                />
+
+                <HeaderBox
+                  label="Avalúos válidos"
+                  value={`C$${money(montoAvaluosValidos)}`}
+                  text={`${avaluosValidos.length} avalúo(s)`}
+                />
+
+                <HeaderBox
+                  label="Valor inventario"
+                  value={`C$${money(valorInventario)}`}
+                  text={`${totalMateriales} material(es)`}
+                />
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <MainMetric
-              title="Proyectos"
-              value={totalProyectos}
-              subtitle="Total registrados"
-              firstLabel="Activos"
-              firstValue={proyectosActivos}
-              secondLabel="En espera"
-              secondValue={proyectosEnEspera}
-              variant="blue"
-            />
+        <section className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            title="Proyectos"
+            value={totalProyectos}
+            subtitle="Total registrados"
+            icon="/icons/projects.svg"
+            color="blue"
+            items={[
+              { label: "Activos", value: proyectosActivos },
+              { label: "En espera", value: proyectosEnEspera },
+            ]}
+          />
 
-            <MainMetric
-              title="Avalúos"
-              value={totalAvaluos}
-              subtitle={`Días totales: ${totalDiasAvaluos}`}
-              firstLabel="Válidos"
-              firstValue={avaluosValidos.length}
-              secondLabel="Monto"
-              secondValue={`C$${money(montoAvaluosValidos)}`}
-              variant="emerald"
-            />
+          <MetricCard
+            title="Avalúos"
+            value={totalAvaluos}
+            subtitle={`Días totales: ${totalDiasAvaluos}`}
+            icon="/icons/avaluos.svg"
+            color="teal"
+            items={[
+              { label: "Válidos", value: avaluosValidos.length },
+              { label: "Monto", value: `C$${money(montoAvaluosValidos)}` },
+            ]}
+          />
 
-            <MainMetric
-              title="Clientes"
-              value={totalClientes}
-              subtitle="Empresas registradas"
-              firstLabel="Con contacto"
-              firstValue={clientesConContacto}
-              secondLabel="Con teléfono"
-              secondValue={clientesConTelefono}
-              variant="cyan"
-            />
+          <MetricCard
+            title="Clientes"
+            value={totalClientes}
+            subtitle="Empresas registradas"
+            icon="/icons/clients.svg"
+            color="cyan"
+            items={[
+              { label: "Con contacto", value: clientesConContacto },
+              { label: "Con teléfono", value: clientesConTelefono },
+            ]}
+          />
 
-            <MainMetric
-              title="Compras"
-              value={compras.length}
-              subtitle={`Total: C$${money(totalCompras)}`}
-              firstLabel="Pagadas"
-              firstValue={comprasPagadas}
-              secondLabel="Pendientes"
-              secondValue={comprasPendientes}
-              variant="amber"
-            />
-          </section>
+          <MetricCard
+            title="Compras"
+            value={compras.length}
+            subtitle={`Total: C$${money(totalCompras)}`}
+            icon="/icons/buy.svg"
+            color="purple"
+            items={[
+              { label: "Pagadas", value: comprasPagadas },
+              { label: "Pendientes", value: comprasPendientes },
+            ]}
+          />
+        </section>
 
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <MainMetric
-              title="Inventario"
-              value={totalMateriales}
-              subtitle={`Stock total: ${stockTotal.toLocaleString("es-NI")}`}
-              firstLabel="Bajo stock"
-              firstValue={materialesBajoStock}
-              secondLabel="Valor"
-              secondValue={`C$${money(valorInventario)}`}
-              variant="violet"
-            />
+        <section className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            title="Inventario"
+            value={totalMateriales}
+            subtitle={`Stock total: ${stockTotal.toLocaleString("es-NI")}`}
+            icon="/icons/inventory.svg"
+            color="amber"
+            items={[
+              { label: "Bajo stock", value: materialesBajoStock },
+              { label: "Valor", value: `C$${money(valorInventario)}` },
+            ]}
+          />
 
-            <MainMetric
-              title="Servicios"
-              value={totalServicios}
-              subtitle={`Venta: C$${money(totalCostoVentaServicios)}`}
-              firstLabel="Directos"
-              firstValue={`C$${money(totalCostoDirectoServicios)}`}
-              secondLabel="Registrados"
-              secondValue={totalServicios}
-              variant="green"
-            />
+          <MetricCard
+            title="Servicios"
+            value={totalServicios}
+            subtitle={`Venta: C$${money(totalCostoVentaServicios)}`}
+            icon="/icons/tool.svg"
+            color="rose"
+            items={[
+              {
+                label: "Costo directo",
+                value: `C$${money(totalCostoDirectoServicios)}`,
+              },
+              { label: "Registrados", value: totalServicios },
+            ]}
+          />
 
-            <MainMetric
-              title="Vehículos"
-              value={vehiculos.length}
-              subtitle="Flota registrada"
-              firstLabel="Disponibles"
-              firstValue={vehiculosDisponibles}
-              secondLabel="Mantenimiento"
-              secondValue={vehiculosMantenimiento}
-              variant="sky"
-            />
+          <MetricCard
+            title="Vehículos"
+            value={vehiculos.length}
+            subtitle="Flota registrada"
+            icon="/icons/car.svg"
+            color="emerald"
+            items={[
+              { label: "Disponibles", value: vehiculosDisponibles },
+              { label: "Mantenimiento", value: vehiculosMantenimiento },
+            ]}
+          />
 
-            <MainMetric
-              title="Alertas"
-              value={
-                proyectosCancelados + vehiculosNoDisponibles + comprasPendientes
-              }
-              subtitle="Elementos que requieren revisión"
-              firstLabel="Cancelados"
-              firstValue={proyectosCancelados}
-              secondLabel="No disponibles"
-              secondValue={vehiculosNoDisponibles}
-              variant="red"
-            />
-          </section>
+          <MetricCard
+            title="Alertas"
+            value={alertas}
+            subtitle="Elementos que requieren revisión"
+            icon="/icons/alert.svg"
+            color="red"
+            items={[
+              { label: "Cancelados", value: proyectosCancelados },
+              { label: "No disponibles", value: vehiculosNoDisponibles },
+            ]}
+          />
+        </section>
 
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatusCard
-              title="Proyectos completados"
-              value={proyectosCompletados}
-              text="Finalizados correctamente"
-              variant="blue"
-            />
+        <section className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatusCard
+            title="Proyectos completados"
+            value={proyectosCompletados}
+            text="Finalizados correctamente"
+            color="blue"
+          />
 
-            <StatusCard
-              title="Proyectos cancelados"
-              value={proyectosCancelados}
-              text="No suman al presupuesto válido"
-              variant="red"
-            />
+          <StatusCard
+            title="Proyectos cancelados"
+            value={proyectosCancelados}
+            text="No suman al presupuesto válido"
+            color="red"
+          />
 
-            <StatusCard
-              title="Compras pendientes"
-              value={comprasPendientes}
-              text="Pendientes de pago o revisión"
-              variant="amber"
-            />
+          <StatusCard
+            title="Compras pendientes"
+            value={comprasPendientes}
+            text="Pendientes de pago o revisión"
+            color="amber"
+          />
 
-            <StatusCard
-              title="Materiales bajo stock"
-              value={materialesBajoStock}
-              text="Requieren revisión de inventario"
-              variant="violet"
-            />
-          </section>
+          <StatusCard
+            title="Materiales bajo stock"
+            value={materialesBajoStock}
+            text="Requieren revisión de inventario"
+            color="purple"
+          />
+        </section>
 
-          <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_0.9fr]">
-            <Panel
-              title="Proyectos recientes"
-              description="Últimos proyectos registrados con presupuesto, estado y avalúos asociados."
-              badge={`${proyectosRecientes.length} registro(s)`}
-            >
-              <div className="max-h-[520px] overflow-y-auto overflow-x-auto pr-1">
-                <div className="hidden min-w-[780px] overflow-hidden rounded-3xl border border-cyan-200 bg-white xl:block">
-                  <table className="w-full text-sm">
-                    <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-950 to-cyan-800 text-white">
-                      <tr>
-                        <th className="px-5 py-4 text-left font-bold">
-                          Proyecto
-                        </th>
+        <section className="grid w-full grid-cols-1 gap-5 xl:grid-cols-[1.4fr_0.8fr]">
+          <Panel
+            title="Proyectos recientes"
+            description="Últimos proyectos registrados con presupuesto, estado y avalúos asociados."
+            badge={`${proyectosRecientes.length} registro(s)`}
+          >
+            <div className="max-h-[520px] overflow-y-auto overflow-x-auto pr-1">
+              <div className="hidden min-w-[780px] overflow-hidden rounded-2xl border border-slate-300 bg-slate-100 xl:block">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 text-white">
+                    <tr>
+                      <th className="px-5 py-4 text-left font-bold">
+                        Proyecto
+                      </th>
 
-                        <th className="px-5 py-4 text-center font-bold">
-                          Estado
-                        </th>
+                      <th className="px-5 py-4 text-center font-bold">
+                        Estado
+                      </th>
 
-                        <th className="px-5 py-4 text-right font-bold">
-                          Presupuesto
-                        </th>
+                      <th className="px-5 py-4 text-right font-bold">
+                        Presupuesto
+                      </th>
 
-                        <th className="px-5 py-4 text-center font-bold">
-                          Inicio
-                        </th>
+                      <th className="px-5 py-4 text-center font-bold">
+                        Inicio
+                      </th>
 
-                        <th className="px-5 py-4 text-center font-bold">
-                          Avalúos
-                        </th>
-                      </tr>
-                    </thead>
+                      <th className="px-5 py-4 text-center font-bold">
+                        Avalúos
+                      </th>
+                    </tr>
+                  </thead>
 
-                    <tbody className="divide-y divide-cyan-100">
-                      {proyectosRecientes.length > 0 ? (
-                        proyectosRecientes.map((p, index) => {
-                          const cantidadAvaluos = avaluos.filter(
-                            (a) => Number(a.proyectoId) === Number(p.id)
-                          ).length;
+                  <tbody className="divide-y divide-slate-300">
+                    {proyectosRecientes.length > 0 ? (
+                      proyectosRecientes.map((p, index) => {
+                        const cantidadAvaluos = avaluos.filter(
+                          (a) => Number(a.proyectoId) === Number(p.id)
+                        ).length;
 
-                          return (
-                            <tr
-                              key={p.id}
-                              className={`
-                                transition hover:bg-cyan-100
-                                ${index % 2 === 0 ? "bg-white" : "bg-cyan-50"}
-                              `}
-                            >
-                              <td className="px-5 py-4">
-                                <p className="font-bold text-slate-900">
-                                  {p.nombreProyecto || "—"}
-                                </p>
-
-                                <p className="mt-1 text-sm font-medium text-slate-600">
-                                  {p.clienteNombre || "Sin cliente"}
-                                </p>
-                              </td>
-
-                              <td className="px-5 py-4 text-center">
-                                <EstadoBadge estado={p.estado} />
-                              </td>
-
-                              <td className="px-5 py-4 text-right font-bold text-emerald-700">
-                                C${money(p.presupuestoTotal)}
-                              </td>
-
-                              <td className="px-5 py-4 text-center font-medium text-slate-700">
-                                {p.fechaInicio || "—"}
-                              </td>
-
-                              <td className="px-5 py-4 text-center">
-                                <span className="rounded-full border border-cyan-300 bg-cyan-100 px-3 py-1 text-sm font-bold text-cyan-800">
-                                  {cantidadAvaluos}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan="5"
-                            className="px-5 py-10 text-center text-sm font-bold text-slate-500"
+                        return (
+                          <tr
+                            key={p.id}
+                            className={`
+                              transition hover:bg-blue-50
+                              ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                            `}
                           >
-                            No hay proyectos registrados.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 xl:hidden">
-                  {proyectosRecientes.length > 0 ? (
-                    proyectosRecientes.map((p) => {
-                      const cantidadAvaluos = avaluos.filter(
-                        (a) => Number(a.proyectoId) === Number(p.id)
-                      ).length;
-
-                      return (
-                        <div
-                          key={p.id}
-                          className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-md"
-                        >
-                          <div className="mb-4 border-b border-cyan-100 pb-3">
-                            <p className="text-sm font-bold text-slate-900">
-                              {p.nombreProyecto || "—"}
-                            </p>
-
-                            <p className="mt-1 text-sm font-medium text-slate-600">
-                              {p.clienteNombre || "Sin cliente"}
-                            </p>
-                          </div>
-
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <MiniBox
-                              label="Presupuesto"
-                              value={`C$${money(p.presupuestoTotal)}`}
-                              green
-                            />
-
-                            <MiniBox label="Avalúos" value={cantidadAvaluos} />
-
-                            <MiniBox
-                              label="Inicio"
-                              value={p.fechaInicio || "—"}
-                            />
-
-                            <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-3">
-                              <p className="text-sm font-semibold text-cyan-800">
-                                Estado
+                            <td className="px-5 py-4">
+                              <p className="font-bold text-slate-900">
+                                {p.nombreProyecto || "—"}
                               </p>
 
-                              <div className="mt-2">
-                                <EstadoBadge estado={p.estado} />
-                              </div>
+                              <p className="mt-1 text-sm text-slate-600">
+                                {p.clienteNombre || "Sin cliente"}
+                              </p>
+                            </td>
+
+                            <td className="px-5 py-4 text-center">
+                              <EstadoBadge estado={p.estado} />
+                            </td>
+
+                            <td className="px-5 py-4 text-right font-bold text-emerald-700">
+                              C${money(p.presupuestoTotal)}
+                            </td>
+
+                            <td className="px-5 py-4 text-center font-medium text-slate-700">
+                              {p.fechaInicio || "—"}
+                            </td>
+
+                            <td className="px-5 py-4 text-center">
+                              <span className="rounded-full border border-blue-200 bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
+                                {cantidadAvaluos}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="px-5 py-10 text-center text-sm font-bold text-slate-500"
+                        >
+                          No hay proyectos registrados.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 xl:hidden">
+                {proyectosRecientes.length > 0 ? (
+                  proyectosRecientes.map((p) => {
+                    const cantidadAvaluos = avaluos.filter(
+                      (a) => Number(a.proyectoId) === Number(p.id)
+                    ).length;
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="rounded-2xl border border-slate-300 bg-slate-200 p-4 shadow-sm"
+                      >
+                        <div className="mb-4 border-b border-slate-300 pb-3">
+                          <p className="text-sm font-bold text-slate-900">
+                            {p.nombreProyecto || "—"}
+                          </p>
+
+                          <p className="mt-1 text-sm text-slate-600">
+                            {p.clienteNombre || "Sin cliente"}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <MiniBox
+                            label="Presupuesto"
+                            value={`C$${money(p.presupuestoTotal)}`}
+                          />
+
+                          <MiniBox label="Avalúos" value={cantidadAvaluos} />
+
+                          <MiniBox label="Inicio" value={p.fechaInicio || "—"} />
+
+                          <div className="rounded-xl border border-slate-300 bg-slate-100 p-3">
+                            <p className="text-sm font-semibold text-slate-600">
+                              Estado
+                            </p>
+
+                            <div className="mt-2">
+                              <EstadoBadge estado={p.estado} />
                             </div>
                           </div>
                         </div>
-                      );
-                    })
-                  ) : (
-                    <EmptyBox text="No hay proyectos registrados." />
-                  )}
-                </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <EmptyBox text="No hay proyectos registrados." />
+                )}
               </div>
-            </Panel>
-
-            <div className="grid grid-cols-1 gap-6">
-              <Panel
-                title="Estado de vehículos"
-                description="Distribución general de la flota."
-              >
-                <div className="grid max-h-[360px] grid-cols-1 gap-3 overflow-y-auto pr-1">
-                  <ProgressItem
-                    label="Disponibles"
-                    value={vehiculosDisponibles}
-                    total={vehiculos.length}
-                    variant="green"
-                  />
-
-                  <ProgressItem
-                    label="En mantenimiento"
-                    value={vehiculosMantenimiento}
-                    total={vehiculos.length}
-                    variant="amber"
-                  />
-
-                  <ProgressItem
-                    label="No disponibles"
-                    value={vehiculosNoDisponibles}
-                    total={vehiculos.length}
-                    variant="red"
-                  />
-                </div>
-              </Panel>
-
-              <Panel
-                title="Proyectos con más avalúos"
-                description="Ordenados por cantidad de avalúos."
-              >
-                <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                  {proyectosConMasAvaluos.length > 0 ? (
-                    proyectosConMasAvaluos.map((p) => (
-                      <InfoListItem
-                        key={p.id}
-                        title={p.nombreProyecto || "—"}
-                        subtitle={`Monto ejecutado: C$${money(
-                          p.montoEjecutado
-                        )}`}
-                        badge={p.cantidadAvaluos}
-                      />
-                    ))
-                  ) : (
-                    <EmptyBox text="No hay datos de avalúos." />
-                  )}
-                </div>
-              </Panel>
             </div>
-          </section>
+          </Panel>
 
-          <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <div className="flex flex-col gap-5">
             <Panel
-              title="Materiales de mayor valor"
-              description="Calculado por stock disponible y precio unitario."
+              title="Estado de vehículos"
+              description="Distribución general de la flota registrada."
             >
-              <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                {materialesMayorValor.length > 0 ? (
-                  materialesMayorValor.map((m) => (
-                    <InfoListItem
-                      key={m.id}
-                      title={m.nombre_material || "—"}
-                      subtitle={`Stock: ${Number(
-                        m.cantidad_en_stock ?? 0
-                      ).toLocaleString("es-NI")}`}
-                      badge={`C$${money(m.valorTotal)}`}
-                      green
-                    />
-                  ))
-                ) : (
-                  <EmptyBox text="No hay materiales registrados." />
-                )}
+              <div className="grid max-h-[360px] grid-cols-1 gap-3 overflow-y-auto pr-1">
+                <ProgressItem
+                  label="Disponibles"
+                  value={vehiculosDisponibles}
+                  total={vehiculos.length}
+                  color="emerald"
+                />
+
+                <ProgressItem
+                  label="En mantenimiento"
+                  value={vehiculosMantenimiento}
+                  total={vehiculos.length}
+                  color="amber"
+                />
+
+                <ProgressItem
+                  label="No disponibles"
+                  value={vehiculosNoDisponibles}
+                  total={vehiculos.length}
+                  color="red"
+                />
               </div>
             </Panel>
 
             <Panel
-              title="Servicios con mayor costo de venta"
-              description="Primeros servicios ordenados por costo de venta."
+              title="Proyectos con más avalúos"
+              description="Ordenados por cantidad de avalúos registrados."
             >
               <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                {serviciosMasCostosos.length > 0 ? (
-                  serviciosMasCostosos.map((s) => (
+                {proyectosConMasAvaluos.length > 0 ? (
+                  proyectosConMasAvaluos.map((p) => (
                     <InfoListItem
-                      key={s.id}
-                      title={s.nombreServicio || "—"}
-                      subtitle={`Costo directo: C$${money(
-                        s.totalCostoDirecto
-                      )}`}
-                      badge={`C$${money(s.costoVenta)}`}
-                      green
+                      key={p.id}
+                      title={p.nombreProyecto || "—"}
+                      subtitle={`Monto ejecutado: C$${money(p.montoEjecutado)}`}
+                      badge={p.cantidadAvaluos}
                     />
                   ))
                 ) : (
-                  <EmptyBox text="No hay servicios registrados." />
+                  <EmptyBox text="No hay datos de avalúos." />
                 )}
               </div>
             </Panel>
-          </section>
-        </div>
+          </div>
+        </section>
+
+        <section className="grid w-full grid-cols-1 gap-5 xl:grid-cols-2">
+          <Panel
+            title="Materiales de mayor valor"
+            description="Calculado por stock disponible y precio unitario."
+          >
+            <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+              {materialesMayorValor.length > 0 ? (
+                materialesMayorValor.map((m) => (
+                  <InfoListItem
+                    key={m.id}
+                    title={m.nombre_material || "—"}
+                    subtitle={`Stock: ${Number(
+                      m.cantidad_en_stock ?? 0
+                    ).toLocaleString("es-NI")}`}
+                    badge={`C$${money(m.valorTotal)}`}
+                    green
+                  />
+                ))
+              ) : (
+                <EmptyBox text="No hay materiales registrados." />
+              )}
+            </div>
+          </Panel>
+
+          <Panel
+            title="Servicios con mayor costo de venta"
+            description="Primeros servicios ordenados por costo de venta."
+          >
+            <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+              {serviciosMasCostosos.length > 0 ? (
+                serviciosMasCostosos.map((s) => (
+                  <InfoListItem
+                    key={s.id}
+                    title={s.nombreServicio || "—"}
+                    subtitle={`Costo directo: C$${money(s.totalCostoDirecto)}`}
+                    badge={`C$${money(s.costoVenta)}`}
+                    green
+                  />
+                ))
+              ) : (
+                <EmptyBox text="No hay servicios registrados." />
+              )}
+            </div>
+          </Panel>
+        </section>
       </div>
     </div>
   );
 }
 
-const HeroStat = ({ label, value, description }) => (
-  <div className="rounded-3xl border border-white/20 bg-white/15 px-5 py-4 shadow-lg backdrop-blur transition hover:bg-white/20">
-    <p className="text-sm font-bold text-cyan-100">{label}</p>
-
-    <p className="mt-2 truncate text-lg font-extrabold text-white">{value}</p>
-
-    <p className="mt-1 text-sm font-medium text-cyan-50">{description}</p>
+const HeaderBox = ({ label, value, text }) => (
+  <div className="rounded-2xl border border-white/10 bg-slate-900/50 px-4 py-3 text-left shadow-sm backdrop-blur xl:text-right">
+    <p className="text-sm font-medium text-cyan-100">{label}</p>
+    <p className="mt-1 truncate text-sm font-bold text-white">{value}</p>
+    <p className="mt-1 text-xs font-medium text-slate-300">{text}</p>
   </div>
 );
 
-const MainMetric = ({
-  title,
-  value,
-  subtitle,
-  firstLabel,
-  firstValue,
-  secondLabel,
-  secondValue,
-  variant = "blue",
-}) => {
-  const styles = {
-    blue: {
-      card: "border-blue-300 bg-gradient-to-br from-white via-blue-50 to-blue-100",
-      label: "border-blue-400 bg-blue-600 text-white",
-      value: "text-blue-800",
-      shadow: "hover:shadow-blue-300/40",
-    },
-    emerald: {
-      card: "border-emerald-300 bg-gradient-to-br from-white via-emerald-50 to-emerald-100",
-      label: "border-emerald-400 bg-emerald-600 text-white",
-      value: "text-emerald-800",
-      shadow: "hover:shadow-emerald-300/40",
-    },
-    cyan: {
-      card: "border-cyan-300 bg-gradient-to-br from-white via-cyan-50 to-cyan-100",
-      label: "border-cyan-400 bg-cyan-600 text-white",
-      value: "text-cyan-800",
-      shadow: "hover:shadow-cyan-300/40",
-    },
-    amber: {
-      card: "border-amber-300 bg-gradient-to-br from-white via-amber-50 to-amber-100",
-      label: "border-amber-400 bg-amber-500 text-white",
-      value: "text-amber-800",
-      shadow: "hover:shadow-amber-300/40",
-    },
-    violet: {
-      card: "border-violet-300 bg-gradient-to-br from-white via-violet-50 to-violet-100",
-      label: "border-violet-400 bg-violet-600 text-white",
-      value: "text-violet-800",
-      shadow: "hover:shadow-violet-300/40",
-    },
-    green: {
-      card: "border-green-300 bg-gradient-to-br from-white via-green-50 to-green-100",
-      label: "border-green-400 bg-green-600 text-white",
-      value: "text-green-800",
-      shadow: "hover:shadow-green-300/40",
-    },
-    sky: {
-      card: "border-sky-300 bg-gradient-to-br from-white via-sky-50 to-sky-100",
-      label: "border-sky-400 bg-sky-600 text-white",
-      value: "text-sky-800",
-      shadow: "hover:shadow-sky-300/40",
-    },
-    red: {
-      card: "border-red-300 bg-gradient-to-br from-white via-red-50 to-red-100",
-      label: "border-red-400 bg-red-600 text-white",
-      value: "text-red-800",
-      shadow: "hover:shadow-red-300/40",
-    },
+const MetricCard = ({ title, value, subtitle, icon, color = "blue", items }) => {
+  const colorClass = {
+    blue: "border-blue-200 bg-blue-100",
+    cyan: "border-cyan-200 bg-cyan-100",
+    emerald: "border-emerald-200 bg-emerald-100",
+    amber: "border-amber-200 bg-amber-100",
+    purple: "border-purple-200 bg-purple-100",
+    rose: "border-rose-200 bg-rose-100",
+    teal: "border-teal-200 bg-teal-100",
+    red: "border-red-200 bg-red-100",
   };
 
-  const current = styles[variant] || styles.blue;
+  const valueClass = {
+    blue: "text-blue-800",
+    cyan: "text-cyan-800",
+    emerald: "text-emerald-800",
+    amber: "text-amber-800",
+    purple: "text-purple-800",
+    rose: "text-rose-800",
+    teal: "text-teal-800",
+    red: "text-red-800",
+  };
 
   return (
-    <div
-      className={`
-        min-h-[190px] rounded-3xl border p-5 shadow-md transition
-        hover:-translate-y-1 hover:shadow-xl
-        ${current.card} ${current.shadow}
-      `}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className={`rounded-2xl border px-4 py-2 shadow-sm ${current.label}`}>
-          <p className="text-sm font-bold">{title}</p>
+    <div className="group min-h-[205px] overflow-hidden rounded-3xl border border-slate-300 bg-slate-100 shadow-md transition hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl">
+      <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-4 text-white">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-medium text-cyan-100">Indicador</p>
+
+          <span
+            className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${
+              colorClass[color] || colorClass.blue
+            }`}
+          >
+            <img src={icon} alt={title} className="h-6 w-6" />
+          </span>
         </div>
 
-        <p className={`text-2xl font-extrabold ${current.value}`}>{value}</p>
+        <h3 className="mt-2 truncate text-sm font-bold text-white">{title}</h3>
       </div>
 
-      <p className="mt-4 text-sm font-semibold text-slate-700">{subtitle}</p>
+      <div className="p-5">
+        <div className="flex items-end justify-between gap-3">
+          <p
+            className={`text-3xl font-extrabold ${
+              valueClass[color] || valueClass.blue
+            }`}
+          >
+            {value}
+          </p>
 
-      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm">
-          <p className="text-sm font-semibold text-slate-600">{firstLabel}</p>
-
-          <p className="mt-1 truncate text-sm font-extrabold text-slate-900">
-            {firstValue}
+          <p className="text-right text-sm font-medium text-slate-600">
+            {subtitle}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm">
-          <p className="text-sm font-semibold text-slate-600">{secondLabel}</p>
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {items.map((item) => (
+            <div
+              key={item.label}
+              className="rounded-2xl border border-slate-300 bg-slate-200 p-3 shadow-sm"
+            >
+              <p className="text-sm font-semibold text-slate-600">
+                {item.label}
+              </p>
 
-          <p className="mt-1 truncate text-sm font-extrabold text-slate-900">
-            {secondValue}
-          </p>
+              <p className="mt-1 truncate text-sm font-extrabold text-slate-900">
+                {item.value}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 };
 
-const StatusCard = ({ title, value, text, variant = "blue" }) => {
+const StatusCard = ({ title, value, text, color = "blue" }) => {
   const styles = {
-    blue: "border-blue-300 bg-gradient-to-br from-blue-500 to-blue-700 text-white",
-    red: "border-red-300 bg-gradient-to-br from-red-500 to-red-700 text-white",
-    amber:
-      "border-amber-300 bg-gradient-to-br from-amber-400 to-orange-600 text-white",
-    violet:
-      "border-violet-300 bg-gradient-to-br from-violet-500 to-purple-700 text-white",
+    blue: "from-blue-800 to-cyan-700",
+    red: "from-red-700 to-rose-800",
+    amber: "from-amber-500 to-orange-700",
+    purple: "from-purple-700 to-indigo-800",
   };
 
   return (
     <div
       className={`
-        min-h-[130px] rounded-3xl border p-5 shadow-md
-        transition hover:-translate-y-1 hover:shadow-xl
-        ${styles[variant] || styles.blue}
+        min-h-[135px] rounded-3xl border border-slate-700/20
+        bg-gradient-to-r p-5 text-white shadow-md transition
+        hover:-translate-y-1 hover:shadow-xl
+        ${styles[color] || styles.blue}
       `}
     >
       <p className="text-sm font-bold text-white/90">{title}</p>
 
-      <p className="mt-2 text-2xl font-extrabold text-white">{value}</p>
+      <p className="mt-2 text-3xl font-extrabold text-white">{value}</p>
 
-      <p className="mt-1 text-sm font-medium text-white/85">{text}</p>
+      <p className="mt-1 text-sm font-medium text-white/80">{text}</p>
     </div>
   );
 };
 
 const Panel = ({ title, description, badge, children }) => (
-  <section className="rounded-3xl border border-cyan-200 bg-white p-4 shadow-lg shadow-cyan-900/10 sm:p-5">
-    <div className="mb-5 flex flex-col gap-3 border-b border-cyan-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+  <section className="rounded-3xl border border-slate-300 bg-slate-100 p-4 shadow-md sm:p-5">
+    <div className="mb-4 flex flex-col gap-2 border-b border-slate-300 pb-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h2 className="text-sm font-extrabold text-cyan-900">{title}</h2>
+        <h2 className="text-sm font-bold text-slate-900">{title}</h2>
 
-        <p className="mt-1 text-sm font-medium text-slate-600">
-          {description}
-        </p>
+        <p className="mt-1 text-sm text-slate-600">{description}</p>
       </div>
 
       {badge && (
-        <span className="w-fit rounded-full border border-cyan-300 bg-cyan-100 px-4 py-2 text-sm font-bold text-cyan-800">
+        <span className="w-fit rounded-full border border-blue-200 bg-blue-100 px-4 py-2 text-sm font-bold text-blue-800">
           {badge}
         </span>
       )}
@@ -750,37 +730,30 @@ const Panel = ({ title, description, badge, children }) => (
   </section>
 );
 
-const MiniBox = ({ label, value, green = false }) => (
-  <div
-    className={`
-      rounded-xl border p-3 shadow-sm
-      ${
-        green
-          ? "border-emerald-300 bg-emerald-100 text-emerald-800"
-          : "border-cyan-200 bg-cyan-50 text-cyan-800"
-      }
-    `}
-  >
-    <p className="text-sm font-bold opacity-80">{label}</p>
+const MiniBox = ({ label, value }) => (
+  <div className="rounded-xl border border-slate-300 bg-slate-100 p-3 shadow-sm">
+    <p className="text-sm font-bold text-slate-600">{label}</p>
 
-    <p className="mt-1 truncate text-sm font-extrabold">{value}</p>
+    <p className="mt-1 truncate text-sm font-extrabold text-slate-900">
+      {value}
+    </p>
   </div>
 );
 
 const EstadoBadge = ({ estado }) => {
   const styles = {
-    Activo: "border-emerald-300 bg-emerald-100 text-emerald-800",
-    "En Espera": "border-amber-300 bg-amber-100 text-amber-800",
-    Completado: "border-blue-300 bg-blue-100 text-blue-800",
-    Cancelado: "border-red-300 bg-red-100 text-red-800",
-    "En ejecución": "border-emerald-300 bg-emerald-100 text-emerald-800",
+    Activo: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    "En Espera": "border-amber-200 bg-amber-100 text-amber-800",
+    Completado: "border-blue-200 bg-blue-100 text-blue-800",
+    Cancelado: "border-red-200 bg-red-100 text-red-800",
+    "En ejecución": "border-emerald-200 bg-emerald-100 text-emerald-800",
   };
 
   return (
     <span
       className={`
         rounded-full border px-3 py-1 text-sm font-bold
-        ${styles[estado] || "border-cyan-300 bg-cyan-100 text-cyan-800"}
+        ${styles[estado] || "border-slate-300 bg-slate-200 text-slate-700"}
       `}
     >
       {estado || "—"}
@@ -788,26 +761,26 @@ const EstadoBadge = ({ estado }) => {
   );
 };
 
-const ProgressItem = ({ label, value, total, variant = "green" }) => {
+const ProgressItem = ({ label, value, total, color = "emerald" }) => {
   const percent =
     total > 0 ? Math.round((Number(value) / Number(total)) * 100) : 0;
 
-  const styles = {
-    green: "from-emerald-400 to-emerald-600",
-    amber: "from-amber-400 to-orange-500",
-    red: "from-red-400 to-red-600",
+  const barClass = {
+    emerald: "from-emerald-500 to-emerald-700",
+    amber: "from-amber-500 to-orange-600",
+    red: "from-red-500 to-rose-700",
   };
 
-  const textStyles = {
-    green: "text-emerald-800",
+  const textClass = {
+    emerald: "text-emerald-800",
     amber: "text-amber-800",
     red: "text-red-800",
   };
 
   return (
-    <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
+    <div className="rounded-2xl border border-slate-300 bg-slate-200 p-4 shadow-sm">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <p className={`text-sm font-extrabold ${textStyles[variant]}`}>
+        <p className={`text-sm font-extrabold ${textClass[color]}`}>
           {label}
         </p>
 
@@ -816,9 +789,11 @@ const ProgressItem = ({ label, value, total, variant = "green" }) => {
         </p>
       </div>
 
-      <div className="h-3 overflow-hidden rounded-full bg-white">
+      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
         <div
-          className={`h-full rounded-full bg-gradient-to-r ${styles[variant]}`}
+          className={`h-full rounded-full bg-gradient-to-r ${
+            barClass[color] || barClass.emerald
+          }`}
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -831,14 +806,14 @@ const ProgressItem = ({ label, value, total, variant = "green" }) => {
 };
 
 const InfoListItem = ({ title, subtitle, badge, green = false }) => (
-  <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm transition hover:border-cyan-400 hover:bg-cyan-100">
+  <div className="rounded-2xl border border-slate-300 bg-slate-200 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-400 hover:bg-blue-100 hover:shadow-md">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
         <p className="truncate text-sm font-extrabold text-slate-900">
           {title}
         </p>
 
-        <p className="mt-1 text-sm font-medium text-slate-600">{subtitle}</p>
+        <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
       </div>
 
       <span
@@ -846,8 +821,8 @@ const InfoListItem = ({ title, subtitle, badge, green = false }) => (
           w-fit shrink-0 rounded-full border px-3 py-1 text-sm font-bold
           ${
             green
-              ? "border-emerald-300 bg-emerald-100 text-emerald-800"
-              : "border-cyan-300 bg-cyan-100 text-cyan-800"
+              ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+              : "border-blue-200 bg-blue-100 text-blue-800"
           }
         `}
       >
@@ -858,7 +833,7 @@ const InfoListItem = ({ title, subtitle, badge, green = false }) => (
 );
 
 const EmptyBox = ({ text }) => (
-  <div className="rounded-2xl border border-dashed border-cyan-300 bg-cyan-50 px-6 py-8 text-center">
-    <p className="text-sm font-bold text-cyan-800">{text}</p>
+  <div className="rounded-2xl border border-dashed border-slate-400 bg-slate-200 px-6 py-8 text-center">
+    <p className="text-sm font-bold text-slate-700">{text}</p>
   </div>
 );

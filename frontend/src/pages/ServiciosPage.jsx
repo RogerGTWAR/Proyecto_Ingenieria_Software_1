@@ -91,9 +91,39 @@ function ServiciosPage() {
   const [servicioAEliminar, setServicioAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const serviciosFiltrados = (servicios || []).filter((s) =>
-    s.nombreServicio?.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+  };
+
+  const serviciosFiltrados = (servicios || []).filter((s) => {
+    const q = busqueda.toLowerCase();
+
+    return (
+      s.nombreServicio?.toLowerCase().includes(q) ||
+      s.descripcion?.toLowerCase().includes(q)
+    );
+  });
 
   const abrirFormulario = () => {
     setServicioAEditar(null);
@@ -120,24 +150,49 @@ function ServiciosPage() {
 
       if (modoEdicion && servicioAEditar) {
         servicioGuardado = await edit(servicioAEditar.id, data);
-        setServicioSeleccionado(servicioGuardado);
+
+        if (
+          vistaDetalle &&
+          servicioSeleccionado?.id === servicioAEditar.id
+        ) {
+          setServicioSeleccionado(servicioGuardado);
+        }
+
+        mostrarMensaje(
+          "success",
+          "Servicio actualizado",
+          "El servicio se actualizó correctamente."
+        );
       } else {
         servicioGuardado = await add(data);
+
+        mostrarMensaje(
+          "success",
+          "Servicio creado",
+          "El servicio se registró correctamente."
+        );
       }
 
       if (!servicioGuardado || !servicioGuardado.id) {
-        alert("No se pudo obtener el ID del servicio guardado.");
-        return null;
+        throw new Error(
+          "El sistema guardó la información, pero no devolvió el ID del servicio."
+        );
       }
 
       await reload();
       await reloadDirectos();
       await reloadIndirectos();
 
+      cerrarFormulario();
+
       return servicioGuardado;
     } catch (error) {
-      console.error("Error al guardar servicio:", error);
-      alert("No se pudo guardar el servicio.");
+      mostrarMensaje(
+        "error",
+        "Error al guardar servicio",
+        error.message || "No se pudo guardar el servicio."
+      );
+
       return null;
     }
   };
@@ -170,13 +225,23 @@ function ServiciosPage() {
     try {
       await remove(servicioAEliminar.id);
       await reload();
-      setVistaDetalle(false);
-    } catch (e) {
-      console.error("Error al eliminar servicio:", e);
-      alert("Error al eliminar el servicio.");
+
+      mostrarMensaje(
+        "success",
+        "Servicio eliminado",
+        "El servicio se eliminó correctamente."
+      );
+
+      cerrarEliminar();
+      cerrarDetalles();
+    } catch (error) {
+      mostrarMensaje(
+        "error",
+        "Error al eliminar servicio",
+        error.message || "No se pudo eliminar el servicio."
+      );
     } finally {
       setIsDeleting(false);
-      cerrarEliminar();
     }
   };
 
@@ -287,7 +352,7 @@ function ServiciosPage() {
 
               <input
                 type="text"
-                placeholder="Buscar servicio..."
+                placeholder="Buscar servicio por nombre o descripción..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 bg-slate-200 px-4 py-3 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-sm placeholder:text-slate-500 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100"
@@ -364,7 +429,10 @@ function ServiciosPage() {
 
         {vistaDetalle && servicioSeleccionado && (
           <ServiciosDetails
-            servicio={servicioSeleccionado}
+            servicio={
+              servicios.find((s) => s.id === servicioSeleccionado.id) ||
+              servicioSeleccionado
+            }
             onClose={cerrarDetalles}
             onEdit={editarServicio}
             onDelete={abrirEliminar}
@@ -388,6 +456,65 @@ function ServiciosPage() {
             itemName={servicioAEliminar?.nombreServicio || ""}
             loading={isDeleting}
           />
+        )}
+
+        {modalMensaje.open && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+            <div
+              className={`
+                w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+                ${
+                  modalMensaje.type === "error"
+                    ? "border-red-200"
+                    : "border-emerald-200"
+                }
+              `}
+            >
+              <div className="px-6 py-6">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`
+                      flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+                      ${
+                        modalMensaje.type === "error"
+                          ? "bg-red-100 text-red-600"
+                          : "bg-emerald-100 text-emerald-600"
+                      }
+                    `}
+                  >
+                    {modalMensaje.type === "error" ? "!" : "✓"}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-black text-slate-900">
+                      {modalMensaje.title}
+                    </h3>
+
+                    <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                      {modalMensaje.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={cerrarMensaje}
+                  className={`
+                    rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+                    ${
+                      modalMensaje.type === "error"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                    }
+                  `}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

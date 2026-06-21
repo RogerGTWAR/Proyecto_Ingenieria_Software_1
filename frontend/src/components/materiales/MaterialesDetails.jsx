@@ -11,8 +11,25 @@ const MaterialesDetails = ({ material, onClose, onEdit, onDelete }) => {
     });
 
   const stock = Number(material.cantidad_en_stock ?? 0);
+  const stockMinimo = Number(material.stock_minimo ?? 10);
   const precio = Number(material.precio_unitario ?? 0);
   const valorTotal = stock * precio;
+
+  const estadoStock =
+    stock <= stockMinimo
+      ? {
+          label: "Stock bajo",
+          variant: "red",
+        }
+      : stock <= stockMinimo + 5
+      ? {
+          label: "Stock cercano al mínimo",
+          variant: "yellow",
+        }
+      : {
+          label: "Stock normal",
+          variant: "blue",
+        };
 
   return (
     <div
@@ -36,7 +53,7 @@ const MaterialesDetails = ({ material, onClose, onEdit, onDelete }) => {
       <div
         className="
           w-full
-          max-w-3xl
+          max-w-4xl
           overflow-hidden
           rounded-3xl
           border
@@ -66,7 +83,7 @@ const MaterialesDetails = ({ material, onClose, onEdit, onDelete }) => {
           </h2>
         </div>
 
-        <div className="space-y-5 p-4 sm:p-6">
+        <div className="max-h-[calc(100dvh-170px)] space-y-5 overflow-y-auto p-4 sm:p-6">
           <section
             className="
               rounded-3xl
@@ -102,9 +119,21 @@ const MaterialesDetails = ({ material, onClose, onEdit, onDelete }) => {
               />
 
               <InfoBox
+                label="Estado de Stock"
+                value={estadoStock.label}
+                variant={estadoStock.variant}
+              />
+
+              <InfoBox
                 label="Cantidad en Stock"
                 value={stock.toLocaleString("es-NI")}
                 variant="blue"
+              />
+
+              <InfoBox
+                label="Stock Mínimo"
+                value={stockMinimo.toLocaleString("es-NI")}
+                variant="yellow"
               />
 
               <InfoBox
@@ -117,6 +146,17 @@ const MaterialesDetails = ({ material, onClose, onEdit, onDelete }) => {
                 label="Valor en Inventario"
                 value={money(valorTotal)}
                 variant="green"
+              />
+
+              <InfoBox
+                label="Movimientos"
+                value={Number(material.movimientos_count ?? 0)}
+              />
+
+              <InfoBox
+                label="Alertas"
+                value={Number(material.alertas_count ?? 0)}
+                variant={Number(material.alertas_count ?? 0) > 0 ? "red" : "default"}
               />
 
               <div
@@ -220,6 +260,8 @@ const InfoBox = ({ label, value, variant = "default" }) => {
     default: "border-slate-300 bg-slate-100 text-slate-800",
     blue: "border-blue-200 bg-blue-100 text-blue-800",
     green: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    yellow: "border-amber-200 bg-amber-100 text-amber-800",
+    red: "border-red-200 bg-red-100 text-red-800",
   };
 
   return (

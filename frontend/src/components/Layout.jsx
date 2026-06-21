@@ -29,6 +29,10 @@ const Layout = () => {
         return "Proveedores";
       case "/materiales":
         return "Inventario";
+      case "/movimientos_inventario":
+        return "Movimientos de Inventario";
+      case "/alertas_inventario":
+        return "Alertas de Inventario";
       case "/avaluos":
         return "Avalúos";
       case "/permisos":
@@ -39,6 +43,8 @@ const Layout = () => {
         return "Reportes";
       case "/usuarios":
         return "Usuarios";
+      case "/notificaciones":
+        return "Notificaciones";
       default:
         return "Inicio";
     }
@@ -47,19 +53,21 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-slate-200">
       <Sidebar />
+
       <Upbar title={getTitle(location.pathname)} />
 
       <main
         className="
           min-h-screen
           w-full
-          overflow-hidden
+          overflow-x-hidden
           bg-slate-200
           pt-16
+          md:pl-20
           lg:pl-48
         "
       >
-        <div className="h-[calc(100dvh-64px)] w-full overflow-hidden">
+        <div className="min-h-[calc(100dvh-64px)] w-full">
           <Outlet />
         </div>
       </main>

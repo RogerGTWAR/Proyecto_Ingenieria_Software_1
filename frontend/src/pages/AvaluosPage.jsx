@@ -99,6 +99,28 @@ function AvaluosPage() {
   const [avaluoAEliminar, setAvaluoAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [modalError, setModalError] = useState({
+    open: false,
+    title: "",
+    message: "",
+  });
+
+  const mostrarError = (title, message) => {
+    setModalError({
+      open: true,
+      title,
+      message,
+    });
+  };
+
+  const cerrarError = () => {
+    setModalError({
+      open: false,
+      title: "",
+      message: "",
+    });
+  };
+
   const avaluosFiltrados = (avaluos || []).filter((a) => {
     const q = busqueda.toLowerCase();
 
@@ -129,31 +151,26 @@ function AvaluosPage() {
   };
 
   const guardarAvaluo = async (data) => {
-    try {
-      let avaluoGuardado;
+    let avaluoGuardado;
 
-      if (modoEdicion && avaluoAEditar) {
-        avaluoGuardado = await edit(avaluoAEditar.id, data);
-        setAvaluoSeleccionado(avaluoGuardado);
-      } else {
-        avaluoGuardado = await add(data);
-      }
-
-      if (!avaluoGuardado || !avaluoGuardado.id) {
-        alert("No se pudo obtener el ID del avalúo guardado.");
-        return null;
-      }
-
-      await reloadServicios();
-      await reload();
-      await reloadDetalles();
-
-      return avaluoGuardado;
-    } catch (error) {
-      console.error("Error al guardar avalúo:", error);
-      alert("No se pudo guardar el avalúo.");
-      return null;
+    if (modoEdicion && avaluoAEditar) {
+      avaluoGuardado = await edit(avaluoAEditar.id, data);
+      setAvaluoSeleccionado(avaluoGuardado);
+    } else {
+      avaluoGuardado = await add(data);
     }
+
+    if (!avaluoGuardado || !avaluoGuardado.id) {
+      throw new Error(
+        "El sistema guardó la información, pero no devolvió el ID del avalúo. Intenta actualizar la página."
+      );
+    }
+
+    await reloadServicios();
+    await reload();
+    await reloadDetalles();
+
+    return avaluoGuardado;
   };
 
   const verDetalles = (avaluo) => {
@@ -186,9 +203,11 @@ function AvaluosPage() {
       await reload();
       await reloadDetalles();
       setVistaDetalle(false);
-    } catch (e) {
-      console.error("Error al eliminar avalúo:", e);
-      alert("Error al eliminar el avalúo.");
+    } catch (error) {
+      mostrarError(
+        "Error al eliminar avalúo",
+        error.message || "No se pudo eliminar el avalúo."
+      );
     } finally {
       setIsDeleting(false);
       cerrarEliminar();
@@ -452,6 +471,40 @@ function AvaluosPage() {
             itemName={avaluoAEliminar?.descripcion || ""}
             loading={isDeleting}
           />
+        )}
+
+        {modalError.open && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+            <div className="w-full max-w-md overflow-hidden rounded-3xl border border-red-200 bg-white shadow-2xl">
+              <div className="px-6 py-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-2xl font-black text-red-600">
+                    !
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-black text-slate-900">
+                      {modalError.title}
+                    </h3>
+
+                    <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                      {modalError.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={cerrarError}
+                  className="rounded-2xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-red-700"
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

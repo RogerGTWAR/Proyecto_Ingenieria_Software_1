@@ -24,7 +24,7 @@ const ClientesCard = ({ clientes, onEdit, onDelete, onVerDetalles }) => {
           key={c.id}
           className="
             flex
-            min-h-[330px]
+            min-h-[370px]
             w-full
             flex-col
             overflow-hidden
@@ -41,7 +41,7 @@ const ClientesCard = ({ clientes, onEdit, onDelete, onVerDetalles }) => {
         >
           <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-4 text-white">
             <p className="text-sm font-medium text-cyan-100">
-              Cliente registrado
+              {c.tipoCliente || "Cliente registrado"}
             </p>
 
             <h3 className="mt-1 truncate text-sm font-bold">
@@ -51,6 +51,11 @@ const ClientesCard = ({ clientes, onEdit, onDelete, onVerDetalles }) => {
 
           <div className="flex flex-1 flex-col justify-between p-5">
             <div className="space-y-4">
+              <InfoBox
+                label="Identificación"
+                value={c.numeroIdentificacion || "—"}
+              />
+
               <InfoBox
                 label="Contacto"
                 value={c.nombreContacto || "Sin contacto"}
@@ -63,7 +68,7 @@ const ClientesCard = ({ clientes, onEdit, onDelete, onVerDetalles }) => {
 
               <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                 <InfoBox label="Ciudad" value={c.ciudad || "—"} />
-                <InfoBox label="País" value={c.pais || "—"} />
+                <InfoBox label="Correo" value={c.correo || "—"} />
               </div>
             </div>
 

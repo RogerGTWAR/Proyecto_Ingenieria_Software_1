@@ -94,14 +94,42 @@ function ProveedoresPage() {
   const [proveedorAEliminar, setProveedorAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+  };
+
   const proveedoresFiltrados = (proveedores || []).filter((p) => {
     const txt = busqueda.toLowerCase();
 
     return (
       p.nombre_empresa?.toLowerCase().includes(txt) ||
+      p.nombre_contacto?.toLowerCase().includes(txt) ||
       p.categoriaNombre?.toLowerCase().includes(txt) ||
       p.ciudad?.toLowerCase().includes(txt) ||
-      p.pais?.toLowerCase().includes(txt)
+      p.pais?.toLowerCase().includes(txt) ||
+      p.telefono?.toLowerCase().includes(txt) ||
+      p.correo?.toLowerCase().includes(txt)
     );
   });
 
@@ -126,17 +154,41 @@ function ProveedoresPage() {
 
   const guardarProveedor = async (data) => {
     try {
+      let proveedorGuardado;
+
       if (modoEdicion && proveedorAEditar) {
-        await edit(proveedorAEditar.id, data);
+        proveedorGuardado = await edit(proveedorAEditar.id, data);
+
+        if (
+          vistaDetalle &&
+          proveedorSeleccionado?.id === proveedorAEditar.id
+        ) {
+          setProveedorSeleccionado(proveedorGuardado);
+        }
+
+        mostrarMensaje(
+          "success",
+          "Proveedor actualizado",
+          "El proveedor se actualizó correctamente."
+        );
       } else {
-        await add(data);
+        proveedorGuardado = await add(data);
+
+        mostrarMensaje(
+          "success",
+          "Proveedor registrado",
+          "El proveedor se registró correctamente."
+        );
       }
 
       await reload();
       cerrarFormulario();
     } catch (error) {
-      console.error("Error al guardar proveedor:", error);
-      alert("No se pudo guardar el proveedor.");
+      mostrarMensaje(
+        "error",
+        "Error al guardar proveedor",
+        error.message || "No se pudo guardar el proveedor."
+      );
     }
   };
 
@@ -168,13 +220,23 @@ function ProveedoresPage() {
     try {
       await remove(proveedorAEliminar.id);
       await reload();
-      setVistaDetalle(false);
+
+      mostrarMensaje(
+        "success",
+        "Proveedor eliminado",
+        "El proveedor se eliminó correctamente."
+      );
+
+      cerrarEliminar();
+      cerrarDetalles();
     } catch (error) {
-      console.error("Error al eliminar proveedor:", error);
-      alert("No se pudo eliminar el proveedor.");
+      mostrarMensaje(
+        "error",
+        "Error al eliminar proveedor",
+        error.message || "No se pudo eliminar el proveedor."
+      );
     } finally {
       setIsDeleting(false);
-      cerrarEliminar();
     }
   };
 
@@ -280,7 +342,7 @@ function ProveedoresPage() {
 
               <input
                 type="text"
-                placeholder="Buscar por empresa, categoría, ciudad o país..."
+                placeholder="Buscar por empresa, contacto, categoría, ciudad, país, teléfono o correo..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 className="
@@ -405,9 +467,10 @@ function ProveedoresPage() {
 
         {vistaDetalle && proveedorSeleccionado && (
           <ProveedoresDetails
-            proveedor={proveedores.find(
-              (p) => p.id === proveedorSeleccionado.id
-            )}
+            proveedor={
+              proveedores.find((p) => p.id === proveedorSeleccionado.id) ||
+              proveedorSeleccionado
+            }
             onClose={cerrarDetalles}
             onEdit={editarProveedor}
             onDelete={abrirEliminar}
@@ -431,6 +494,65 @@ function ProveedoresPage() {
             itemName={proveedorAEliminar?.nombre_empresa || ""}
             loading={isDeleting}
           />
+        )}
+
+        {modalMensaje.open && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+            <div
+              className={`
+                w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+                ${
+                  modalMensaje.type === "error"
+                    ? "border-red-200"
+                    : "border-emerald-200"
+                }
+              `}
+            >
+              <div className="px-6 py-6">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`
+                      flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+                      ${
+                        modalMensaje.type === "error"
+                          ? "bg-red-100 text-red-600"
+                          : "bg-emerald-100 text-emerald-600"
+                      }
+                    `}
+                  >
+                    {modalMensaje.type === "error" ? "!" : "✓"}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-black text-slate-900">
+                      {modalMensaje.title}
+                    </h3>
+
+                    <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                      {modalMensaje.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={cerrarMensaje}
+                  className={`
+                    rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+                    ${
+                      modalMensaje.type === "error"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                    }
+                  `}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

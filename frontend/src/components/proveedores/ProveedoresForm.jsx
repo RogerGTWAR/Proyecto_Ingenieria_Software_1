@@ -17,6 +17,7 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -60,91 +61,103 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const validate = () => {
     const newErrors = {};
+
+    const letrasRegex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/;
+    const telefonoRegex = /^[0-9]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const nombreEmpresa = form.nombre_empresa.trim();
+    const nombreContacto = form.nombre_contacto.trim();
+    const cargoContacto = form.cargo_contacto.trim();
+    const telefono = form.telefono.trim();
+    const correo = form.correo.trim();
 
     if (!form.categoria_proveedor_id) {
       newErrors.categoria_proveedor_id = "Seleccione una categoría.";
     }
 
-    if (!form.nombre_empresa.trim()) {
+    if (!nombreEmpresa) {
       newErrors.nombre_empresa = "El nombre de la empresa es obligatorio.";
+    } else if (nombreEmpresa.length < 3) {
+      newErrors.nombre_empresa =
+        "El nombre de la empresa debe tener al menos 3 caracteres.";
     }
 
-    if (!form.nombre_contacto.trim()) {
+    if (!nombreContacto) {
       newErrors.nombre_contacto = "El nombre del contacto es obligatorio.";
+    } else if (nombreContacto.length < 3) {
+      newErrors.nombre_contacto =
+        "El nombre del contacto debe tener al menos 3 caracteres.";
+    } else if (!letrasRegex.test(nombreContacto)) {
+      newErrors.nombre_contacto =
+        "El nombre del contacto solo debe contener letras.";
     }
 
-    if (!form.cargo_contacto.trim()) {
+    if (!cargoContacto) {
       newErrors.cargo_contacto = "El cargo del contacto es obligatorio.";
     }
 
-    if (!form.telefono.trim()) {
+    if (!telefono) {
       newErrors.telefono = "El teléfono es obligatorio.";
-    } else if (!/^[0-9]+$/.test(form.telefono)) {
+    } else if (!telefonoRegex.test(telefono)) {
       newErrors.telefono = "El teléfono debe contener solo números.";
-    } else if (form.telefono.length < 8) {
+    } else if (telefono.length < 8) {
       newErrors.telefono = "El teléfono debe tener al menos 8 dígitos.";
+    } else if (telefono.length > 15) {
+      newErrors.telefono = "El teléfono no debe superar los 15 dígitos.";
     }
 
-    const emailRegex = /^\S+@\S+\.\S+$/;
-
-    if (!form.correo.trim()) {
+    if (!correo) {
       newErrors.correo = "El correo es obligatorio.";
-    } else if (!emailRegex.test(form.correo)) {
+    } else if (!emailRegex.test(correo)) {
       newErrors.correo = "Ingrese un correo válido.";
     }
+
+    return newErrors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (guardando) return;
+
+    const newErrors = validate();
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    await onSubmit(form);
+    try {
+      setGuardando(true);
+      await onSubmit(form);
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const inputClass =
     "w-full min-w-0 rounded-xl border border-slate-300 bg-slate-100 px-3 py-3 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-sm placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100 sm:px-4";
 
   const labelClass = "mb-2 block text-sm font-semibold text-slate-700";
-
   const errorClass = "mt-1 text-sm font-medium text-red-600";
 
   return (
     <div
       className="
-        fixed
-        left-0
-        right-0
-        bottom-0
-        top-16
-        z-40
-        flex
-        items-center
-        justify-center
-        overflow-y-auto
-        bg-slate-900/35
-        px-4
-        py-6
-        lg:left-48
+        fixed left-0 right-0 bottom-0 top-16 z-40
+        flex items-center justify-center overflow-y-auto
+        bg-slate-900/35 px-4 py-6 lg:left-48
       "
     >
       <form
         onSubmit={handleSubmit}
         className="
-          flex
-          w-full
-          max-w-5xl
-          max-h-[calc(100dvh-96px)]
-          flex-col
-          overflow-hidden
-          rounded-3xl
-          border
-          border-slate-300
-          bg-slate-100
-          shadow-2xl
+          flex w-full max-w-5xl max-h-[calc(100dvh-96px)]
+          flex-col overflow-hidden rounded-3xl
+          border border-slate-300 bg-slate-100 shadow-2xl
         "
       >
         <div className="shrink-0 bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-5 text-white shadow-lg sm:px-7">
@@ -355,16 +368,22 @@ const ProveedoresForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 sm:w-auto"
             >
-              {isEdit ? "Actualizar Proveedor" : "Guardar Proveedor"}
+              {guardando
+                ? "Guardando..."
+                : isEdit
+                ? "Actualizar Proveedor"
+                : "Guardar Proveedor"}
             </button>
           </div>
         </div>

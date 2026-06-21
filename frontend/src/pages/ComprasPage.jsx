@@ -7,6 +7,7 @@ import ComprasCard from "../components/compras/ComprasCard";
 import ComprasTable from "../components/compras/ComprasTable";
 import ComprasDetails from "../components/compras/ComprasDetails";
 import ComprasForm from "../components/compras/ComprasForm";
+
 import { useCompras } from "../hooks/useCompras";
 import { useDetallesCompras } from "../hooks/useDetallesCompras";
 
@@ -70,15 +71,7 @@ const flujoModulos = [
 ];
 
 function ComprasPage() {
-  const {
-    items: compras,
-    loading,
-    add,
-    edit,
-    remove,
-    reload,
-  } = useCompras();
-
+  const { items: compras, loading, add, edit, remove, reload } = useCompras();
   const { reload: reloadDetalles } = useDetallesCompras();
 
   const [busqueda, setBusqueda] = useState("");
@@ -96,12 +89,38 @@ function ComprasPage() {
   const [compraAEliminar, setCompraAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+  };
+
   const comprasFiltradas = (compras || []).filter((c) => {
     const txt = busqueda.toLowerCase();
 
     return (
       c.numero_factura?.toLowerCase().includes(txt) ||
       c.proveedorNombre?.toLowerCase().includes(txt) ||
+      c.empleadoNombre?.toLowerCase().includes(txt) ||
       c.estado?.toLowerCase().includes(txt)
     );
   });
@@ -131,14 +150,33 @@ function ComprasPage() {
 
       if (modoEdicion && compraAEditar) {
         compraGuardada = await edit(compraAEditar.id, data);
-        setCompraSeleccionada(compraGuardada);
+
+        if (
+          vistaDetalle &&
+          Number(compraSeleccionada?.id) === Number(compraAEditar.id)
+        ) {
+          setCompraSeleccionada(compraGuardada);
+        }
+
+        mostrarMensaje(
+          "success",
+          "Compra actualizada",
+          "La compra se actualizó correctamente."
+        );
       } else {
         compraGuardada = await add(data);
+
+        mostrarMensaje(
+          "success",
+          "Compra registrada",
+          "La compra se registró correctamente."
+        );
       }
 
-      if (!compraGuardada?.id) {
-        alert("No se pudo obtener el ID de la compra guardada.");
-        return null;
+      if (!compraGuardada || !compraGuardada.id) {
+        throw new Error(
+          "El sistema guardó la información, pero no devolvió el ID de la compra."
+        );
       }
 
       await reload();
@@ -146,8 +184,12 @@ function ComprasPage() {
 
       return compraGuardada;
     } catch (error) {
-      console.error("Error al guardar compra:", error);
-      alert("Error al guardar la compra.");
+      mostrarMensaje(
+        "error",
+        "Error al guardar compra",
+        error.message || "No se pudo guardar la compra."
+      );
+
       return null;
     }
   };
@@ -181,24 +223,31 @@ function ComprasPage() {
       await remove(compraAEliminar.id);
       await reload();
       await reloadDetalles();
-      setVistaDetalle(false);
+
+      mostrarMensaje(
+        "success",
+        "Compra eliminada",
+        "La compra se eliminó correctamente."
+      );
+
+      cerrarEliminar();
+      cerrarDetalles();
     } catch (error) {
-      console.error("Error al eliminar compra:", error);
-      alert("No se pudo eliminar la compra.");
+      mostrarMensaje(
+        "error",
+        "Error al eliminar compra",
+        error.message || "No se pudo eliminar la compra."
+      );
     } finally {
       setIsDeleting(false);
-      cerrarEliminar();
     }
   };
 
   const totalCompras = compras.length;
-
   const comprasPagadas = compras.filter((c) => c.estado === "Pagada").length;
-
   const comprasPendientes = compras.filter(
     (c) => c.estado === "Pendiente"
   ).length;
-
   const comprasCanceladas = compras.filter(
     (c) => c.estado === "Cancelada"
   ).length;
@@ -305,7 +354,7 @@ function ComprasPage() {
 
               <input
                 type="text"
-                placeholder="Buscar por Nº factura, proveedor o estado..."
+                placeholder="Buscar por factura, proveedor, empleado o estado..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 bg-slate-200 px-4 py-3 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-sm placeholder:text-slate-500 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100"
@@ -380,7 +429,10 @@ function ComprasPage() {
 
         {vistaDetalle && compraSeleccionada && (
           <ComprasDetails
-            compra={compraSeleccionada}
+            compra={
+              compras.find((c) => Number(c.id) === Number(compraSeleccionada.id)) ||
+              compraSeleccionada
+            }
             onClose={cerrarDetalles}
             onEdit={editarCompra}
             onDelete={abrirEliminar}
@@ -404,6 +456,65 @@ function ComprasPage() {
             itemName={compraAEliminar?.numero_factura || ""}
             loading={isDeleting}
           />
+        )}
+
+        {modalMensaje.open && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+            <div
+              className={`
+                w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+                ${
+                  modalMensaje.type === "error"
+                    ? "border-red-200"
+                    : "border-emerald-200"
+                }
+              `}
+            >
+              <div className="px-6 py-6">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`
+                      flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+                      ${
+                        modalMensaje.type === "error"
+                          ? "bg-red-100 text-red-600"
+                          : "bg-emerald-100 text-emerald-600"
+                      }
+                    `}
+                  >
+                    {modalMensaje.type === "error" ? "!" : "✓"}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-black text-slate-900">
+                      {modalMensaje.title}
+                    </h3>
+
+                    <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                      {modalMensaje.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={cerrarMensaje}
+                  className={`
+                    rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+                    ${
+                      modalMensaje.type === "error"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                    }
+                  `}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

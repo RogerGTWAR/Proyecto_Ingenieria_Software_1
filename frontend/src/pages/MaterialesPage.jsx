@@ -76,9 +76,11 @@ function MaterialesPage() {
   const [busqueda, setBusqueda] = useState("");
   const [materialSeleccionado, setMaterialSeleccionado] = useState(null);
   const [vistaDetalle, setVistaDetalle] = useState(false);
+
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [materialAEditar, setMaterialAEditar] = useState(null);
+
   const [mostrarEliminar, setMostrarEliminar] = useState(false);
   const [materialAEliminar, setMaterialAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -86,9 +88,40 @@ function MaterialesPage() {
   const [vistaTarjetas, setVistaTarjetas] = useState(false);
   const [mostrarFlujo, setMostrarFlujo] = useState(false);
 
-  const materialesFiltrados = materiales.filter((m) =>
-    m.nombre_material.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+  };
+
+  const materialesFiltrados = (materiales || []).filter((m) => {
+    const q = busqueda.toLowerCase();
+
+    return (
+      m.nombre_material?.toLowerCase().includes(q) ||
+      m.categoriaNombre?.toLowerCase().includes(q) ||
+      m.unidad_de_medida?.toLowerCase().includes(q)
+    );
+  });
 
   const abrirFormulario = () => {
     setMaterialAEditar(null);
@@ -100,6 +133,7 @@ function MaterialesPage() {
     setMaterialAEditar(material);
     setModoEdicion(true);
     setMostrarFormulario(true);
+    setVistaDetalle(false);
   };
 
   const cerrarFormulario = () => {
@@ -110,17 +144,45 @@ function MaterialesPage() {
 
   const guardarMaterial = async (data) => {
     try {
+      let materialGuardado;
+
       if (modoEdicion && materialAEditar) {
-        await edit(materialAEditar.id, data);
+        materialGuardado = await edit(materialAEditar.id, data);
+
+        if (
+          vistaDetalle &&
+          Number(materialSeleccionado?.id) === Number(materialAEditar.id)
+        ) {
+          setMaterialSeleccionado(materialGuardado);
+        }
+
+        mostrarMensaje(
+          "success",
+          "Material actualizado",
+          "El material se actualizó correctamente."
+        );
       } else {
-        await add(data);
+        materialGuardado = await add(data);
+
+        mostrarMensaje(
+          "success",
+          "Material creado",
+          "El material se registró correctamente."
+        );
       }
 
       await reload();
       cerrarFormulario();
-    } catch (e) {
-      console.error("Error al guardar material:", e);
-      alert("No se pudo guardar el material.");
+
+      return materialGuardado;
+    } catch (error) {
+      mostrarMensaje(
+        "error",
+        "Error al guardar material",
+        error.message || "No se pudo guardar el material."
+      );
+
+      return null;
     }
   };
 
@@ -152,10 +214,21 @@ function MaterialesPage() {
     try {
       await remove(materialAEliminar.id);
       await reload();
+
+      mostrarMensaje(
+        "success",
+        "Material eliminado",
+        "El material se eliminó correctamente."
+      );
+
       cerrarEliminar();
-    } catch (e) {
-      console.error("Error al eliminar material:", e);
-      alert("No se pudo eliminar el material.");
+      cerrarDetalles();
+    } catch (error) {
+      mostrarMensaje(
+        "error",
+        "Error al eliminar material",
+        error.message || "No se pudo eliminar el material."
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -173,6 +246,10 @@ function MaterialesPage() {
       acc + Number(m.cantidad_en_stock ?? 0) * Number(m.precio_unitario ?? 0),
     0
   );
+
+  const materialesStockBajo = materiales.filter(
+    (m) => Number(m.cantidad_en_stock ?? 0) <= Number(m.stock_minimo ?? 10)
+  ).length;
 
   const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
 
@@ -212,13 +289,15 @@ function MaterialesPage() {
                 </p>
               </div>
 
-              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 xl:w-auto">
+              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-4 xl:w-auto">
                 <HeaderBox label="Materiales" value={totalMateriales} />
 
                 <HeaderBox
                   label="Stock total"
                   value={totalStock.toLocaleString("es-NI")}
                 />
+
+                <HeaderBox label="Stock bajo" value={materialesStockBajo} />
 
                 <HeaderBox
                   label="Valor inventario"
@@ -270,7 +349,7 @@ function MaterialesPage() {
 
               <input
                 type="text"
-                placeholder="Buscar material por nombre..."
+                placeholder="Buscar por nombre, categoría o unidad de medida..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 className="
@@ -395,7 +474,10 @@ function MaterialesPage() {
 
         {vistaDetalle && materialSeleccionado && (
           <MaterialesDetails
-            material={materialSeleccionado}
+            material={
+              materiales.find((m) => m.id === materialSeleccionado.id) ||
+              materialSeleccionado
+            }
             onClose={cerrarDetalles}
             onEdit={editarMaterial}
             onDelete={abrirEliminar}
@@ -419,6 +501,65 @@ function MaterialesPage() {
             itemName={materialAEliminar?.nombre_material || ""}
             loading={isDeleting}
           />
+        )}
+
+        {modalMensaje.open && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+            <div
+              className={`
+                w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+                ${
+                  modalMensaje.type === "error"
+                    ? "border-red-200"
+                    : "border-emerald-200"
+                }
+              `}
+            >
+              <div className="px-6 py-6">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`
+                      flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+                      ${
+                        modalMensaje.type === "error"
+                          ? "bg-red-100 text-red-600"
+                          : "bg-emerald-100 text-emerald-600"
+                      }
+                    `}
+                  >
+                    {modalMensaje.type === "error" ? "!" : "✓"}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-black text-slate-900">
+                      {modalMensaje.title}
+                    </h3>
+
+                    <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                      {modalMensaje.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={cerrarMensaje}
+                  className={`
+                    rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+                    ${
+                      modalMensaje.type === "error"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                    }
+                  `}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -17,6 +17,28 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
   const [errors, setErrors] = useState({});
   const [guardando, setGuardando] = useState(false);
 
+  const [modalError, setModalError] = useState({
+    open: false,
+    title: "",
+    message: "",
+  });
+
+  const mostrarError = (title, message) => {
+    setModalError({
+      open: true,
+      title,
+      message,
+    });
+  };
+
+  const cerrarError = () => {
+    setModalError({
+      open: false,
+      title: "",
+      message: "",
+    });
+  };
+
   const [form, setForm] = useState({
     id: "",
     proyectoId: "",
@@ -68,8 +90,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     }
   }, [initialData, detalles]);
 
-  const money = (value) =>
-    Number(value ?? 0).toLocaleString("es-NI");
+  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
 
   const totalGeneral = detallesAvaluos.reduce(
     (acc, d) => acc + Number(d.total ?? 0),
@@ -211,8 +232,10 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
         prev.filter((x) => Number(x.servicioId) !== Number(detalle.servicioId))
       );
     } catch (error) {
-      console.error("Error al quitar detalle:", error);
-      alert(error.message || "No se pudo quitar el detalle.");
+      mostrarError(
+        "Error al quitar servicio",
+        error.message || "No se pudo quitar el detalle del avalúo."
+      );
     }
   };
 
@@ -231,6 +254,38 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
         return;
       }
 
+      if (isEdit && initialData?.id) {
+        for (const detalle of detallesAvaluos) {
+          const payload = {
+            avaluoId: initialData.id,
+            servicioId: detalle.servicioId,
+            actividad: detalle.actividad,
+            unidadMedida: detalle.unidadMedida,
+            cantidad: Number(detalle.cantidad),
+          };
+
+          if (detalle.id) {
+            await editDetalle(detalle.id, payload);
+          } else {
+            await addDetalle(payload);
+          }
+        }
+
+        const saved = await onSubmit({
+          ...form,
+          proyectoId: Number(form.proyectoId),
+          totalAvaluo: totalGeneral,
+        });
+
+        if (!saved || !saved.id) {
+          throw new Error("No se pudo actualizar el avalúo correctamente.");
+        }
+
+        await reloadDetalles();
+        onClose();
+        return;
+      }
+
       const saved = await onSubmit({
         ...form,
         proyectoId: Number(form.proyectoId),
@@ -238,8 +293,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
       });
 
       if (!saved || !saved.id) {
-        alert("No se pudo guardar el avalúo correctamente.");
-        return;
+        throw new Error("No se pudo guardar el avalúo correctamente.");
       }
 
       for (const detalle of detallesAvaluos) {
@@ -261,8 +315,12 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
       await reloadDetalles();
       onClose();
     } catch (error) {
-      console.error("Error al guardar avalúo:", error);
-      alert(error.message || "Ocurrió un error al guardar el avalúo.");
+      mostrarError(
+        error.message?.includes("Stock insuficiente")
+          ? "Inventario insuficiente"
+          : "Error al guardar avalúo",
+        error.message || "Ocurrió un error al guardar el avalúo."
+      );
     } finally {
       setGuardando(false);
     }
@@ -297,10 +355,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <SummaryBox
-                label="Servicios"
-                value={totalServicios}
-              />
+              <SummaryBox label="Servicios" value={totalServicios} />
 
               <SummaryBox
                 label="Total actual"
@@ -579,15 +634,9 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
                           value={`C$${money(d.precioUnitario)}`}
                         />
 
-                        <MiniBox
-                          label="Costo"
-                          value={`C$${money(d.costoVenta)}`}
-                        />
+                        <MiniBox label="Costo" value={`C$${money(d.costoVenta)}`} />
 
-                        <MiniBox
-                          label="IVA"
-                          value={`C$${money(d.iva)}`}
-                        />
+                        <MiniBox label="IVA" value={`C$${money(d.iva)}`} />
 
                         <MiniBox
                           label="Total"
@@ -633,6 +682,40 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
           </div>
         </div>
       </form>
+
+      {modalError.open && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-red-200 bg-white shadow-2xl">
+            <div className="px-6 py-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-2xl font-black text-red-600">
+                  !
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-black text-slate-900">
+                    {modalError.title}
+                  </h3>
+
+                  <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                    {modalError.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+              <button
+                type="button"
+                onClick={cerrarError}
+                className="rounded-2xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-red-700"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

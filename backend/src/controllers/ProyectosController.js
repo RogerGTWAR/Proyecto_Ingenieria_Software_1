@@ -1,251 +1,697 @@
-//Listo
 import prisma from "../database.js";
+import { registrarAlerta } from "../utils/registrarAlerta.js";
 
 const ESTADOS_VALIDOS = ["En Espera", "Activo", "Completado", "Cancelado"];
 
 export default class ProyectosController {
   static async getAll(_req, res) {
     try {
-      let proyectos = await prisma.proyectos.findMany({
-        where: { fecha_eliminacion: null },
-        orderBy: { proyecto_id: "asc" },
+      const proyectos = await prisma.proyectos.findMany({
+        where: {
+          fecha_eliminacion: null,
+        },
         include: {
-          clientes: { select: { nombre_empresa: true } } 
-        }
+          clientes: {
+            select: {
+              nombre_empresa: true,
+            },
+          },
+        },
+        orderBy: {
+          proyecto_id: "asc",
+        },
       });
 
-      proyectos = proyectos.map(p => ({
+      const data = proyectos.map((p) => ({
         ...p,
-        cliente_nombre: p.clientes?.nombre_empresa ?? null
+        cliente_nombre: p.clientes?.nombre_empresa ?? "—",
       }));
 
-      res.json({ ok: true, data: proyectos });
+      res.json({
+        ok: true,
+        data,
+      });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ ok: false, msg: "Server error, something went wrong" });
+      await registrarAlerta({
+        tipo: "Error",
+        titulo: "Error al obtener proyectos",
+        mensaje: error.message || "Ocurrió un error al cargar los proyectos.",
+        modulo: "Proyectos",
+        referencia_id: null,
+        prioridad: "Alta",
+      });
+
+      res.status(500).json({
+        ok: false,
+        msg: "Error interno al obtener los proyectos.",
+      });
     }
   }
 
   static async getById(req, res) {
-    const idNum = parseInt(req.params.id);
+    const usuario_id = req.user?.usuario_id ?? null;
+    const idNum = Number(req.params.id);
+
     if (isNaN(idNum)) {
-      return res.status(400).json({ ok: false, msg: "El id de proyecto debe ser un número" });
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Error",
+        titulo: "Proyecto no consultado",
+        mensaje: "No se pudo consultar el proyecto porque el ID no es válido.",
+        modulo: "Proyectos",
+        referencia_id: null,
+        prioridad: "Media",
+      });
+
+      return res.status(400).json({
+        ok: false,
+        msg: "El ID del proyecto debe ser un número.",
+      });
     }
 
     try {
-      let proyecto = await prisma.proyectos.findFirst({
-        where: { AND: [{ proyecto_id: idNum }, { fecha_eliminacion: null }] },
+      const proyecto = await prisma.proyectos.findFirst({
+        where: {
+          proyecto_id: idNum,
+          fecha_eliminacion: null,
+        },
         include: {
-          clientes: { select: { nombre_empresa: true } }
-        }
+          clientes: {
+            select: {
+              nombre_empresa: true,
+            },
+          },
+        },
       });
 
       if (!proyecto) {
-        return res.status(404).json({ ok: false, msg: `No se encontró el proyecto con id: ${idNum}` });
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no encontrado",
+          mensaje: `No se encontró el proyecto con ID ${idNum}.`,
+          modulo: "Proyectos",
+          referencia_id: idNum,
+          prioridad: "Media",
+        });
+
+        return res.status(404).json({
+          ok: false,
+          msg: "No se encontró el proyecto.",
+        });
       }
 
-      proyecto = { ...proyecto, cliente_nombre: proyecto.clientes?.nombre_empresa ?? null };
-
-      res.json({ ok: true, data: proyecto });
+      res.json({
+        ok: true,
+        data: {
+          ...proyecto,
+          cliente_nombre: proyecto.clientes?.nombre_empresa ?? "—",
+        },
+      });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ ok: false, msg: "Server Error, something went wrong" });
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Error",
+        titulo: "Error al obtener proyecto",
+        mensaje: error.message || "Ocurrió un error al obtener el proyecto.",
+        modulo: "Proyectos",
+        referencia_id: idNum,
+        prioridad: "Alta",
+      });
+
+      res.status(500).json({
+        ok: false,
+        msg: "Error interno al obtener el proyecto.",
+      });
     }
   }
 
   static async create(req, res) {
-    const {
-      cliente_id,
-      nombre_proyecto,
-      descripcion,
-      ubicacion,
-      fecha_inicio,
-      fecha_fin,
-      presupuesto_total,
-      estado
-    } = req.body;
-
-    if (!cliente_id || !nombre_proyecto || !fecha_inicio || presupuesto_total === undefined || !estado) {
-      return res.status(400).json({ ok: false, msg: "Faltan campos obligatorios (cliente_id, nombre_proyecto, fecha_inicio, presupuesto_total, estado)" });
-    }
-
-    if (!ESTADOS_VALIDOS.includes(estado)) {
-      return res.status(400).json({ ok: false, msg: `Estado inválido. Válidos: ${ESTADOS_VALIDOS.join(", ")}` });
-    }
-
-    const monto = Number(presupuesto_total);
-    if (Number.isNaN(monto) || monto < 0) {
-      return res.status(400).json({ ok: false, msg: "El presupuesto_total debe ser un número mayor o igual a 0" });
-    }
-
-    const fInicio = new Date(fecha_inicio);
-    if (isNaN(fInicio.getTime())) {
-      return res.status(400).json({ ok: false, msg: "fecha_inicio no es una fecha válida" });
-    }
-
-    let fFin = null;
-    if (fecha_fin !== undefined && fecha_fin !== null && fecha_fin !== "") {
-      fFin = new Date(fecha_fin);
-      if (isNaN(fFin.getTime())) {
-        return res.status(400).json({ ok: false, msg: "fecha_fin no es una fecha válida" });
-      }
-      if (fFin < fInicio) {
-        return res.status(400).json({ ok: false, msg: "fecha_fin no puede ser menor que fecha_inicio" });
-      }
-    }
-
-    const clienteOk = await prisma.clientes.findFirst({
-      where: { AND: [{ cliente_id }, { fecha_eliminacion: null }] }
-    });
-    if (!clienteOk) {
-      return res.status(400).json({ ok: false, msg: "El cliente especificado no existe o fue dado de baja" });
-    }
+    const usuario_id = req.user?.usuario_id ?? null;
 
     try {
-      let proyecto = await prisma.proyectos.create({
+      const {
+        cliente_id,
+        nombre_proyecto,
+        descripcion,
+        ubicacion,
+        fecha_inicio,
+        fecha_fin,
+        presupuesto_total,
+        estado,
+      } = req.body;
+
+      if (!cliente_id || !nombre_proyecto || !fecha_inicio || !fecha_fin) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no creado",
+          mensaje:
+            "No se pudo crear el proyecto porque faltan campos obligatorios: cliente, nombre, fecha de inicio y fecha de fin.",
+          modulo: "Proyectos",
+          referencia_id: null,
+          prioridad: "Alta",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "Campos obligatorios: cliente_id, nombre_proyecto, fecha_inicio y fecha_fin.",
+        });
+      }
+
+      const clienteId = String(cliente_id).trim();
+      const presupuesto = Number(presupuesto_total ?? 0);
+      const estadoFinal = estado ?? "En Espera";
+
+      if (!ESTADOS_VALIDOS.includes(estadoFinal)) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no creado",
+          mensaje: `No se pudo crear el proyecto porque el estado "${estadoFinal}" no es válido.`,
+          modulo: "Proyectos",
+          referencia_id: null,
+          prioridad: "Media",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "El estado del proyecto no es válido.",
+        });
+      }
+
+      if (isNaN(presupuesto) || presupuesto <= 0) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no creado",
+          mensaje:
+            "No se pudo crear el proyecto porque el presupuesto debe ser mayor que cero.",
+          modulo: "Proyectos",
+          referencia_id: null,
+          prioridad: "Alta",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "El presupuesto debe ser mayor que cero.",
+        });
+      }
+
+      const inicio = new Date(fecha_inicio);
+      const fin = new Date(fecha_fin);
+
+      if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no creado",
+          mensaje:
+            "No se pudo crear el proyecto porque una de las fechas no es válida.",
+          modulo: "Proyectos",
+          referencia_id: null,
+          prioridad: "Media",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "Las fechas ingresadas no son válidas.",
+        });
+      }
+
+      if (fin < inicio) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no creado",
+          mensaje:
+            "No se pudo crear el proyecto porque la fecha de fin es menor que la fecha de inicio.",
+          modulo: "Proyectos",
+          referencia_id: null,
+          prioridad: "Media",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "La fecha de fin no puede ser menor que la fecha de inicio.",
+        });
+      }
+
+      const cliente = await prisma.clientes.findFirst({
+        where: {
+          cliente_id: clienteId,
+          fecha_eliminacion: null,
+        },
+      });
+
+      if (!cliente) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no creado",
+          mensaje: `No se pudo crear el proyecto porque el cliente con ID "${clienteId}" no existe o fue eliminado.`,
+          modulo: "Proyectos",
+          referencia_id: null,
+          prioridad: "Alta",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "El cliente seleccionado no existe o fue eliminado.",
+        });
+      }
+
+      const existeNombre = await prisma.proyectos.findFirst({
+        where: {
+          cliente_id: clienteId,
+          nombre_proyecto: {
+            equals: nombre_proyecto.trim(),
+            mode: "insensitive",
+          },
+          fecha_eliminacion: null,
+        },
+      });
+
+      if (existeNombre) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no creado",
+          mensaje: `No se pudo crear el proyecto porque el cliente ya tiene un proyecto llamado "${nombre_proyecto.trim()}".`,
+          modulo: "Proyectos",
+          referencia_id: existeNombre.proyecto_id,
+          prioridad: "Alta",
+        });
+
+        return res.status(409).json({
+          ok: false,
+          msg: "Ya existe un proyecto con ese nombre para el cliente seleccionado.",
+        });
+      }
+
+      const proyecto = await prisma.proyectos.create({
         data: {
-          cliente_id,
-          nombre_proyecto,
-          descripcion: descripcion ?? null,
-          ubicacion: ubicacion ?? null,
-          fecha_inicio: fInicio,
-          fecha_fin: fFin,
-          presupuesto_total: monto,
-          estado
-        }
+          cliente_id: clienteId,
+          nombre_proyecto: nombre_proyecto.trim(),
+          descripcion: descripcion?.trim() || null,
+          ubicacion: ubicacion?.trim() || null,
+          fecha_inicio: inicio,
+          fecha_fin: fin,
+          presupuesto_total: presupuesto,
+          estado: estadoFinal,
+        },
+        include: {
+          clientes: {
+            select: {
+              nombre_empresa: true,
+            },
+          },
+        },
       });
 
-      proyecto = await prisma.proyectos.findUnique({
-        where: { proyecto_id: proyecto.proyecto_id },
-        include: { clientes: { select: { nombre_empresa: true } } }
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Registro creado",
+        titulo: "Proyecto creado",
+        mensaje: `Se creó el proyecto "${proyecto.nombre_proyecto}" para el cliente "${proyecto.clientes?.nombre_empresa ?? "Sin cliente"}".`,
+        modulo: "Proyectos",
+        referencia_id: proyecto.proyecto_id,
+        prioridad: "Media",
       });
 
-      proyecto = { ...proyecto, cliente_nombre: proyecto.clientes?.nombre_empresa ?? null };
-
-      res.status(201).json({ ok: true, msg: "Proyecto creado correctamente", data: proyecto });
+      res.status(201).json({
+        ok: true,
+        msg: "Proyecto creado correctamente.",
+        data: {
+          ...proyecto,
+          cliente_nombre: proyecto.clientes?.nombre_empresa ?? "—",
+        },
+      });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ ok: false, msg: "Server error something went wrong" });
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Error",
+        titulo: "Error al crear proyecto",
+        mensaje: error.message || "Ocurrió un error al crear el proyecto.",
+        modulo: "Proyectos",
+        referencia_id: null,
+        prioridad: "Alta",
+      });
+
+      res.status(500).json({
+        ok: false,
+        msg: "Error interno al crear el proyecto.",
+      });
     }
   }
 
   static async update(req, res) {
-    const idNum = parseInt(req.params.id);
+    const usuario_id = req.user?.usuario_id ?? null;
+    const idNum = Number(req.params.id);
+
     if (isNaN(idNum)) {
-      return res.status(400).json({ ok: false, msg: "El id de proyecto debe ser un número" });
-    }
-
-    const old = await prisma.proyectos.findUnique({ where: { proyecto_id: idNum } });
-    if (!old || old.fecha_eliminacion !== null) {
-      return res.status(404).json({ ok: false, msg: "No se encontró el proyecto que se desea modificar" });
-    }
-
-    const {
-      cliente_id,
-      nombre_proyecto,
-      descripcion,
-      ubicacion,
-      fecha_inicio,
-      fecha_fin,
-      presupuesto_total,
-      estado
-    } = req.body;
-
-    if (estado !== undefined && !ESTADOS_VALIDOS.includes(estado)) {
-      return res.status(400).json({ ok: false, msg: `Estado inválido. Válidos: ${ESTADOS_VALIDOS.join(", ")}` });
-    }
-
-    let monto = old.presupuesto_total;
-    if (presupuesto_total !== undefined) {
-      monto = Number(presupuesto_total);
-      if (Number.isNaN(monto) || monto < 0) {
-        return res.status(400).json({ ok: false, msg: "El presupuesto_total debe ser un número mayor o igual a 0" });
-      }
-    }
-
-    const nuevaFechaInicio = fecha_inicio ? new Date(fecha_inicio) : old.fecha_inicio;
-    if (fecha_inicio && isNaN(nuevaFechaInicio.getTime())) {
-      return res.status(400).json({ ok: false, msg: "fecha_inicio no es una fecha válida" });
-    }
-
-    const nuevaFechaFin = (fecha_fin !== undefined)
-      ? (fecha_fin === null || fecha_fin === "" ? null : new Date(fecha_fin))
-      : old.fecha_fin;
-
-    if (fecha_fin !== undefined && nuevaFechaFin !== null && isNaN(nuevaFechaFin.getTime())) {
-      return res.status(400).json({ ok: false, msg: "fecha_fin no es una fecha válida" });
-    }
-    if (nuevaFechaFin !== null && nuevaFechaFin < nuevaFechaInicio) {
-      return res.status(400).json({ ok: false, msg: "fecha_fin no puede ser menor que fecha_inicio" });
-    }
-
-    let nuevoClienteId = old.cliente_id;
-    if (cliente_id !== undefined) {
-      if (!cliente_id) {
-        return res.status(400).json({ ok: false, msg: "cliente_id no puede ser vacío" });
-      }
-      const clienteOk = await prisma.clientes.findFirst({
-        where: { AND: [{ cliente_id }, { fecha_eliminacion: null }] }
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Error",
+        titulo: "Proyecto no actualizado",
+        mensaje:
+          "No se pudo actualizar el proyecto porque el ID enviado no es válido.",
+        modulo: "Proyectos",
+        referencia_id: null,
+        prioridad: "Alta",
       });
-      if (!clienteOk) {
-        return res.status(400).json({ ok: false, msg: "El cliente especificado no existe o fue dado de baja" });
-      }
-      nuevoClienteId = cliente_id;
+
+      return res.status(400).json({
+        ok: false,
+        msg: "El ID del proyecto debe ser un número.",
+      });
     }
 
     try {
-      let proyecto = await prisma.proyectos.update({
-        where: { proyecto_id: idNum },
-        data: {
-          cliente_id: nuevoClienteId,
-          nombre_proyecto: nombre_proyecto ?? old.nombre_proyecto,
-          descripcion: descripcion ?? old.descripcion,
-          ubicacion: ubicacion ?? old.ubicacion,
-          fecha_inicio: nuevaFechaInicio,
-          fecha_fin: nuevaFechaFin,
-          presupuesto_total: monto,
-          estado: estado ?? old.estado,
-          fecha_actualizacion: new Date()
+      const old = await prisma.proyectos.findFirst({
+        where: {
+          proyecto_id: idNum,
+          fecha_eliminacion: null,
+        },
+      });
+
+      if (!old) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no actualizado",
+          mensaje: `No se pudo actualizar el proyecto con ID ${idNum} porque no existe o fue eliminado.`,
+          modulo: "Proyectos",
+          referencia_id: idNum,
+          prioridad: "Alta",
+        });
+
+        return res.status(404).json({
+          ok: false,
+          msg: "No se encontró el proyecto a modificar.",
+        });
+      }
+
+      const {
+        cliente_id,
+        nombre_proyecto,
+        descripcion,
+        ubicacion,
+        fecha_inicio,
+        fecha_fin,
+        presupuesto_total,
+        estado,
+      } = req.body;
+
+      const clienteId = cliente_id ? String(cliente_id).trim() : old.cliente_id;
+      const nombreFinal = nombre_proyecto?.trim() ?? old.nombre_proyecto;
+      const presupuesto =
+        presupuesto_total !== undefined
+          ? Number(presupuesto_total)
+          : Number(old.presupuesto_total);
+      const estadoFinal = estado ?? old.estado;
+
+      if (!ESTADOS_VALIDOS.includes(estadoFinal)) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no actualizado",
+          mensaje: `No se pudo actualizar el proyecto porque el estado "${estadoFinal}" no es válido.`,
+          modulo: "Proyectos",
+          referencia_id: idNum,
+          prioridad: "Media",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "El estado del proyecto no es válido.",
+        });
+      }
+
+      if (isNaN(presupuesto) || presupuesto <= 0) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no actualizado",
+          mensaje:
+            "No se pudo actualizar el proyecto porque el presupuesto debe ser mayor que cero.",
+          modulo: "Proyectos",
+          referencia_id: idNum,
+          prioridad: "Alta",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "El presupuesto debe ser mayor que cero.",
+        });
+      }
+
+      const inicio = fecha_inicio ? new Date(fecha_inicio) : old.fecha_inicio;
+      const fin = fecha_fin ? new Date(fecha_fin) : old.fecha_fin;
+
+      if (isNaN(new Date(inicio).getTime()) || isNaN(new Date(fin).getTime())) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no actualizado",
+          mensaje:
+            "No se pudo actualizar el proyecto porque una de las fechas no es válida.",
+          modulo: "Proyectos",
+          referencia_id: idNum,
+          prioridad: "Media",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "Las fechas ingresadas no son válidas.",
+        });
+      }
+
+      if (new Date(fin) < new Date(inicio)) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no actualizado",
+          mensaje:
+            "No se pudo actualizar el proyecto porque la fecha de fin es menor que la fecha de inicio.",
+          modulo: "Proyectos",
+          referencia_id: idNum,
+          prioridad: "Media",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "La fecha de fin no puede ser menor que la fecha de inicio.",
+        });
+      }
+
+      const cliente = await prisma.clientes.findFirst({
+        where: {
+          cliente_id: clienteId,
+          fecha_eliminacion: null,
+        },
+      });
+
+      if (!cliente) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no actualizado",
+          mensaje: `No se pudo actualizar el proyecto porque el cliente con ID "${clienteId}" no existe o fue eliminado.`,
+          modulo: "Proyectos",
+          referencia_id: idNum,
+          prioridad: "Alta",
+        });
+
+        return res.status(400).json({
+          ok: false,
+          msg: "El cliente seleccionado no existe o fue eliminado.",
+        });
+      }
+
+      if (
+        nombreFinal !== old.nombre_proyecto ||
+        String(clienteId) !== String(old.cliente_id)
+      ) {
+        const existeNombre = await prisma.proyectos.findFirst({
+          where: {
+            cliente_id: clienteId,
+            nombre_proyecto: {
+              equals: nombreFinal,
+              mode: "insensitive",
+            },
+            fecha_eliminacion: null,
+            NOT: {
+              proyecto_id: idNum,
+            },
+          },
+        });
+
+        if (existeNombre) {
+          await registrarAlerta({
+            usuario_id,
+            tipo: "Error",
+            titulo: "Proyecto no actualizado",
+            mensaje: `No se pudo actualizar el proyecto porque ya existe otro proyecto llamado "${nombreFinal}" para el cliente seleccionado.`,
+            modulo: "Proyectos",
+            referencia_id: idNum,
+            prioridad: "Alta",
+          });
+
+          return res.status(409).json({
+            ok: false,
+            msg: "Ya existe otro proyecto con ese nombre para el cliente seleccionado.",
+          });
         }
+      }
+
+      const proyecto = await prisma.proyectos.update({
+        where: {
+          proyecto_id: idNum,
+        },
+        data: {
+          cliente_id: clienteId,
+          nombre_proyecto: nombreFinal,
+          descripcion: descripcion?.trim() ?? old.descripcion,
+          ubicacion: ubicacion?.trim() ?? old.ubicacion,
+          fecha_inicio: new Date(inicio),
+          fecha_fin: new Date(fin),
+          presupuesto_total: presupuesto,
+          estado: estadoFinal,
+          fecha_actualizacion: new Date(),
+        },
+        include: {
+          clientes: {
+            select: {
+              nombre_empresa: true,
+            },
+          },
+        },
       });
 
-      proyecto = await prisma.proyectos.findUnique({
-        where: { proyecto_id: proyecto.proyecto_id },
-        include: { clientes: { select: { nombre_empresa: true } } }
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Registro actualizado",
+        titulo: "Proyecto actualizado",
+        mensaje: `Se actualizó el proyecto "${proyecto.nombre_proyecto}".`,
+        modulo: "Proyectos",
+        referencia_id: proyecto.proyecto_id,
+        prioridad: "Media",
       });
 
-      proyecto = { ...proyecto, cliente_nombre: proyecto.clientes?.nombre_empresa ?? null };
-
-      res.json({ ok: true, msg: "Proyecto actualizado correctamente", data: proyecto });
+      res.json({
+        ok: true,
+        msg: "Proyecto actualizado correctamente.",
+        data: {
+          ...proyecto,
+          cliente_nombre: proyecto.clientes?.nombre_empresa ?? "—",
+        },
+      });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ ok: false, msg: "Server error something went wrong" });
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Error",
+        titulo: "Error al actualizar proyecto",
+        mensaje: error.message || "Ocurrió un error al actualizar el proyecto.",
+        modulo: "Proyectos",
+        referencia_id: isNaN(idNum) ? null : idNum,
+        prioridad: "Alta",
+      });
+
+      res.status(500).json({
+        ok: false,
+        msg: "Error interno al actualizar el proyecto.",
+      });
     }
   }
 
   static async delete(req, res) {
-    const idNum = parseInt(req.params.id);
-    if (isNaN(idNum)) {
-      return res.status(400).json({ ok: false, msg: "El id de proyecto debe ser un número" });
-    }
+    const usuario_id = req.user?.usuario_id ?? null;
+    const idNum = Number(req.params.id);
 
-    const existe = await prisma.proyectos.findFirst({
-      where: { AND: [{ proyecto_id: idNum }, { fecha_eliminacion: null }] }
-    });
-    if (!existe) {
-      return res.status(404).json({ ok: false, msg: "No se encontró el proyecto que se desea eliminar" });
+    if (isNaN(idNum)) {
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Error",
+        titulo: "Proyecto no eliminado",
+        mensaje:
+          "No se pudo eliminar el proyecto porque el ID enviado no es válido.",
+        modulo: "Proyectos",
+        referencia_id: null,
+        prioridad: "Alta",
+      });
+
+      return res.status(400).json({
+        ok: false,
+        msg: "El ID del proyecto debe ser un número.",
+      });
     }
 
     try {
-      const { proyecto_id } = await prisma.proyectos.update({
-        where: { proyecto_id: idNum },
-        data: { fecha_eliminacion: new Date() }
+      const existe = await prisma.proyectos.findFirst({
+        where: {
+          proyecto_id: idNum,
+          fecha_eliminacion: null,
+        },
       });
 
-      res.json({ ok: true, msg: "Se eliminó el proyecto correctamente", id: proyecto_id });
+      if (!existe) {
+        await registrarAlerta({
+          usuario_id,
+          tipo: "Error",
+          titulo: "Proyecto no eliminado",
+          mensaje: `No se pudo eliminar el proyecto con ID ${idNum} porque no existe o ya fue eliminado.`,
+          modulo: "Proyectos",
+          referencia_id: idNum,
+          prioridad: "Alta",
+        });
+
+        return res.status(404).json({
+          ok: false,
+          msg: "No se encontró el proyecto a eliminar.",
+        });
+      }
+
+      const eliminado = await prisma.proyectos.update({
+        where: {
+          proyecto_id: idNum,
+        },
+        data: {
+          fecha_eliminacion: new Date(),
+          fecha_actualizacion: new Date(),
+        },
+      });
+
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Registro eliminado",
+        titulo: "Proyecto eliminado",
+        mensaje: `Se eliminó el proyecto "${existe.nombre_proyecto}".`,
+        modulo: "Proyectos",
+        referencia_id: eliminado.proyecto_id,
+        prioridad: "Alta",
+      });
+
+      res.json({
+        ok: true,
+        msg: "Proyecto eliminado correctamente.",
+        id: eliminado.proyecto_id,
+      });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ ok: false, msg: "Server error something went wrong" });
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Error",
+        titulo: "Error al eliminar proyecto",
+        mensaje: error.message || "Ocurrió un error al eliminar el proyecto.",
+        modulo: "Proyectos",
+        referencia_id: isNaN(idNum) ? null : idNum,
+        prioridad: "Alta",
+      });
+
+      res.status(500).json({
+        ok: false,
+        msg: "Error interno al eliminar el proyecto.",
+      });
     }
   }
 }

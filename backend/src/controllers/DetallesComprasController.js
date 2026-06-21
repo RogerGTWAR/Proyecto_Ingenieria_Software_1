@@ -1,4 +1,5 @@
 import prisma from "../database.js";
+import { registrarAlerta } from "../utils/registrarAlerta.js";
 
 async function recalcularMontoTotal(tx, compraId) {
   const detalles = await tx.detalles_compras.findMany({
@@ -30,21 +31,45 @@ async function recalcularMontoTotal(tx, compraId) {
   return total;
 }
 
-async function aumentarStockMaterial(tx, materialId, cantidad) {
-  await tx.materiales.update({
-    where: {
-      material_id: Number(materialId),
-    },
+async function registrarMovimientoInventario(
+  tx,
+  {
+    material_id,
+    tipo_movimiento,
+    cantidad,
+    stock_anterior,
+    stock_nuevo,
+    precio_unitario,
+    referencia,
+    descripcion,
+    usuario_id = null,
+  }
+) {
+  await tx.movimientos_inventario.create({
     data: {
-      cantidad_en_stock: {
-        increment: Number(cantidad),
-      },
-      fecha_actualizacion: new Date(),
+      material_id: Number(material_id),
+      tipo_movimiento,
+      cantidad: Number(cantidad),
+      stock_anterior: Number(stock_anterior),
+      stock_nuevo: Number(stock_nuevo),
+      precio_unitario: Number(precio_unitario),
+      referencia,
+      descripcion,
+      usuario_id: usuario_id ? Number(usuario_id) : null,
+      fecha_movimiento: new Date(),
     },
   });
 }
 
-async function disminuirStockMaterial(tx, materialId, cantidad) {
+async function aumentarStockMaterial(
+  tx,
+  materialId,
+  cantidad,
+  precioUnitario,
+  referencia,
+  descripcion,
+  usuarioId = null
+) {
   const material = await tx.materiales.findFirst({
     where: {
       material_id: Number(materialId),
@@ -56,25 +81,85 @@ async function disminuirStockMaterial(tx, materialId, cantidad) {
     throw new Error("El material no existe o fue eliminado");
   }
 
-  const stockActual = Number(material.cantidad_en_stock);
-  const cantidadRestar = Number(cantidad);
-
-  if (stockActual < cantidadRestar) {
-    throw new Error(
-      `No se puede disminuir el stock. Stock actual: ${stockActual}, cantidad a restar: ${cantidadRestar}`
-    );
-  }
+  const stockAnterior = Number(material.cantidad_en_stock);
+  const cantidadSumar = Number(cantidad);
+  const stockNuevo = stockAnterior + cantidadSumar;
 
   await tx.materiales.update({
     where: {
       material_id: Number(materialId),
     },
     data: {
-      cantidad_en_stock: {
-        decrement: cantidadRestar,
-      },
+      cantidad_en_stock: stockNuevo,
+      precio_unitario: Number(precioUnitario),
       fecha_actualizacion: new Date(),
     },
+  });
+
+  await registrarMovimientoInventario(tx, {
+    material_id: materialId,
+    tipo_movimiento: "Entrada",
+    cantidad: cantidadSumar,
+    stock_anterior: stockAnterior,
+    stock_nuevo: stockNuevo,
+    precio_unitario: precioUnitario,
+    referencia,
+    descripcion,
+    usuario_id: usuarioId,
+  });
+}
+
+async function disminuirStockMaterial(
+  tx,
+  materialId,
+  cantidad,
+  precioUnitario,
+  referencia,
+  descripcion,
+  usuarioId = null
+) {
+  const material = await tx.materiales.findFirst({
+    where: {
+      material_id: Number(materialId),
+      fecha_eliminacion: null,
+    },
+  });
+
+  if (!material) {
+    throw new Error("El material no existe o fue eliminado");
+  }
+
+  const stockAnterior = Number(material.cantidad_en_stock);
+  const cantidadRestar = Number(cantidad);
+
+  if (stockAnterior < cantidadRestar) {
+    throw new Error(
+      `No se puede disminuir el stock. Stock actual: ${stockAnterior}, cantidad a restar: ${cantidadRestar}`
+    );
+  }
+
+  const stockNuevo = stockAnterior - cantidadRestar;
+
+  await tx.materiales.update({
+    where: {
+      material_id: Number(materialId),
+    },
+    data: {
+      cantidad_en_stock: stockNuevo,
+      fecha_actualizacion: new Date(),
+    },
+  });
+
+  await registrarMovimientoInventario(tx, {
+    material_id: materialId,
+    tipo_movimiento: "Salida",
+    cantidad: cantidadRestar,
+    stock_anterior: stockAnterior,
+    stock_nuevo: stockNuevo,
+    precio_unitario: precioUnitario,
+    referencia,
+    descripcion,
+    usuario_id: usuarioId,
   });
 }
 
@@ -114,11 +199,9 @@ export default class DetallesComprasController {
         data: detalles,
       });
     } catch (error) {
-      console.error("Error getAll detalles_compras:", error);
-
       res.status(500).json({
         ok: false,
-        msg: "Server error, something went wrong",
+        msg: "Error interno al obtener los detalles de compras",
       });
     }
   }
@@ -170,17 +253,16 @@ export default class DetallesComprasController {
         data: detalle,
       });
     } catch (error) {
-      console.error("Error getById detalles_compras:", error);
-
       res.status(500).json({
         ok: false,
-        msg: "Server error, something went wrong",
+        msg: "Error interno al obtener el detalle de compra",
       });
     }
   }
 
   static async create(req, res) {
     try {
+      const usuario_id = req.user?.usuario_id ?? null;
       const { compra_id, material_id, cantidad, precio_unitario } = req.body;
 
       if (
@@ -202,10 +284,10 @@ export default class DetallesComprasController {
         });
       }
 
-      if (Number(precio_unitario) < 0) {
+      if (Number(precio_unitario) <= 0) {
         return res.status(400).json({
           ok: false,
-          msg: "El precio unitario no puede ser negativo",
+          msg: "El precio unitario debe ser mayor a cero",
         });
       }
 
@@ -239,30 +321,60 @@ export default class DetallesComprasController {
             cantidad: Number(cantidad),
             precio_unitario: Number(precio_unitario),
           },
+          include: {
+            compras: {
+              select: {
+                numero_factura: true,
+              },
+            },
+            materiales: {
+              select: {
+                nombre_material: true,
+              },
+            },
+          },
         });
-
-        await aumentarStockMaterial(tx, material_id, cantidad);
 
         const total = await recalcularMontoTotal(tx, compra_id);
 
         return {
           detalle,
           total,
+          compra,
+          material,
         };
+      });
+
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Registro creado",
+        titulo: "Detalle de compra registrado",
+        mensaje: `Se agregó ${Number(cantidad)} unidad(es) del material "${resultado.material.nombre_material}" a la compra "${resultado.compra.numero_factura}".`,
+        modulo: "Detalles Compras",
+        referencia_id: resultado.detalle.detalle_compra_id,
+        prioridad: "Media",
       });
 
       res.status(201).json({
         ok: true,
-        msg: "Detalle registrado correctamente. El inventario fue actualizado.",
+        msg: "Detalle registrado correctamente",
         data: resultado.detalle,
         monto_total: resultado.total,
       });
     } catch (error) {
-      console.error("Error create detalles_compras:", error);
+      await registrarAlerta({
+        usuario_id: req.user?.usuario_id ?? null,
+        tipo: "Error",
+        titulo: "Error al crear detalle de compra",
+        mensaje:
+          error.message || "Ocurrió un error al crear un detalle de compra.",
+        modulo: "Detalles Compras",
+        prioridad: "Alta",
+      });
 
       res.status(500).json({
         ok: false,
-        msg: error.message || "Server error, something went wrong",
+        msg: error.message || "Error interno al crear detalle de compra",
       });
     }
   }
@@ -278,6 +390,7 @@ export default class DetallesComprasController {
     }
 
     try {
+      const usuario_id = req.user?.usuario_id ?? null;
       const { compra_id, material_id, cantidad, precio_unitario } = req.body;
 
       if (cantidad !== undefined && Number(cantidad) <= 0) {
@@ -287,10 +400,10 @@ export default class DetallesComprasController {
         });
       }
 
-      if (precio_unitario !== undefined && Number(precio_unitario) < 0) {
+      if (precio_unitario !== undefined && Number(precio_unitario) <= 0) {
         return res.status(400).json({
           ok: false,
-          msg: "El precio unitario no puede ser negativo",
+          msg: "El precio unitario debe ser mayor a cero",
         });
       }
 
@@ -298,6 +411,19 @@ export default class DetallesComprasController {
         const old = await tx.detalles_compras.findUnique({
           where: {
             detalle_compra_id: idNum,
+          },
+          include: {
+            compras: {
+              select: {
+                compra_id: true,
+                numero_factura: true,
+              },
+            },
+            materiales: {
+              select: {
+                nombre_material: true,
+              },
+            },
           },
         });
 
@@ -347,19 +473,48 @@ export default class DetallesComprasController {
           const diferencia = nuevaCantidad - Number(old.cantidad);
 
           if (diferencia > 0) {
-            await aumentarStockMaterial(tx, nuevoMaterialId, diferencia);
+            await aumentarStockMaterial(
+              tx,
+              nuevoMaterialId,
+              diferencia,
+              nuevoPrecioUnitario,
+              `Actualización compra ${compra.numero_factura}`,
+              "Entrada por aumento de cantidad en compra",
+              usuario_id
+            );
           }
 
           if (diferencia < 0) {
             await disminuirStockMaterial(
               tx,
               nuevoMaterialId,
-              Math.abs(diferencia)
+              Math.abs(diferencia),
+              nuevoPrecioUnitario,
+              `Actualización compra ${compra.numero_factura}`,
+              "Salida por disminución de cantidad en compra",
+              usuario_id
             );
           }
         } else {
-          await disminuirStockMaterial(tx, old.material_id, old.cantidad);
-          await aumentarStockMaterial(tx, nuevoMaterialId, nuevaCantidad);
+          await disminuirStockMaterial(
+            tx,
+            old.material_id,
+            old.cantidad,
+            old.precio_unitario,
+            `Actualización compra ${compra.numero_factura}`,
+            "Salida por cambio de material en compra",
+            usuario_id
+          );
+
+          await aumentarStockMaterial(
+            tx,
+            nuevoMaterialId,
+            nuevaCantidad,
+            nuevoPrecioUnitario,
+            `Actualización compra ${compra.numero_factura}`,
+            "Entrada por cambio de material en compra",
+            usuario_id
+          );
         }
 
         const updated = await tx.detalles_compras.update({
@@ -372,6 +527,18 @@ export default class DetallesComprasController {
             cantidad: nuevaCantidad,
             precio_unitario: nuevoPrecioUnitario,
             fecha_actualizacion: new Date(),
+          },
+          include: {
+            materiales: {
+              select: {
+                nombre_material: true,
+              },
+            },
+            compras: {
+              select: {
+                numero_factura: true,
+              },
+            },
           },
         });
 
@@ -388,17 +555,37 @@ export default class DetallesComprasController {
         return updated;
       });
 
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Registro actualizado",
+        titulo: "Detalle de compra actualizado",
+        mensaje: `Se actualizó el detalle de compra del material "${resultado.materiales?.nombre_material ?? "Material"}" en la compra "${resultado.compras?.numero_factura ?? "Compra"}".`,
+        modulo: "Detalles Compras",
+        referencia_id: resultado.detalle_compra_id,
+        prioridad: "Media",
+      });
+
       res.json({
         ok: true,
-        msg: "Detalle actualizado correctamente. El inventario fue ajustado.",
+        msg: "Detalle actualizado correctamente",
         data: resultado,
       });
     } catch (error) {
-      console.error("Error update detalles_compras:", error);
+      await registrarAlerta({
+        usuario_id: req.user?.usuario_id ?? null,
+        tipo: "Error",
+        titulo: "Error al actualizar detalle de compra",
+        mensaje:
+          error.message ||
+          "Ocurrió un error al actualizar un detalle de compra.",
+        modulo: "Detalles Compras",
+        referencia_id: idNum,
+        prioridad: "Alta",
+      });
 
       res.status(500).json({
         ok: false,
-        msg: error.message || "Server error, something went wrong",
+        msg: error.message || "Error interno al actualizar detalle de compra",
       });
     }
   }
@@ -414,11 +601,25 @@ export default class DetallesComprasController {
     }
 
     try {
+      const usuario_id = req.user?.usuario_id ?? null;
+
       const resultado = await prisma.$transaction(async (tx) => {
         const existe = await tx.detalles_compras.findFirst({
           where: {
             detalle_compra_id: idNum,
             fecha_eliminacion: null,
+          },
+          include: {
+            compras: {
+              select: {
+                numero_factura: true,
+              },
+            },
+            materiales: {
+              select: {
+                nombre_material: true,
+              },
+            },
           },
         });
 
@@ -426,7 +627,15 @@ export default class DetallesComprasController {
           throw new Error("No se encontró el detalle a eliminar");
         }
 
-        await disminuirStockMaterial(tx, existe.material_id, existe.cantidad);
+        await disminuirStockMaterial(
+          tx,
+          existe.material_id,
+          existe.cantidad,
+          existe.precio_unitario,
+          `Eliminación compra ${existe.compras?.numero_factura ?? ""}`,
+          "Salida por eliminación de detalle de compra",
+          usuario_id
+        );
 
         const eliminado = await tx.detalles_compras.update({
           where: {
@@ -443,21 +652,42 @@ export default class DetallesComprasController {
         return {
           eliminado,
           total,
+          existe,
         };
+      });
+
+      await registrarAlerta({
+        usuario_id,
+        tipo: "Registro eliminado",
+        titulo: "Detalle de compra eliminado",
+        mensaje: `Se eliminó el detalle del material "${resultado.existe.materiales?.nombre_material ?? "Material"}" en la compra "${resultado.existe.compras?.numero_factura ?? "Compra"}".`,
+        modulo: "Detalles Compras",
+        referencia_id: resultado.eliminado.detalle_compra_id,
+        prioridad: "Alta",
       });
 
       res.json({
         ok: true,
-        msg: "Detalle eliminado correctamente. El inventario fue actualizado.",
+        msg: "Detalle eliminado correctamente",
         id: resultado.eliminado.detalle_compra_id,
         monto_total: resultado.total,
       });
     } catch (error) {
-      console.error("Error delete detalles_compras:", error);
+      await registrarAlerta({
+        usuario_id: req.user?.usuario_id ?? null,
+        tipo: "Error",
+        titulo: "Error al eliminar detalle de compra",
+        mensaje:
+          error.message ||
+          "Ocurrió un error al eliminar un detalle de compra.",
+        modulo: "Detalles Compras",
+        referencia_id: idNum,
+        prioridad: "Alta",
+      });
 
       res.status(500).json({
         ok: false,
-        msg: error.message || "Server error, something went wrong",
+        msg: error.message || "Error interno al eliminar detalle de compra",
       });
     }
   }

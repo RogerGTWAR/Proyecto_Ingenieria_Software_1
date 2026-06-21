@@ -8,6 +8,8 @@ const ClientesForm = ({
 }) => {
   const [formData, setFormData] = useState({
     id: "",
+    tipoCliente: "Persona Natural",
+    numeroIdentificacion: "",
     nombreEmpresa: "",
     nombreContacto: "",
     cargoContacto: "",
@@ -15,14 +17,18 @@ const ClientesForm = ({
     ciudad: "",
     pais: "",
     telefono: "",
+    correo: "",
   });
 
   const [errors, setErrors] = useState({});
+  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     if (initialData) {
       setFormData({
         id: initialData.id || "",
+        tipoCliente: initialData.tipoCliente || "Persona Natural",
+        numeroIdentificacion: initialData.numeroIdentificacion || "",
         nombreEmpresa: initialData.nombreEmpresa || "",
         nombreContacto: initialData.nombreContacto || "",
         cargoContacto: initialData.cargoContacto || "",
@@ -30,6 +36,7 @@ const ClientesForm = ({
         ciudad: initialData.ciudad || "",
         pais: initialData.pais || "",
         telefono: initialData.telefono || "",
+        correo: initialData.correo || "",
       });
     }
   }, [initialData]);
@@ -48,9 +55,7 @@ const ClientesForm = ({
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
+  const validate = () => {
     const newErrors = {};
 
     if (!formData.id.toString().trim()) {
@@ -59,8 +64,12 @@ const ClientesForm = ({
       newErrors.id = "El ID debe tener exactamente 5 caracteres.";
     }
 
+    if (!formData.tipoCliente.trim()) {
+      newErrors.tipoCliente = "El tipo de cliente es obligatorio.";
+    }
+
     if (!formData.nombreEmpresa.trim()) {
-      newErrors.nombreEmpresa = "El nombre de la empresa es obligatorio.";
+      newErrors.nombreEmpresa = "El nombre del cliente es obligatorio.";
     }
 
     if (!formData.nombreContacto.trim()) {
@@ -75,12 +84,34 @@ const ClientesForm = ({
       newErrors.telefono = "El teléfono debe tener al menos 8 dígitos.";
     }
 
+    if (
+      formData.correo.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)
+    ) {
+      newErrors.correo = "El correo no tiene un formato válido.";
+    }
+
+    return newErrors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (guardando) return;
+
+    const newErrors = validate();
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    onSubmit(formData);
+    try {
+      setGuardando(true);
+      await onSubmit(formData);
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const inputClass =
@@ -158,7 +189,7 @@ const ClientesForm = ({
                   onChange={handleChange}
                   required
                   readOnly={isEdit}
-                  placeholder="Ejemplo: 00001"
+                  placeholder="Ejemplo: C0001"
                   className={`${inputClass} ${
                     isEdit ? "cursor-not-allowed bg-slate-300" : ""
                   }`}
@@ -168,7 +199,39 @@ const ClientesForm = ({
               </div>
 
               <div className="min-w-0">
-                <label className={labelClass}>Nombre de Empresa</label>
+                <label className={labelClass}>Tipo de Cliente</label>
+
+                <select
+                  name="tipoCliente"
+                  value={formData.tipoCliente}
+                  onChange={handleChange}
+                  required
+                  className={inputClass}
+                >
+                  <option value="Persona Natural">Persona Natural</option>
+                  <option value="Persona Jurídica">Persona Jurídica</option>
+                </select>
+
+                {errors.tipoCliente && (
+                  <p className={errorClass}>{errors.tipoCliente}</p>
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <label className={labelClass}>Número de Identificación</label>
+
+                <input
+                  type="text"
+                  name="numeroIdentificacion"
+                  value={formData.numeroIdentificacion}
+                  onChange={handleChange}
+                  placeholder="Ejemplo: 001-120595-1001A"
+                  className={inputClass}
+                />
+              </div>
+
+              <div className="min-w-0">
+                <label className={labelClass}>Nombre del Cliente</label>
 
                 <input
                   type="text"
@@ -247,6 +310,23 @@ const ClientesForm = ({
               </div>
 
               <div className="min-w-0">
+                <label className={labelClass}>Correo</label>
+
+                <input
+                  type="email"
+                  name="correo"
+                  value={formData.correo}
+                  onChange={handleChange}
+                  placeholder="Ejemplo: cliente@correo.com"
+                  className={inputClass}
+                />
+
+                {errors.correo && (
+                  <p className={errorClass}>{errors.correo}</p>
+                )}
+              </div>
+
+              <div className="min-w-0">
                 <label className={labelClass}>País</label>
 
                 <input
@@ -272,7 +352,7 @@ const ClientesForm = ({
                 />
               </div>
 
-              <div className="min-w-0">
+              <div className="min-w-0 md:col-span-2">
                 <label className={labelClass}>Dirección</label>
 
                 <input
@@ -293,6 +373,7 @@ const ClientesForm = ({
             <button
               type="button"
               onClick={onClose}
+              disabled={guardando}
               className="
                 w-full
                 rounded-2xl
@@ -307,6 +388,8 @@ const ClientesForm = ({
                 shadow-sm
                 transition
                 hover:bg-slate-300
+                disabled:cursor-not-allowed
+                disabled:opacity-60
                 sm:w-auto
               "
             >
@@ -315,6 +398,7 @@ const ClientesForm = ({
 
             <button
               type="submit"
+              disabled={guardando}
               className="
                 w-full
                 rounded-2xl
@@ -330,10 +414,17 @@ const ClientesForm = ({
                 transition
                 hover:scale-[1.01]
                 hover:shadow-xl
+                disabled:cursor-not-allowed
+                disabled:opacity-60
+                disabled:hover:scale-100
                 sm:w-auto
               "
             >
-              {isEdit ? "Guardar Cambios" : "Guardar"}
+              {guardando
+                ? "Guardando..."
+                : isEdit
+                ? "Guardar Cambios"
+                : "Guardar"}
             </button>
           </div>
         </div>

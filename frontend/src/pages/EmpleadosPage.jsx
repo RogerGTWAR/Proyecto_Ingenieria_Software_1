@@ -98,12 +98,46 @@ function EmpleadosPage() {
   const [empleadoAEliminar, setEmpleadoAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+  };
+
   const empleadosFiltrados = (empleados || []).filter((e) => {
     const q = busqueda.toLowerCase();
 
+    const nombres = e.nombres?.toLowerCase() ?? "";
+    const apellidos = e.apellidos?.toLowerCase() ?? "";
+    const cedula = e.cedula?.toLowerCase() ?? "";
+    const correo = e.correo?.toLowerCase() ?? "";
+    const telefono = e.telefono?.toLowerCase() ?? "";
+
     const coincideBusqueda =
-      e.nombres.toLowerCase().includes(q) ||
-      e.apellidos.toLowerCase().includes(q);
+      nombres.includes(q) ||
+      apellidos.includes(q) ||
+      cedula.includes(q) ||
+      correo.includes(q) ||
+      telefono.includes(q);
 
     const coincideRol =
       filtroRol === "all" || Number(e.rolId) === Number(filtroRol);
@@ -161,23 +195,38 @@ function EmpleadosPage() {
           ? new Date(data.fecha_contratacion).toISOString()
           : null,
         rol_id: Number(data.rolId),
+        reportes: data.reportes ? Number(data.reportes) : null,
       };
 
       if (modoEdicion && empleadoAEditar) {
         const actualizado = await edit(empleadoAEditar.id, datosFormateados);
-        console.log("Empleado actualizado correctamente");
 
         if (vistaDetalle && empleadoSeleccionado?.id === empleadoAEditar.id) {
           setEmpleadoSeleccionado(actualizado);
         }
+
+        mostrarMensaje(
+          "success",
+          "Empleado actualizado",
+          "El empleado se actualizó correctamente."
+        );
       } else {
         await add(datosFormateados);
-        console.log("Empleado agregado correctamente");
+
+        mostrarMensaje(
+          "success",
+          "Empleado creado",
+          "El empleado se registró correctamente."
+        );
       }
 
       cerrarFormulario();
     } catch (error) {
-      console.error("Error al guardar empleado:", error);
+      mostrarMensaje(
+        "error",
+        "Error al guardar empleado",
+        error.message || "No se pudo guardar el empleado."
+      );
     }
   };
 
@@ -186,12 +235,27 @@ function EmpleadosPage() {
 
     setIsDeleting(true);
 
-    await remove(empleadoAEliminar.id);
+    try {
+      await remove(empleadoAEliminar.id);
 
-    setIsDeleting(false);
-    setMostrarEliminar(false);
-    setEmpleadoAEliminar(null);
-    cerrarDetalles();
+      mostrarMensaje(
+        "success",
+        "Empleado eliminado",
+        "El empleado se eliminó correctamente."
+      );
+
+      setMostrarEliminar(false);
+      setEmpleadoAEliminar(null);
+      cerrarDetalles();
+    } catch (error) {
+      mostrarMensaje(
+        "error",
+        "Error al eliminar empleado",
+        error.message || "No se pudo eliminar el empleado."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const verDetalles = (empleado) => {
@@ -309,7 +373,7 @@ function EmpleadosPage() {
 
                 <input
                   type="text"
-                  placeholder="Buscar por nombre o apellido..."
+                  placeholder="Buscar por nombre, apellido, cédula, correo o teléfono..."
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                   className="
@@ -508,6 +572,65 @@ function EmpleadosPage() {
             }
             loading={isDeleting}
           />
+        )}
+
+        {modalMensaje.open && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+            <div
+              className={`
+                w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+                ${
+                  modalMensaje.type === "error"
+                    ? "border-red-200"
+                    : "border-emerald-200"
+                }
+              `}
+            >
+              <div className="px-6 py-6">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`
+                      flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+                      ${
+                        modalMensaje.type === "error"
+                          ? "bg-red-100 text-red-600"
+                          : "bg-emerald-100 text-emerald-600"
+                      }
+                    `}
+                  >
+                    {modalMensaje.type === "error" ? "!" : "✓"}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-black text-slate-900">
+                      {modalMensaje.title}
+                    </h3>
+
+                    <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                      {modalMensaje.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={cerrarMensaje}
+                  className={`
+                    rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+                    ${
+                      modalMensaje.type === "error"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                    }
+                  `}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

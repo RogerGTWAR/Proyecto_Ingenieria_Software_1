@@ -8,6 +8,33 @@ const MaterialesCard = ({ materiales, onEdit, onDelete, onVerDetalles }) => {
       minimumFractionDigits: 2,
     });
 
+  const getStockStatus = (stock, minimo) => {
+    if (stock <= minimo) {
+      return {
+        label: "Stock bajo",
+        box: "border-red-200 bg-red-100",
+        text: "text-red-800",
+        title: "text-red-700",
+      };
+    }
+
+    if (stock <= minimo + 5) {
+      return {
+        label: "Stock cercano",
+        box: "border-amber-200 bg-amber-100",
+        text: "text-amber-800",
+        title: "text-amber-700",
+      };
+    }
+
+    return {
+      label: "Stock normal",
+      box: "border-blue-200 bg-blue-100",
+      text: "text-blue-800",
+      title: "text-blue-700",
+    };
+  };
+
   if (!materiales.length) {
     return (
       <div className="rounded-3xl border border-dashed border-slate-400 bg-slate-200 px-6 py-10 text-center shadow-sm">
@@ -25,8 +52,10 @@ const MaterialesCard = ({ materiales, onEdit, onDelete, onVerDetalles }) => {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {materiales.map((material) => {
         const stock = Number(material.cantidad_en_stock ?? 0);
+        const stockMinimo = Number(material.stock_minimo ?? 10);
         const precio = Number(material.precio_unitario ?? 0);
         const valorTotal = stock * precio;
+        const estadoStock = getStockStatus(stock, stockMinimo);
 
         return (
           <div
@@ -40,7 +69,9 @@ const MaterialesCard = ({ materiales, onEdit, onDelete, onVerDetalles }) => {
             "
           >
             <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-cyan-900 px-5 py-4 text-white">
-              <p className="text-sm font-medium text-cyan-100">Material</p>
+              <p className="text-sm font-medium text-cyan-100">
+                {estadoStock.label}
+              </p>
 
               <h3 className="mt-1 truncate text-sm font-bold">
                 {material.nombre_material}
@@ -67,12 +98,32 @@ const MaterialesCard = ({ materiales, onEdit, onDelete, onVerDetalles }) => {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-blue-200 bg-blue-100 p-4">
-                  <p className="text-sm font-semibold text-blue-700">
+                <div className={`rounded-2xl border p-4 ${estadoStock.box}`}>
+                  <p className={`text-sm font-semibold ${estadoStock.title}`}>
                     Stock
                   </p>
-                  <p className="mt-1 text-sm font-bold text-blue-800">
+                  <p className={`mt-1 text-sm font-bold ${estadoStock.text}`}>
                     {stock.toLocaleString("es-NI")}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-amber-200 bg-amber-100 p-4">
+                  <p className="text-sm font-semibold text-amber-700">
+                    Stock mínimo
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-amber-800">
+                    {stockMinimo.toLocaleString("es-NI")}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4">
+                  <p className="text-sm font-semibold text-slate-600">
+                    Alertas
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-slate-900">
+                    {Number(material.alertas_count ?? 0)}
                   </p>
                 </div>
               </div>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import { useProveedores } from "../../hooks/useProveedores";
 import { useMateriales } from "../../hooks/useMateriales";
 import { useDetallesCompras } from "../../hooks/useDetallesCompras";
@@ -11,11 +12,20 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
   const { items: detalles, add, edit, remove, reload } = useDetallesCompras();
 
   const [errors, setErrors] = useState({});
+  const [guardando, setGuardando] = useState(false);
+
   const [materialSeleccionado, setMaterialSeleccionado] = useState("");
   const [busquedaProveedor, setBusquedaProveedor] = useState("");
   const [busquedaEmpleado, setBusquedaEmpleado] = useState("");
   const [busquedaMaterial, setBusquedaMaterial] = useState("");
   const [materialesAsignados, setMaterialesAsignados] = useState([]);
+
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "error",
+    title: "",
+    message: "",
+  });
 
   const [form, setForm] = useState({
     proveedor_id: "",
@@ -25,6 +35,24 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
     estado: "Pendiente",
     observaciones: "",
   });
+
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "error",
+      title: "",
+      message: "",
+    });
+  };
 
   const empleadoAsignado = empleados.find(
     (e) => Number(e.id) === Number(form.empleado_id)
@@ -44,37 +72,38 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
         estado: "Pendiente",
         observaciones: "",
       });
+
       setMaterialesAsignados([]);
       return;
     }
 
-    if (materiales.length === 0 || detalles.length === 0) return;
-
     const compraId = Number(initialData.compra_id ?? initialData.id);
 
     setForm({
-      proveedor_id: initialData.proveedor_id,
-      empleado_id: initialData.empleado_id,
-      numero_factura: initialData.numero_factura,
-      fecha_compra: initialData.fecha_compra,
-      estado: initialData.estado,
+      proveedor_id: initialData.proveedor_id ?? "",
+      empleado_id: initialData.empleado_id ?? "",
+      numero_factura: initialData.numero_factura ?? "",
+      fecha_compra: initialData.fecha_compra ?? "",
+      estado: initialData.estado ?? "Pendiente",
       observaciones: initialData.observaciones ?? "",
     });
 
     const asignados = detalles
-      .filter((d) => Number(d.compraId) === compraId)
+      .filter((d) => Number(d.compraId ?? d.compra_id) === compraId)
       .map((d) => ({
         detalle_id: d.id,
-        material_id: d.materialId,
-        nombre: d.materialNombre,
-        unidad: d.unidadDeMedida,
-        cantidad: d.cantidad,
-        precio_unitario: d.precio_unitario,
-        subtotal: Number(d.cantidad) * Number(d.precio_unitario),
+        material_id: d.materialId ?? d.material_id,
+        nombre: d.materialNombre ?? d.nombre_material ?? "Material",
+        unidad: d.unidadDeMedida ?? d.unidad_de_medida ?? "",
+        cantidad: Number(d.cantidad ?? 1),
+        precio_unitario: Number(d.precio_unitario ?? d.precioUnitario ?? 0),
+        subtotal:
+          Number(d.cantidad ?? 1) *
+          Number(d.precio_unitario ?? d.precioUnitario ?? 0),
       }));
 
     setMaterialesAsignados(asignados);
-  }, [initialData, materiales, detalles]);
+  }, [initialData, detalles]);
 
   const empleadosFiltrados = useMemo(() => {
     if (!busquedaEmpleado.trim() || form.empleado_id) return [];
@@ -102,15 +131,36 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
     );
   }, [busquedaMaterial, materiales]);
 
+  const totalCompra = materialesAsignados.reduce(
+    (a, b) => a + Number(b.subtotal ?? 0),
+    0
+  );
+
+  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
+
+  const inputClass =
+    "w-full min-w-0 rounded-xl border border-slate-300 bg-slate-100 px-3 py-3 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-sm placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100 sm:px-4";
+
+  const labelClass = "mb-2 block text-sm font-semibold text-slate-700";
+  const errorClass = "mt-1 text-sm font-medium text-red-600";
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
 
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+    setErrors((prev) => ({
+      ...prev,
+      [name]: "",
+    }));
   };
 
   const handleAsignarMaterial = () => {
+    if (guardando) return;
+
     if (!materialSeleccionado) {
       setErrors((prev) => ({
         ...prev,
@@ -123,7 +173,13 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
       (m) => Number(m.id) === Number(materialSeleccionado)
     );
 
-    if (!mat) return;
+    if (!mat) {
+      setErrors((prev) => ({
+        ...prev,
+        asignarMaterial: "El material seleccionado no existe.",
+      }));
+      return;
+    }
 
     const existe = materialesAsignados.some(
       (m) => Number(m.material_id) === Number(mat.id)
@@ -138,6 +194,15 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
     }
 
     const precio = Number(mat.precio_unitario ?? 0);
+
+    if (precio <= 0) {
+      setErrors((prev) => ({
+        ...prev,
+        asignarMaterial:
+          "El material seleccionado debe tener un precio mayor que cero.",
+      }));
+      return;
+    }
 
     setMaterialesAsignados((prev) => [
       ...prev,
@@ -154,38 +219,122 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
 
     setBusquedaMaterial("");
     setMaterialSeleccionado("");
-    setErrors((prev) => ({ ...prev, asignarMaterial: "" }));
+    setErrors((prev) => ({
+      ...prev,
+      asignarMaterial: "",
+    }));
   };
 
   const handleQuitarMaterial = async (mat) => {
-    const compraId = Number(initialData?.compra_id ?? initialData?.id);
+    if (guardando) return;
 
-    const detalle = detalles.find(
-      (d) =>
-        Number(d.materialId) === Number(mat.material_id) &&
-        Number(d.compraId) === compraId
-    );
+    try {
+      const compraId = Number(initialData?.compra_id ?? initialData?.id);
 
-    if (detalle) {
-      await remove(detalle.id);
-      await reload();
+      const detalle = detalles.find(
+        (d) =>
+          Number(d.materialId ?? d.material_id) === Number(mat.material_id) &&
+          Number(d.compraId ?? d.compra_id) === compraId
+      );
+
+      if (detalle) {
+        await remove(detalle.id);
+        await reload();
+      }
+
+      setMaterialesAsignados((prev) =>
+        prev.filter((m) => Number(m.material_id) !== Number(mat.material_id))
+      );
+    } catch (error) {
+      mostrarMensaje(
+        "error",
+        "Error al quitar material",
+        error.message || "No se pudo quitar el material de la compra."
+      );
     }
+  };
 
+  const actualizarMaterialAsignado = (materialId, campo, valor) => {
     setMaterialesAsignados((prev) =>
-      prev.filter((m) => Number(m.material_id) !== Number(mat.material_id))
+      prev.map((item) => {
+        if (Number(item.material_id) !== Number(materialId)) return item;
+
+        const actualizado = {
+          ...item,
+          [campo]: valor,
+        };
+
+        const cantidad = Number(actualizado.cantidad ?? 0);
+        const precio = Number(actualizado.precio_unitario ?? 0);
+
+        return {
+          ...actualizado,
+          subtotal: cantidad * precio,
+        };
+      })
     );
+
+    setErrors((prev) => ({
+      ...prev,
+      asignarMaterial: "",
+    }));
   };
 
   const validateForm = () => {
     const e = {};
 
-    if (!form.empleado_id) e.empleado_id = "Seleccione un empleado.";
-    if (!form.proveedor_id) e.proveedor_id = "Seleccione un proveedor.";
-    if (!form.numero_factura.trim()) e.numero_factura = "Campo obligatorio.";
-    if (!form.fecha_compra) e.fecha_compra = "Seleccione una fecha.";
+    if (!form.empleado_id) {
+      e.empleado_id = "Seleccione un empleado.";
+    }
+
+    if (!form.proveedor_id) {
+      e.proveedor_id = "Seleccione un proveedor.";
+    }
+
+    if (!form.numero_factura.trim()) {
+      e.numero_factura = "El número de factura es obligatorio.";
+    } else if (form.numero_factura.trim().length < 3) {
+      e.numero_factura =
+        "El número de factura debe tener al menos 3 caracteres.";
+    }
+
+    if (!form.fecha_compra) {
+      e.fecha_compra = "Seleccione una fecha.";
+    } else {
+      const fecha = new Date(form.fecha_compra);
+      const minFecha = new Date("2000-01-01");
+      const hoy = new Date();
+
+      if (fecha < minFecha || fecha > hoy) {
+        e.fecha_compra =
+          "La fecha de compra debe estar entre el año 2000 y la fecha actual.";
+      }
+    }
+
+    if (!form.estado) {
+      e.estado = "Seleccione un estado.";
+    }
 
     if (materialesAsignados.length === 0) {
       e.asignarMaterial = "Debe asignar al menos un material.";
+    }
+
+    const materialCantidadInvalida = materialesAsignados.find(
+      (m) => Number(m.cantidad) <= 0
+    );
+
+    if (materialCantidadInvalida) {
+      e.asignarMaterial =
+        "Cada material comprado debe tener una cantidad mayor a 0.";
+    }
+
+    const materialPrecioInvalido = materialesAsignados.find(
+      (m) => Number(m.precio_unitario) <= 0
+    );
+
+    if (materialPrecioInvalido) {
+      e.asignarMaterial =
+        "Cada material comprado debe tener un precio unitario mayor a 0.";
     }
 
     return e;
@@ -194,54 +343,78 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (guardando) return;
+
     const eForm = validateForm();
 
     if (Object.keys(eForm).length > 0) {
       setErrors(eForm);
+
+      mostrarMensaje(
+        "error",
+        "Revise los datos de la compra",
+        "Hay campos pendientes o valores inválidos. Revise el formulario antes de guardar."
+      );
+
       return;
     }
 
-    const compraGuardada = await onSubmit(form);
-    const compraId = Number(compraGuardada.id);
+    try {
+      setGuardando(true);
 
-    for (const m of materialesAsignados) {
-      const existe = detalles.find(
-        (d) =>
-          Number(d.materialId) === Number(m.material_id) &&
-          Number(d.compraId) === compraId
-      );
+      const compraGuardada = await onSubmit({
+        ...form,
+        monto_total: totalCompra,
+      });
 
-      if (existe) {
-        await edit(existe.id, {
-          cantidad: m.cantidad,
-          precio_unitario: m.precio_unitario,
-        });
-      } else {
-        await add({
-          compra_id: compraId,
-          material_id: m.material_id,
-          cantidad: m.cantidad,
-          precio_unitario: m.precio_unitario,
-        });
+      const compraId = Number(compraGuardada?.id);
+
+      if (!compraId) {
+        mostrarMensaje(
+          "error",
+          "Error al guardar compra",
+          "No se pudo obtener el ID de la compra guardada."
+        );
+
+        return;
       }
+
+      for (const m of materialesAsignados) {
+        const existe = detalles.find(
+          (d) =>
+            Number(d.materialId ?? d.material_id) === Number(m.material_id) &&
+            Number(d.compraId ?? d.compra_id) === compraId
+        );
+
+        if (existe) {
+          await edit(existe.id, {
+            compra_id: compraId,
+            material_id: m.material_id,
+            cantidad: Number(m.cantidad),
+            precio_unitario: Number(m.precio_unitario),
+          });
+        } else {
+          await add({
+            compra_id: compraId,
+            material_id: m.material_id,
+            cantidad: Number(m.cantidad),
+            precio_unitario: Number(m.precio_unitario),
+          });
+        }
+      }
+
+      await reload();
+      onClose();
+    } catch (error) {
+      mostrarMensaje(
+        "error",
+        "Error al guardar compra",
+        error.message || "No se pudo guardar la compra."
+      );
+    } finally {
+      setGuardando(false);
     }
-
-    await reload();
-    onClose();
   };
-
-  const totalCompra = materialesAsignados.reduce(
-    (a, b) => a + Number(b.subtotal ?? 0),
-    0
-  );
-
-  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
-
-  const inputClass =
-    "w-full min-w-0 rounded-xl border border-slate-300 bg-slate-100 px-3 py-3 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-sm placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100 sm:px-4";
-
-  const labelClass = "mb-2 block text-sm font-semibold text-slate-700";
-  const errorClass = "mt-1 text-sm font-medium text-red-600";
 
   return (
     <div
@@ -306,12 +479,27 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                 placeholder="Buscar empleado..."
                 error={errors.empleado_id}
                 results={empleadosFiltrados}
-                renderItem={(e) => `${e.nombres} ${e.apellidos} — ${e.rolNombre}`}
+                renderItem={(e) =>
+                  `${e.nombres} ${e.apellidos} — ${e.rolNombre}`
+                }
                 onSelect={(e) => {
-                  setForm((prev) => ({ ...prev, empleado_id: e.id }));
+                  setForm((prev) => ({
+                    ...prev,
+                    empleado_id: e.id,
+                  }));
                   setBusquedaEmpleado("");
+                  setErrors((prev) => ({
+                    ...prev,
+                    empleado_id: "",
+                  }));
                 }}
-                onClear={() => setForm((prev) => ({ ...prev, empleado_id: "" }))}
+                onClear={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    empleado_id: "",
+                  }))
+                }
+                disabled={guardando}
               />
 
               <SearchBox
@@ -325,10 +513,23 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                 results={proveedoresFiltrados}
                 renderItem={(p) => p.nombre_empresa}
                 onSelect={(p) => {
-                  setForm((prev) => ({ ...prev, proveedor_id: p.id }));
+                  setForm((prev) => ({
+                    ...prev,
+                    proveedor_id: p.id,
+                  }));
                   setBusquedaProveedor("");
+                  setErrors((prev) => ({
+                    ...prev,
+                    proveedor_id: "",
+                  }));
                 }}
-                onClear={() => setForm((prev) => ({ ...prev, proveedor_id: "" }))}
+                onClear={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    proveedor_id: "",
+                  }))
+                }
+                disabled={guardando}
               />
 
               <div>
@@ -338,6 +539,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                   name="numero_factura"
                   value={form.numero_factura}
                   onChange={handleChange}
+                  disabled={guardando}
                   placeholder="Ejemplo: FAC-001"
                   className={inputClass}
                 />
@@ -353,6 +555,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                   name="fecha_compra"
                   value={form.fecha_compra}
                   onChange={handleChange}
+                  disabled={guardando}
                   className={inputClass}
                 />
                 {errors.fecha_compra && (
@@ -366,12 +569,17 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                   name="estado"
                   value={form.estado}
                   onChange={handleChange}
+                  disabled={guardando}
                   className={inputClass}
                 >
                   <option value="Pendiente">Pendiente</option>
                   <option value="Pagada">Pagada</option>
                   <option value="Cancelada">Cancelada</option>
                 </select>
+
+                {errors.estado && (
+                  <p className={errorClass}>{errors.estado}</p>
+                )}
               </div>
 
               <div className="lg:col-span-2">
@@ -380,6 +588,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                   name="observaciones"
                   value={form.observaciones}
                   onChange={handleChange}
+                  disabled={guardando}
                   rows={3}
                   placeholder="Observaciones de la compra"
                   className={`${inputClass} resize-none`}
@@ -408,6 +617,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                   placeholder="Escribe para buscar..."
                   value={busquedaMaterial}
                   onChange={(e) => setBusquedaMaterial(e.target.value)}
+                  disabled={guardando}
                   className={inputClass}
                 />
 
@@ -415,6 +625,7 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                   <select
                     value={materialSeleccionado}
                     onChange={(e) => setMaterialSeleccionado(e.target.value)}
+                    disabled={guardando}
                     className={`${inputClass} mt-3`}
                   >
                     <option value="">Selecciona un material...</option>
@@ -434,36 +645,64 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
               <button
                 type="button"
                 onClick={handleAsignarMaterial}
+                disabled={guardando}
                 className="
                   h-fit rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700
                   px-6 py-3 text-sm font-bold text-white shadow-lg
                   transition hover:scale-[1.01] hover:shadow-xl
+                  disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100
                 "
               >
                 Agregar
               </button>
             </div>
 
-            {materialesAsignados.length > 0 && (
+            {materialesAsignados.length === 0 ? (
+              <div className="mt-5 rounded-2xl border border-dashed border-slate-400 bg-slate-100 px-6 py-8 text-center">
+                <p className="text-sm font-bold text-slate-700">
+                  Aún no hay materiales asignados.
+                </p>
+              </div>
+            ) : (
               <div className="mt-5 overflow-hidden rounded-3xl border border-slate-300 bg-slate-100 shadow-sm">
                 <div className="hidden overflow-x-auto xl:block">
                   <table className="w-full text-sm">
                     <thead className="bg-slate-900 text-slate-100">
                       <tr>
-                        <th className="px-4 py-4 text-left font-bold">Material</th>
-                        <th className="px-4 py-4 text-center font-bold">Unidad</th>
-                        <th className="px-4 py-4 text-center font-bold">Cantidad</th>
-                        <th className="px-4 py-4 text-center font-bold">Precio Unit.</th>
-                        <th className="px-4 py-4 text-right font-bold">Subtotal</th>
-                        <th className="px-4 py-4 text-center font-bold">Acción</th>
+                        <th className="px-4 py-4 text-left font-bold">
+                          Material
+                        </th>
+                        <th className="px-4 py-4 text-center font-bold">
+                          Unidad
+                        </th>
+                        <th className="px-4 py-4 text-center font-bold">
+                          Cantidad
+                        </th>
+                        <th className="px-4 py-4 text-center font-bold">
+                          Precio Unit.
+                        </th>
+                        <th className="px-4 py-4 text-right font-bold">
+                          Subtotal
+                        </th>
+                        <th className="px-4 py-4 text-center font-bold">
+                          Acción
+                        </th>
                       </tr>
                     </thead>
 
                     <tbody className="divide-y divide-slate-300">
                       {materialesAsignados.map((m) => (
-                        <tr key={m.material_id} className="bg-slate-100 hover:bg-blue-100">
-                          <td className="px-4 py-4 font-bold text-slate-900">{m.nombre}</td>
-                          <td className="px-4 py-4 text-center text-slate-700">{m.unidad}</td>
+                        <tr
+                          key={m.material_id}
+                          className="bg-slate-100 hover:bg-blue-100"
+                        >
+                          <td className="px-4 py-4 font-bold text-slate-900">
+                            {m.nombre}
+                          </td>
+
+                          <td className="px-4 py-4 text-center text-slate-700">
+                            {m.unidad}
+                          </td>
 
                           <td className="px-4 py-4 text-center">
                             <input
@@ -471,16 +710,16 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                               value={m.cantidad}
                               min="1"
                               step="1"
-                              onChange={(e) => {
-                                const q = Number(e.target.value);
-                                setMaterialesAsignados((prev) =>
-                                  prev.map((x) =>
-                                    x.material_id === m.material_id
-                                      ? { ...x, cantidad: q, subtotal: q * x.precio_unitario }
-                                      : x
-                                  )
-                                );
-                              }}
+                              disabled={guardando}
+                              onChange={(e) =>
+                                actualizarMaterialAsignado(
+                                  m.material_id,
+                                  "cantidad",
+                                  e.target.value === ""
+                                    ? ""
+                                    : Number(e.target.value)
+                                )
+                              }
                               className="w-20 rounded-xl border border-slate-300 bg-slate-100 p-2 text-center text-sm outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100"
                             />
                           </td>
@@ -491,16 +730,16 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                               value={m.precio_unitario}
                               min="0.01"
                               step="0.01"
-                              onChange={(e) => {
-                                const p = Number(e.target.value);
-                                setMaterialesAsignados((prev) =>
-                                  prev.map((x) =>
-                                    x.material_id === m.material_id
-                                      ? { ...x, precio_unitario: p, subtotal: p * x.cantidad }
-                                      : x
-                                  )
-                                );
-                              }}
+                              disabled={guardando}
+                              onChange={(e) =>
+                                actualizarMaterialAsignado(
+                                  m.material_id,
+                                  "precio_unitario",
+                                  e.target.value === ""
+                                    ? ""
+                                    : Number(e.target.value)
+                                )
+                              }
                               className="w-24 rounded-xl border border-slate-300 bg-slate-100 p-2 text-center text-sm outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100"
                             />
                           </td>
@@ -513,7 +752,8 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                             <button
                               type="button"
                               onClick={() => handleQuitarMaterial(m)}
-                              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                              disabled={guardando}
+                              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               Quitar
                             </button>
@@ -532,14 +772,19 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                     >
                       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <p className="text-sm font-bold text-slate-900">{m.nombre}</p>
-                          <p className="text-sm text-slate-600">Unidad: {m.unidad}</p>
+                          <p className="text-sm font-bold text-slate-900">
+                            {m.nombre}
+                          </p>
+                          <p className="text-sm text-slate-600">
+                            Unidad: {m.unidad}
+                          </p>
                         </div>
 
                         <button
                           type="button"
                           onClick={() => handleQuitarMaterial(m)}
-                          className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                          disabled={guardando}
+                          className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Quitar
                         </button>
@@ -553,16 +798,16 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                             value={m.cantidad}
                             min="1"
                             step="1"
-                            onChange={(e) => {
-                              const q = Number(e.target.value);
-                              setMaterialesAsignados((prev) =>
-                                prev.map((x) =>
-                                  x.material_id === m.material_id
-                                    ? { ...x, cantidad: q, subtotal: q * x.precio_unitario }
-                                    : x
-                                )
-                              );
-                            }}
+                            disabled={guardando}
+                            onChange={(e) =>
+                              actualizarMaterialAsignado(
+                                m.material_id,
+                                "cantidad",
+                                e.target.value === ""
+                                  ? ""
+                                  : Number(e.target.value)
+                              )
+                            }
                             className={inputClass}
                           />
                         </div>
@@ -574,23 +819,25 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
                             value={m.precio_unitario}
                             min="0.01"
                             step="0.01"
-                            onChange={(e) => {
-                              const p = Number(e.target.value);
-                              setMaterialesAsignados((prev) =>
-                                prev.map((x) =>
-                                  x.material_id === m.material_id
-                                    ? { ...x, precio_unitario: p, subtotal: p * x.cantidad }
-                                    : x
-                                )
-                              );
-                            }}
+                            disabled={guardando}
+                            onChange={(e) =>
+                              actualizarMaterialAsignado(
+                                m.material_id,
+                                "precio_unitario",
+                                e.target.value === ""
+                                  ? ""
+                                  : Number(e.target.value)
+                              )
+                            }
                             className={inputClass}
                           />
                         </div>
                       </div>
 
                       <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-100 p-4">
-                        <p className="text-sm font-semibold text-emerald-700">Subtotal</p>
+                        <p className="text-sm font-semibold text-emerald-700">
+                          Subtotal
+                        </p>
                         <p className="mt-1 text-sm font-bold text-emerald-900">
                           C${money(m.subtotal)}
                         </p>
@@ -615,20 +862,85 @@ export default function ComprasForm({ onSubmit, onClose, initialData, isEdit }) 
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 sm:w-auto"
             >
-              {isEdit ? "Actualizar Compra" : "Guardar Compra"}
+              {guardando
+                ? "Guardando..."
+                : isEdit
+                ? "Actualizar Compra"
+                : "Guardar Compra"}
             </button>
           </div>
         </div>
       </form>
+
+      {modalMensaje.open && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+          <div
+            className={`
+              w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+              ${
+                modalMensaje.type === "error"
+                  ? "border-red-200"
+                  : "border-emerald-200"
+              }
+            `}
+          >
+            <div className="px-6 py-6">
+              <div className="flex items-start gap-4">
+                <div
+                  className={`
+                    flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+                    ${
+                      modalMensaje.type === "error"
+                        ? "bg-red-100 text-red-600"
+                        : "bg-emerald-100 text-emerald-600"
+                    }
+                  `}
+                >
+                  {modalMensaje.type === "error" ? "!" : "✓"}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-black text-slate-900">
+                    {modalMensaje.title}
+                  </h3>
+
+                  <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+                    {modalMensaje.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+              <button
+                type="button"
+                onClick={cerrarMensaje}
+                className={`
+                  rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+                  ${
+                    modalMensaje.type === "error"
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-emerald-600 hover:bg-emerald-700"
+                  }
+                `}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -645,6 +957,7 @@ const SearchBox = ({
   renderItem,
   onSelect,
   onClear,
+  disabled = false,
 }) => {
   const inputClass =
     "w-full min-w-0 rounded-xl border border-slate-300 bg-slate-100 px-3 py-3 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-sm placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100 sm:px-4";
@@ -661,6 +974,7 @@ const SearchBox = ({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
           className={inputClass}
         />
       )}
@@ -672,7 +986,8 @@ const SearchBox = ({
               type="button"
               key={item.id}
               onClick={() => onSelect(item)}
-              className="block w-full px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-100"
+              disabled={disabled}
+              className="block w-full px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {renderItem(item)}
             </button>
@@ -687,7 +1002,8 @@ const SearchBox = ({
           <button
             type="button"
             onClick={onClear}
-            className="rounded-xl bg-red-100 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-200"
+            disabled={disabled}
+            className="rounded-xl bg-red-100 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cambiar
           </button>

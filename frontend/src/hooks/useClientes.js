@@ -1,5 +1,5 @@
-//Listo
 import { useEffect, useState } from "react";
+
 import {
   fetchClientes,
   createCliente,
@@ -16,12 +16,15 @@ export function useClientes() {
     try {
       setLoading(true);
       setError("");
+
       const list = await fetchClientes();
-      console.log("Clientes cargados:", list); 
-      setItems(Array.isArray(list) ? list : []);
-    } catch (e) {
-      console.error("Error en useClientes:", e);
-      setError(e.message || "Error al cargar clientes");
+      const safeList = Array.isArray(list) ? list : [];
+
+      setItems(safeList);
+      return safeList;
+    } catch (error) {
+      setError(error.message || "Error al cargar clientes");
+      return [];
     } finally {
       setLoading(false);
     }
@@ -34,17 +37,30 @@ export function useClientes() {
   const add = async (payloadUI) => {
     const created = await createCliente(payloadUI);
     setItems((prev) => [created, ...prev]);
+    return created;
   };
 
   const edit = async (id, payloadUI) => {
     const updated = await updateCliente(id, payloadUI);
-    setItems((prev) => prev.map((c) => (c.id === id ? updated : c)));
+    setItems((prev) =>
+      prev.map((cliente) => (cliente.id === id ? updated : cliente))
+    );
+    return updated;
   };
 
   const remove = async (id) => {
     await deleteCliente(id);
-    setItems((prev) => prev.filter((c) => c.id !== id));
+    setItems((prev) => prev.filter((cliente) => cliente.id !== id));
+    return true;
   };
 
-  return { items, loading, error, reload: load, add, edit, remove };
+  return {
+    items,
+    loading,
+    error,
+    reload: load,
+    add,
+    edit,
+    remove,
+  };
 }
