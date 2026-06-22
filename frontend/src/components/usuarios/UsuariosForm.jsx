@@ -1,11 +1,12 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useEmpleados } from "../../hooks/useEmpleados";
 
 const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
-  const { items: empleados } = useEmpleados();
+  const { items: empleados, reload: reloadEmpleados } = useEmpleados();
 
   const [errors, setErrors] = useState({});
   const [busquedaEmp, setBusquedaEmp] = useState("");
+  const [guardando, setGuardando] = useState(false);
 
   const [form, setForm] = useState({
     empleado_id: "",
@@ -14,27 +15,53 @@ const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   });
 
   useEffect(() => {
+    reloadEmpleados();
+  }, []);
+
+  useEffect(() => {
     if (initialData) {
       setForm({
-        empleado_id: initialData.empleado_id,
-        usuario: initialData.usuario || "",
+        empleado_id: initialData.empleado_id ?? "",
+        usuario: initialData.usuario ?? "",
+        contrasena: "",
+      });
+    } else {
+      setForm({
+        empleado_id: "",
+        usuario: "",
         contrasena: "",
       });
     }
+
+    setErrors({});
+    setBusquedaEmp("");
   }, [initialData]);
 
   const empleadosFiltrados = useMemo(() => {
-    const t = busquedaEmp.toLowerCase();
+    const texto = busquedaEmp.trim().toLowerCase();
 
-    if (!t.trim() || form.empleado_id) return [];
+    if (!texto || form.empleado_id) return [];
 
-    return empleados.filter((e) =>
-      `${e.nombres} ${e.apellidos}`.toLowerCase().includes(t)
-    );
+    return (empleados || []).filter((empleado) => {
+      const nombreCompleto = `${empleado.nombres ?? ""} ${
+        empleado.apellidos ?? ""
+      }`.toLowerCase();
+
+      const cedula = empleado.cedula?.toLowerCase() ?? "";
+      const rol = empleado.rolNombre?.toLowerCase() ?? "";
+
+      return (
+        nombreCompleto.includes(texto) ||
+        cedula.includes(texto) ||
+        rol.includes(texto)
+      );
+    });
   }, [busquedaEmp, empleados, form.empleado_id]);
 
   const empleadoAsignado = useMemo(() => {
-    return empleados.find((e) => Number(e.id) === Number(form.empleado_id));
+    return (empleados || []).find(
+      (empleado) => Number(empleado.id) === Number(form.empleado_id)
+    );
   }, [form.empleado_id, empleados]);
 
   const passwordRules = {
@@ -53,14 +80,27 @@ const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
   const labelClass = "mb-2 block text-sm font-semibold text-slate-700";
   const errorClass = "mt-1 text-sm font-medium text-red-600";
 
-  const handleAsignarEmpleado = (id) => {
-    setForm((prev) => ({ ...prev, empleado_id: id }));
-    setErrors((prev) => ({ ...prev, empleado_id: "" }));
+  const handleAsignarEmpleado = (empleado) => {
+    setForm((prev) => ({
+      ...prev,
+      empleado_id: empleado.id,
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      empleado_id: "",
+      general: "",
+    }));
+
     setBusquedaEmp("");
   };
 
   const handleQuitarEmpleado = () => {
-    setForm((prev) => ({ ...prev, empleado_id: "" }));
+    setForm((prev) => ({
+      ...prev,
+      empleado_id: "",
+    }));
+
     setBusquedaEmp("");
   };
 
@@ -75,6 +115,7 @@ const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
     setErrors((prev) => ({
       ...prev,
       [name]: "",
+      general: "",
     }));
   };
 
@@ -87,6 +128,8 @@ const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 
     if (!form.usuario.trim()) {
       err.usuario = "El nombre de usuario es obligatorio.";
+    } else if (form.usuario.trim().length < 3) {
+      err.usuario = "El usuario debe tener al menos 3 caracteres.";
     }
 
     if (!isEdit && !form.contrasena.trim()) {
@@ -98,11 +141,18 @@ const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
         "La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.";
     }
 
+    if (!isEdit && !empleadoAsignado?.cedula) {
+      err.empleado_id =
+        "El empleado seleccionado no tiene cédula registrada. No se puede crear el usuario.";
+    }
+
     return err;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (guardando) return;
 
     const err = validate();
 
@@ -111,7 +161,22 @@ const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
       return;
     }
 
-    await onSubmit(form);
+    try {
+      setGuardando(true);
+
+      await onSubmit({
+        empleado_id: form.empleado_id,
+        cedula: empleadoAsignado?.cedula ?? "",
+        usuario: form.usuario.trim(),
+        contrasena: form.contrasena,
+      });
+    } catch (error) {
+      setErrors({
+        general: error.message || "No se pudo guardar el usuario.",
+      });
+    } finally {
+      setGuardando(false);
+    }
   };
 
   return (
@@ -140,6 +205,12 @@ const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
               <h2 className="mt-1 truncate text-sm font-bold tracking-tight text-white">
                 {isEdit ? "Editar Usuario" : "Nuevo Usuario"}
               </h2>
+
+              <p className="mt-2 text-sm text-slate-300">
+                {isEdit
+                  ? "Actualice el empleado vinculado, usuario o contraseña."
+                  : "Seleccione un empleado registrado y cree sus credenciales de acceso."}
+              </p>
             </div>
 
             <SummaryBox
@@ -150,109 +221,151 @@ const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
         </div>
 
         <div className="flex-1 space-y-5 overflow-y-auto bg-slate-100 p-4 sm:p-6">
+          {errors.general && (
+            <div className="rounded-2xl border border-red-200 bg-red-100 px-4 py-3 text-sm font-bold text-red-700">
+              {errors.general}
+            </div>
+          )}
+
           <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
             <div className="mb-5 border-b border-slate-300 pb-4">
               <h3 className="text-sm font-bold text-slate-900">
-                Información de acceso
+                Empleado vinculado
               </h3>
 
               <p className="mt-1 text-sm text-slate-600">
-                Seleccione el empleado y defina las credenciales del usuario.
+                Busque y seleccione el empleado que tendrá acceso al sistema.
               </p>
             </div>
 
-            <div className="space-y-5">
-              <div className="min-w-0">
-                <label className={labelClass}>Empleado</label>
+            <div className="min-w-0">
+              <label className={labelClass}>Empleado</label>
 
-                {!form.empleado_id && (
-                  <input
-                    type="text"
-                    placeholder="Buscar empleado por nombre..."
-                    value={busquedaEmp}
-                    onChange={(e) => setBusquedaEmp(e.target.value)}
-                    className={inputClass}
-                  />
-                )}
+              {!form.empleado_id && (
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, cédula o rol..."
+                  value={busquedaEmp}
+                  onChange={(e) => setBusquedaEmp(e.target.value)}
+                  className={inputClass}
+                />
+              )}
 
-                {busquedaEmp && empleadosFiltrados.length > 0 && (
-                  <div className="mt-3 max-h-44 overflow-y-auto rounded-2xl border border-slate-300 bg-slate-100 shadow-md">
-                    {empleadosFiltrados.map((e) => (
-                      <button
-                        key={e.id}
-                        type="button"
-                        onClick={() => handleAsignarEmpleado(e.id)}
-                        className="block w-full px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-blue-100"
-                      >
-                        {e.nombres} {e.apellidos} — {e.rolNombre}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {empleadoAsignado && (
-                  <div className="mt-3 flex flex-col gap-4 rounded-2xl border border-blue-200 bg-blue-100 p-4 text-blue-900 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-bold">
-                        {empleadoAsignado.nombres} {empleadoAsignado.apellidos}
-                      </p>
-
-                      <p className="mt-1 text-sm font-medium text-blue-700">
-                        Rol: {empleadoAsignado.rolNombre || "Sin rol"}
-                      </p>
-                    </div>
-
+              {busquedaEmp && empleadosFiltrados.length > 0 && (
+                <div className="mt-3 max-h-52 overflow-y-auto rounded-2xl border border-slate-300 bg-slate-100 shadow-md">
+                  {empleadosFiltrados.map((empleado) => (
                     <button
+                      key={empleado.id}
                       type="button"
-                      onClick={handleQuitarEmpleado}
-                      className="w-full rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 sm:w-auto"
+                      onClick={() => handleAsignarEmpleado(empleado)}
+                      className="block w-full border-b border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-700 transition last:border-b-0 hover:bg-blue-100"
                     >
-                      Cambiar
+                      <span className="block font-bold text-slate-900">
+                        {empleado.nombres} {empleado.apellidos}
+                      </span>
+
+                      <span className="mt-1 block text-sm text-slate-600">
+                        Cédula: {empleado.cedula || "No registrada"} | Rol:{" "}
+                        {empleado.rolNombre || "Sin rol"}
+                      </span>
                     </button>
+                  ))}
+                </div>
+              )}
+
+              {busquedaEmp &&
+                empleadosFiltrados.length === 0 &&
+                !form.empleado_id && (
+                  <div className="mt-3 rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600">
+                    No se encontraron empleados con esa búsqueda.
                   </div>
                 )}
 
-                {errors.empleado_id && (
-                  <p className={errorClass}>{errors.empleado_id}</p>
+              {empleadoAsignado && (
+                <div className="mt-3 flex flex-col gap-4 rounded-2xl border border-blue-200 bg-blue-100 p-4 text-blue-900 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-bold">
+                      {empleadoAsignado.nombres} {empleadoAsignado.apellidos}
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-blue-700">
+                      Cédula: {empleadoAsignado.cedula || "No registrada"}
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-blue-700">
+                      Rol: {empleadoAsignado.rolNombre || "Sin rol"}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleQuitarEmpleado}
+                    disabled={guardando}
+                    className="w-full rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  >
+                    Cambiar
+                  </button>
+                </div>
+              )}
+
+              {errors.empleado_id && (
+                <p className={errorClass}>{errors.empleado_id}</p>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
+            <div className="mb-5 border-b border-slate-300 pb-4">
+              <h3 className="text-sm font-bold text-slate-900">
+                Credenciales de acceso
+              </h3>
+
+              <p className="mt-1 text-sm text-slate-600">
+                Defina el nombre de usuario y la contraseña de acceso.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="min-w-0">
+                <label className={labelClass}>Usuario</label>
+
+                <input
+                  type="text"
+                  name="usuario"
+                  value={form.usuario}
+                  onChange={handleChange}
+                  placeholder="Ejemplo: jperez"
+                  className={inputClass}
+                />
+
+                {errors.usuario && (
+                  <p className={errorClass}>{errors.usuario}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="min-w-0">
-                  <label className={labelClass}>Usuario</label>
+              <div className="min-w-0">
+                <label className={labelClass}>Contraseña</label>
 
-                  <input
-                    type="text"
-                    name="usuario"
-                    value={form.usuario}
-                    onChange={handleChange}
-                    placeholder="Ejemplo: jperez"
-                    className={inputClass}
-                  />
+                <input
+                  type="password"
+                  name="contrasena"
+                  value={form.contrasena}
+                  placeholder={
+                    isEdit
+                      ? "Opcional: escribir solo si desea cambiarla"
+                      : "Ingrese una contraseña"
+                  }
+                  onChange={handleChange}
+                  className={inputClass}
+                />
 
-                  {errors.usuario && (
-                    <p className={errorClass}>{errors.usuario}</p>
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <label className={labelClass}>Contraseña</label>
-
-                  <input
-                    type="password"
-                    name="contrasena"
-                    value={form.contrasena}
-                    placeholder={isEdit ? "Opcional..." : "Ingrese una contraseña"}
-                    onChange={handleChange}
-                    className={inputClass}
-                  />
-
-                  {errors.contrasena && (
-                    <p className={errorClass}>{errors.contrasena}</p>
-                  )}
-                </div>
+                {errors.contrasena && (
+                  <p className={errorClass}>{errors.contrasena}</p>
+                )}
               </div>
+            </div>
 
+            <div className="mt-5">
               <PasswordRules rules={passwordRules} password={form.contrasena} />
             </div>
           </section>
@@ -263,16 +376,22 @@ const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl border border-slate-400 bg-slate-100 px-8 py-3 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl sm:w-auto"
+              disabled={guardando}
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 sm:w-auto"
             >
-              {isEdit ? "Actualizar Usuario" : "Guardar Usuario"}
+              {guardando
+                ? "Guardando..."
+                : isEdit
+                ? "Actualizar Usuario"
+                : "Guardar Usuario"}
             </button>
           </div>
         </div>
@@ -282,28 +401,16 @@ const UsuariosForm = ({ onSubmit, onClose, initialData, isEdit }) => {
 };
 
 const PasswordRules = ({ rules, password }) => {
-  if (!password) {
-    return (
-      <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4">
-        <p className="text-sm font-bold text-slate-800">
-          Requisitos de contraseña
-        </p>
-
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Rule active={false} text="Mínimo 8 caracteres" />
-          <Rule active={false} text="Una letra mayúscula" />
-          <Rule active={false} text="Una letra minúscula" />
-          <Rule active={false} text="Un número" />
-          <Rule active={false} text="Un símbolo" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4">
       <p className="text-sm font-bold text-slate-800">
         Requisitos de contraseña
+      </p>
+
+      <p className="mt-1 text-sm text-slate-600">
+        {password
+          ? "La contraseña debe cumplir todos los requisitos."
+          : "En edición puede dejarla vacía si no desea cambiarla."}
       </p>
 
       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">

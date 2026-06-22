@@ -79,6 +79,7 @@ export const updateCliente = async (id, cliente) => {
 export const deleteCliente = async (id) => {
   await api(`/clientes/${id}`, {
     method: "DELETE",
+    showErrorAlert: false,
   });
 
   return true;

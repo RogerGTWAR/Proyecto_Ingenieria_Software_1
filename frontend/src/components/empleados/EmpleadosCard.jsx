@@ -1,12 +1,9 @@
-import { useState } from "react";
-
 const EmpleadosCard = ({
   empleados,
   rolNameById,
   onEdit,
   onDelete,
   onVerDetalles,
-  obtenerColorRol,
 }) => {
   if (!empleados.length) {
     return (
@@ -80,18 +77,10 @@ const EmpleadosCard = ({
                   value={empleado.correo || "Sin correo"}
                 />
 
-                <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                  <InfoBox
-                    label="País"
-                    value={empleado.pais || "No registrado"}
-                  />
-
-                  <InfoBox
-                    label="Estado"
-                    value={empleado.estado || "Activo"}
-                    variant="green"
-                  />
-                </div>
+                <InfoBox
+                  label="País"
+                  value={empleado.pais || "No registrado"}
+                />
               </div>
 
               <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -131,7 +120,6 @@ const InfoBox = ({ label, value, variant = "default" }) => {
   const styles = {
     default: "border-slate-300 bg-slate-100 text-slate-800",
     blue: "border-blue-200 bg-blue-100 text-blue-800",
-    green: "border-emerald-200 bg-emerald-100 text-emerald-800",
   };
 
   return (

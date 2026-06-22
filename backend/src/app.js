@@ -37,33 +37,61 @@ dotenv.config();
 
 const app = express();
 
+/* ============================================================
+   MIDDLEWARES GENERALES
+============================================================ */
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
+/* ============================================================
+   CONFIGURACIÓN DE CORS
+============================================================ */
+
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:4000",
   "http://localhost:3000",
+
+  // Producción en Vercel
+  "https://frontend-aconsa.vercel.app",
+
+  // Variable de entorno
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Permite herramientas como Postman, Thunder Client o requests sin Origin
       if (!origin) {
         return callback(null, true);
       }
 
-      if (allowedOrigins.includes(origin)) {
+      // Permite cualquier puerto local para desarrollo
+      const isLocalhost =
+        origin.startsWith("http://localhost:") ||
+        origin.startsWith("http://127.0.0.1:");
+
+      if (allowedOrigins.includes(origin) || isLocalhost) {
         return callback(null, true);
       }
 
       console.warn("Bloqueado por CORS:", origin);
-      return callback(new Error("No permitido por CORS"));
+      return callback(new Error(`Origen no permitido por CORS: ${origin}`));
     },
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
+
+/* ============================================================
+   ARCHIVOS ESTÁTICOS
+============================================================ */
 
 app.use(express.static("public"));
 
@@ -71,6 +99,10 @@ app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "public", "uploads"))
 );
+
+/* ============================================================
+   RUTAS BASE
+============================================================ */
 
 app.get("/health", (_req, res) => {
   res.json({
@@ -82,9 +114,13 @@ app.get("/health", (_req, res) => {
 app.get("/", (_req, res) => {
   res.json({
     ok: true,
-    msg: "API funcionando correctamente en Render"
+    msg: "API funcionando correctamente"
   });
 });
+
+/* ============================================================
+   RUTAS DE LA API
+============================================================ */
 
 app.use("/api/avaluos", AvaluoRoutes);
 app.use("/api/detalle_avaluos", DetalleAvaloRoutes);
@@ -115,12 +151,20 @@ app.use("/api/menus", MenuRoutes);
 app.use("/api/reportes", ReportesRouter);
 app.use("/api/historial_alertas", HistorialAlertasRoutes);
 
+/* ============================================================
+   RUTA NO ENCONTRADA
+============================================================ */
+
 app.use((req, res) => {
   res.status(404).json({
     ok: false,
     msg: `Ruta no encontrada: ${req.method} ${req.originalUrl}`
   });
 });
+
+/* ============================================================
+   MANEJO GLOBAL DE ERRORES
+============================================================ */
 
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);

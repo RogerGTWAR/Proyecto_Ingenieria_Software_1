@@ -229,10 +229,13 @@ function ClientesPage() {
       cerrarEliminar();
       cerrarDetalles();
     } catch (error) {
+      cerrarEliminar();
+
       mostrarMensaje(
         "error",
-        "Error al eliminar cliente",
-        error.message || "No se pudo eliminar el cliente."
+        "No se puede eliminar el cliente",
+        error.message ||
+          "No se puede eliminar el cliente porque tiene proyectos asociados en el sistema."
       );
     } finally {
       setIsDeleting(false);

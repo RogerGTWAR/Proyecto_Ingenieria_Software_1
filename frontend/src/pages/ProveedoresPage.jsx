@@ -9,6 +9,7 @@ import ProveedoresDetails from "../components/proveedores/ProveedoresDetails";
 import ProveedoresForm from "../components/proveedores/ProveedoresForm";
 
 import { useProveedores } from "../hooks/useProveedores";
+import { useCompras } from "../hooks/useCompras";
 
 const flujoModulos = [
   {
@@ -78,6 +79,11 @@ function ProveedoresPage() {
     remove,
     reload,
   } = useProveedores();
+
+  const {
+    items: compras,
+    reload: reloadCompras,
+  } = useCompras();
 
   const [busqueda, setBusqueda] = useState("");
   const [vistaTarjetas, setVistaTarjetas] = useState(false);
@@ -218,6 +224,40 @@ function ProveedoresPage() {
     setIsDeleting(true);
 
     try {
+      const comprasActualizadas = await reloadCompras();
+
+      const listaCompras = Array.isArray(comprasActualizadas)
+        ? comprasActualizadas
+        : compras;
+
+      const comprasAsociadas = listaCompras.filter(
+        (compra) =>
+          Number(compra.proveedor_id) === Number(proveedorAEliminar.id)
+      );
+
+      if (comprasAsociadas.length > 0) {
+        const facturasTexto = comprasAsociadas
+          .map((compra) => compra.numero_factura || `Compra ${compra.id}`)
+          .filter(Boolean)
+          .slice(0, 5)
+          .join(", ");
+
+        setMostrarEliminar(false);
+        setProveedorAEliminar(null);
+
+        mostrarMensaje(
+          "error",
+          "No se puede eliminar el proveedor",
+          `No se puede eliminar el proveedor "${proveedorAEliminar.nombre_empresa}" porque tiene ${comprasAsociadas.length} compra(s) registrada(s).
+
+Factura(s): ${facturasTexto || "Compra asociada"}
+
+Primero elimine o reasigne las compras relacionadas y luego intente eliminar el proveedor nuevamente.`
+        );
+
+        return;
+      }
+
       await remove(proveedorAEliminar.id);
       await reload();
 
@@ -230,6 +270,9 @@ function ProveedoresPage() {
       cerrarEliminar();
       cerrarDetalles();
     } catch (error) {
+      setMostrarEliminar(false);
+      setProveedorAEliminar(null);
+
       mostrarMensaje(
         "error",
         "Error al eliminar proveedor",

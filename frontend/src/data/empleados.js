@@ -14,7 +14,6 @@ const toUI = (e) => ({
   telefono: e.telefono ?? "",
   correo: e.correo ?? "",
   reportes: e.reportes ?? null,
-  estado: e.fecha_eliminacion ? "Inactivo" : "Activo",
 });
 
 const extractPayload = (res) => {

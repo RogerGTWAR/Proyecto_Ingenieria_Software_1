@@ -42,15 +42,19 @@ export function useClientes() {
 
   const edit = async (id, payloadUI) => {
     const updated = await updateCliente(id, payloadUI);
+
     setItems((prev) =>
       prev.map((cliente) => (cliente.id === id ? updated : cliente))
     );
+
     return updated;
   };
 
   const remove = async (id) => {
     await deleteCliente(id);
+
     setItems((prev) => prev.filter((cliente) => cliente.id !== id));
+
     return true;
   };
 

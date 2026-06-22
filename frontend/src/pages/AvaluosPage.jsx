@@ -11,6 +11,7 @@ import AvaluosForm from "../components/avaluos/AvaluosForm";
 import { useAvaluos } from "../hooks/useAvaluos";
 import { useDetallesAvaluos } from "../hooks/useDetallesAvaluos";
 import { useServicios } from "../hooks/useServicios";
+import { useProyectos } from "../hooks/useProyectos";
 
 const flujoModulos = [
   {
@@ -81,8 +82,20 @@ function AvaluosPage() {
     reload,
   } = useAvaluos();
 
-  const { reload: reloadDetalles } = useDetallesAvaluos();
-  const { items: servicios, reload: reloadServicios } = useServicios();
+  const {
+    items: detalles,
+    reload: reloadDetalles,
+  } = useDetallesAvaluos();
+
+  const {
+    items: servicios,
+    reload: reloadServicios,
+  } = useServicios();
+
+  const {
+    items: proyectos,
+    reload: reloadProyectos,
+  } = useProyectos();
 
   const [busqueda, setBusqueda] = useState("");
   const [vistaTarjetas, setVistaTarjetas] = useState(false);
@@ -104,6 +117,8 @@ function AvaluosPage() {
     title: "",
     message: "",
   });
+
+  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
 
   const mostrarError = (title, message) => {
     setModalError({
@@ -150,7 +165,102 @@ function AvaluosPage() {
     setModoEdicion(false);
   };
 
+  const calcularMontoAvaluoPorDetalles = (avaluoId, detallesLista) => {
+    const detallesAvaluo = detallesLista.filter(
+      (d) => Number(d.avaluoId) === Number(avaluoId)
+    );
+
+    return detallesAvaluo.reduce(
+      (sum, d) => sum + Number(d.totalCostoVenta ?? 0),
+      0
+    );
+  };
+
+  const validarPresupuestoAntesDeGuardar = async (data) => {
+    const proyectosActualizados = await reloadProyectos();
+    const avaluosActualizados = await reload();
+    const detallesActualizados = await reloadDetalles();
+
+    const listaProyectos =
+      Array.isArray(proyectosActualizados) && proyectosActualizados.length > 0
+        ? proyectosActualizados
+        : proyectos;
+
+    const listaAvaluos =
+      Array.isArray(avaluosActualizados) && avaluosActualizados.length > 0
+        ? avaluosActualizados
+        : avaluos;
+
+    const listaDetalles =
+      Array.isArray(detallesActualizados) && detallesActualizados.length > 0
+        ? detallesActualizados
+        : detalles;
+
+    const proyectoId = Number(data.proyectoId);
+    const montoAvaluoActual = Number(data.totalAvaluo ?? 0);
+
+    const proyecto = listaProyectos.find(
+      (p) => Number(p.id) === Number(proyectoId)
+    );
+
+    if (!proyecto) {
+      throw new Error("El proyecto seleccionado no existe.");
+    }
+
+    const presupuestoProyecto = Number(proyecto.presupuestoTotal ?? 0);
+
+    if (presupuestoProyecto <= 0) {
+      throw new Error("El proyecto seleccionado no tiene un presupuesto válido.");
+    }
+
+    const avaluosDelProyecto = listaAvaluos.filter(
+      (a) => Number(a.proyectoId) === Number(proyectoId)
+    );
+
+    const otrosAvaluos = avaluosDelProyecto.filter((a) => {
+      if (!modoEdicion || !avaluoAEditar) return true;
+
+      return Number(a.id) !== Number(avaluoAEditar.id);
+    });
+
+    const montoEjecutadoAnterior = otrosAvaluos.reduce((sum, avaluo) => {
+      const totalDesdeDetalles = calcularMontoAvaluoPorDetalles(
+        avaluo.id,
+        listaDetalles
+      );
+
+      if (totalDesdeDetalles > 0) {
+        return sum + totalDesdeDetalles;
+      }
+
+      return sum + Number(avaluo.montoEjecutado ?? 0);
+    }, 0);
+
+    const totalAcumulado = montoEjecutadoAnterior + montoAvaluoActual;
+    const disponible = presupuestoProyecto - montoEjecutadoAnterior;
+    const excedente = totalAcumulado - presupuestoProyecto;
+
+    if (totalAcumulado > presupuestoProyecto) {
+      throw new Error(
+        `No se puede guardar este avalúo porque supera el presupuesto del proyecto.
+
+Presupuesto del proyecto: C$${money(presupuestoProyecto)}
+Ejecutado anterior: C$${money(montoEjecutadoAnterior)}
+Avalúo actual: C$${money(montoAvaluoActual)}
+Total acumulado: C$${money(totalAcumulado)}
+Disponible: C$${money(disponible)}
+Excedente: C$${money(excedente)}
+
+Reduzca la cantidad de servicios o elimine servicios antes de guardar.`
+      );
+    }
+
+    return true;
+  };
+
   const guardarAvaluo = async (data) => {
+    await validarPresupuestoAntesDeGuardar(data);
+
     let avaluoGuardado;
 
     if (modoEdicion && avaluoAEditar) {
@@ -169,6 +279,7 @@ function AvaluosPage() {
     await reloadServicios();
     await reload();
     await reloadDetalles();
+    await reloadProyectos();
 
     return avaluoGuardado;
   };
@@ -202,6 +313,7 @@ function AvaluosPage() {
       await remove(avaluoAEliminar.id);
       await reload();
       await reloadDetalles();
+      await reloadProyectos();
       setVistaDetalle(false);
     } catch (error) {
       mostrarError(
@@ -225,8 +337,6 @@ function AvaluosPage() {
     (acc, a) => acc + Number(a.tiempoTotalDias ?? 0),
     0
   );
-
-  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
 
   if (loading) {
     return (

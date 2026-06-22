@@ -17,7 +17,6 @@ const EmpleadosForm = ({
     direccion: "",
     fecha_nacimiento: "",
     fecha_contratacion: "",
-    estado: "Activo",
     rolId: "",
     reportes: "",
   });
@@ -41,7 +40,6 @@ const EmpleadosForm = ({
         fecha_contratacion: initialData.fecha_contratacion
           ? initialData.fecha_contratacion.split("T")[0]
           : "",
-        estado: initialData.estado || "Activo",
         rolId: initialData.rolId || "",
         reportes: initialData.reportes || "",
       });
@@ -112,7 +110,8 @@ const EmpleadosForm = ({
     if (!correo) {
       newErrors.correo = "El correo es obligatorio.";
     } else if (!emailRegex.test(correo)) {
-      newErrors.correo = "Ingrese un correo válido. Ejemplo: empleado@correo.com.";
+      newErrors.correo =
+        "Ingrese un correo válido. Ejemplo: empleado@correo.com.";
     }
 
     if (!formData.rolId) {
@@ -186,36 +185,17 @@ const EmpleadosForm = ({
   return (
     <div
       className="
-        fixed
-        left-0
-        right-0
-        bottom-0
-        top-16
-        z-40
-        flex
-        items-center
-        justify-center
-        overflow-y-auto
-        bg-slate-900/35
-        px-4
-        py-6
-        lg:left-48
+        fixed left-0 right-0 bottom-0 top-16 z-40
+        flex items-center justify-center overflow-y-auto
+        bg-slate-900/35 px-4 py-6 lg:left-48
       "
     >
       <form
         onSubmit={handleSubmit}
         className="
-          flex
-          w-full
-          max-w-5xl
-          max-h-[calc(100dvh-96px)]
-          flex-col
-          overflow-hidden
-          rounded-3xl
-          border
-          border-slate-300
-          bg-slate-100
-          shadow-2xl
+          flex w-full max-w-5xl max-h-[calc(100dvh-96px)]
+          flex-col overflow-hidden rounded-3xl
+          border border-slate-300 bg-slate-100 shadow-2xl
         "
       >
         <div className="shrink-0 bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 px-5 py-5 text-white shadow-lg sm:px-7">
@@ -254,6 +234,7 @@ const EmpleadosForm = ({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className={labelClass}>Nombres</label>
+
                 <input
                   type="text"
                   name="nombres"
@@ -261,6 +242,7 @@ const EmpleadosForm = ({
                   onChange={handleChange}
                   className={inputClass}
                 />
+
                 {errors.nombres && (
                   <p className={errorClass}>{errors.nombres}</p>
                 )}
@@ -268,6 +250,7 @@ const EmpleadosForm = ({
 
               <div>
                 <label className={labelClass}>Apellidos</label>
+
                 <input
                   type="text"
                   name="apellidos"
@@ -275,6 +258,7 @@ const EmpleadosForm = ({
                   onChange={handleChange}
                   className={inputClass}
                 />
+
                 {errors.apellidos && (
                   <p className={errorClass}>{errors.apellidos}</p>
                 )}
@@ -282,6 +266,7 @@ const EmpleadosForm = ({
 
               <div>
                 <label className={labelClass}>Cédula</label>
+
                 <input
                   type="text"
                   name="cedula"
@@ -290,6 +275,7 @@ const EmpleadosForm = ({
                   placeholder="Ejemplo: 2410102061000L"
                   className={inputClass}
                 />
+
                 {errors.cedula && (
                   <p className={errorClass}>{errors.cedula}</p>
                 )}
@@ -297,6 +283,7 @@ const EmpleadosForm = ({
 
               <div>
                 <label className={labelClass}>Teléfono</label>
+
                 <input
                   type="text"
                   name="telefono"
@@ -305,6 +292,7 @@ const EmpleadosForm = ({
                   placeholder="Ejemplo: 88889999"
                   className={inputClass}
                 />
+
                 {errors.telefono && (
                   <p className={errorClass}>{errors.telefono}</p>
                 )}
@@ -312,6 +300,7 @@ const EmpleadosForm = ({
 
               <div>
                 <label className={labelClass}>País</label>
+
                 <input
                   type="text"
                   name="pais"
@@ -324,6 +313,7 @@ const EmpleadosForm = ({
 
               <div>
                 <label className={labelClass}>Fecha de Nacimiento</label>
+
                 <input
                   type="date"
                   name="fecha_nacimiento"
@@ -331,6 +321,7 @@ const EmpleadosForm = ({
                   onChange={handleChange}
                   className={inputClass}
                 />
+
                 {errors.fecha_nacimiento && (
                   <p className={errorClass}>{errors.fecha_nacimiento}</p>
                 )}
@@ -352,6 +343,7 @@ const EmpleadosForm = ({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className={labelClass}>Correo</label>
+
                 <input
                   type="email"
                   name="correo"
@@ -360,6 +352,7 @@ const EmpleadosForm = ({
                   placeholder="Ejemplo: empleado@correo.com"
                   className={inputClass}
                 />
+
                 {errors.correo && (
                   <p className={errorClass}>{errors.correo}</p>
                 )}
@@ -367,6 +360,7 @@ const EmpleadosForm = ({
 
               <div>
                 <label className={labelClass}>Rol</label>
+
                 <select
                   name="rolId"
                   value={formData.rolId}
@@ -374,12 +368,14 @@ const EmpleadosForm = ({
                   className={inputClass}
                 >
                   <option value="">Seleccione un rol</option>
+
                   {roles.map((rol) => (
                     <option key={rol.id} value={rol.id}>
                       {rol.nombre}
                     </option>
                   ))}
                 </select>
+
                 {errors.rolId && (
                   <p className={errorClass}>{errors.rolId}</p>
                 )}
@@ -387,6 +383,7 @@ const EmpleadosForm = ({
 
               <div>
                 <label className={labelClass}>Fecha de Contratación</label>
+
                 <input
                   type="date"
                   name="fecha_contratacion"
@@ -394,26 +391,28 @@ const EmpleadosForm = ({
                   onChange={handleChange}
                   className={inputClass}
                 />
+
                 {errors.fecha_contratacion && (
                   <p className={errorClass}>{errors.fecha_contratacion}</p>
                 )}
               </div>
 
               <div>
-                <label className={labelClass}>Estado</label>
-                <select
-                  name="estado"
-                  value={formData.estado}
+                <label className={labelClass}>Reporta a</label>
+
+                <input
+                  type="number"
+                  name="reportes"
+                  value={formData.reportes}
                   onChange={handleChange}
+                  placeholder="ID del empleado superior, opcional"
                   className={inputClass}
-                >
-                  <option value="Activo">Activo</option>
-                  <option value="Inactivo">Inactivo</option>
-                </select>
+                />
               </div>
 
               <div className="md:col-span-2">
                 <label className={labelClass}>Dirección</label>
+
                 <input
                   type="text"
                   name="direccion"

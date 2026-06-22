@@ -11,9 +11,11 @@ const EmpleadosDetails = ({
 
   const formatDate = (dateString) => {
     if (!dateString) return "No registrada";
+
     const dateOnly = dateString.split("T")[0];
     const [year, month, day] = dateOnly.split("-");
     const date = new Date(Number(year), Number(month) - 1, Number(day));
+
     return date.toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "long",
@@ -79,6 +81,7 @@ const EmpleadosDetails = ({
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <InfoBox label="Nombres" value={empleado.nombres || "—"} />
+
               <InfoBox label="Apellidos" value={empleado.apellidos || "—"} />
 
               <InfoBox
@@ -128,20 +131,13 @@ const EmpleadosDetails = ({
               />
 
               <InfoBox
-                label="Dirección"
-                value={empleado.direccion || "No registrada"}
-                className="md:col-span-2"
-              />
-
-              <InfoBox
                 label="Fecha de Contratación"
                 value={formatDate(empleado.fecha_contratacion)}
               />
 
               <InfoBox
-                label="Estado"
-                value={empleado.estado || "Activo"}
-                variant="green"
+                label="Dirección"
+                value={empleado.direccion || "No registrada"}
               />
             </div>
           </section>
@@ -183,7 +179,6 @@ const InfoBox = ({ label, value, variant = "default", className = "" }) => {
   const styles = {
     default: "border-slate-300 bg-slate-100 text-slate-800",
     blue: "border-blue-200 bg-blue-100 text-blue-800",
-    green: "border-emerald-200 bg-emerald-100 text-emerald-800",
   };
 
   return (

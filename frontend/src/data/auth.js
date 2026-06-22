@@ -1,5 +1,9 @@
 import { api } from "./api.js";
 
+const getToken = () => {
+  return localStorage.getItem("token");
+};
+
 export const loginRequest = async ({ usuario, contrasena }) => {
   return await api("/auth/login", {
     method: "POST",
@@ -28,29 +32,84 @@ export const forgotPasswordRequest = async ({ usuario }) => {
   });
 };
 
-export const resetPasswordRequest = async ({ token, contrasena }) => {
+export const resetPasswordRequest = async ({ usuario, codigo, contrasena }) => {
   return await api("/auth/reset-password", {
     method: "POST",
-    body: { token, contrasena },
+    body: { usuario, codigo, contrasena },
   });
 };
 
 export const meRequest = async () => {
-  const res = await api("/auth/me");
-  return res;
+  const token = getToken();
+
+  return await api("/auth/me", {
+    method: "GET",
+    token,
+    showErrorAlert: false,
+  });
 };
 
 export const logoutRequest = async () => {
-  await api("/auth/logout", { method: "POST" });
+  const token = getToken();
+
+  await api("/auth/logout", {
+    method: "POST",
+    token,
+    showErrorAlert: false,
+  });
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+
   return true;
 };
 
 export const fetchUsuarios = async () => {
-  const res = await api("/auth/usuarios");
+  const token = getToken();
+
+  const res = await api("/auth/usuarios", {
+    token,
+  });
+
   return res.usuarios ?? [];
 };
 
 export const fetchUsuarioById = async (id) => {
-  const res = await api(`/auth/usuarios/${id}`);
+  const token = getToken();
+
+  const res = await api(`/auth/usuarios/${id}`, {
+    token,
+  });
+
   return res.usuario ?? null;
+};
+
+export const updateUsuarioRequest = async (id, data) => {
+  const token = getToken();
+
+  const body = {
+    empleado_id: data.empleado_id ? Number(data.empleado_id) : null,
+    usuario: data.usuario?.trim(),
+    contrasena: data.contrasena?.trim() || null,
+    rol_id: data.rol_id ? Number(data.rol_id) : null,
+  };
+
+  const res = await api(`/auth/usuarios/${id}`, {
+    method: "PATCH",
+    body,
+    token,
+  });
+
+  return res.usuario ?? null;
+};
+
+export const deleteUsuarioRequest = async (id) => {
+  const token = getToken();
+
+  await api(`/auth/usuarios/${id}`, {
+    method: "DELETE",
+    token,
+  });
+
+  return true;
 };

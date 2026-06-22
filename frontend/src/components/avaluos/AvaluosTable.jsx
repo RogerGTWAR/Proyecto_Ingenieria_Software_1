@@ -6,8 +6,7 @@ export default function AvaluosTable({
   onDelete,
   onVerDetalles,
 }) {
-  const money = (value) =>
-    Number(value ?? 0).toLocaleString("es-NI");
+  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
 
   if (!avaluos.length) {
     return (
@@ -30,7 +29,9 @@ export default function AvaluosTable({
               <th className="px-4 py-4 text-center font-bold">Inicio</th>
               <th className="px-4 py-4 text-center font-bold">Fin</th>
               <th className="px-4 py-4 text-center font-bold">Días</th>
-              <th className="px-4 py-4 text-right font-bold">Monto Ejecutado</th>
+              <th className="px-4 py-4 text-right font-bold">
+                Monto Ejecutado
+              </th>
               <th className="px-4 py-4 text-center font-bold">Acciones</th>
             </tr>
           </thead>
@@ -119,9 +120,18 @@ export default function AvaluosTable({
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <MiniBox label="Inicio" value={a.fechaInicio?.slice(0, 10) || "—"} />
-              <MiniBox label="Fin" value={a.fechaFin?.slice(0, 10) || "—"} />
+              <MiniBox
+                label="Inicio"
+                value={a.fechaInicio?.slice(0, 10) || "—"}
+              />
+
+              <MiniBox
+                label="Fin"
+                value={a.fechaFin?.slice(0, 10) || "—"}
+              />
+
               <MiniBox label="Días" value={a.tiempoTotalDias || 0} />
+
               <MiniBox
                 label="Monto Ejecutado"
                 value={`C$${money(a.montoEjecutado)}`}

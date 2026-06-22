@@ -1,19 +1,24 @@
 import React, { useEffect, useMemo } from "react";
 import { useDetallesEmpleados } from "../../hooks/useDetallesEmpleados";
 import { useEmpleados } from "../../hooks/useEmpleados";
+import { useAvaluos } from "../../hooks/useAvaluos";
 
 const ProyectosDetails = ({ proyecto, onClose, onEdit, onDelete }) => {
   const { items: detalles, reload: reloadDetalles } = useDetallesEmpleados();
   const { items: empleados, reload: reloadEmpleados } = useEmpleados();
+  const { items: avaluos, reload: reloadAvaluos } = useAvaluos();
 
   useEffect(() => {
     const load = async () => {
       await reloadDetalles();
       await reloadEmpleados();
+      await reloadAvaluos();
     };
 
     if (proyecto) load();
-  }, [proyecto, reloadDetalles, reloadEmpleados]);
+  }, [proyecto, reloadDetalles, reloadEmpleados, reloadAvaluos]);
+
+  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
 
   const tiempoTotalDias = useMemo(() => {
     if (!proyecto?.fechaInicio || !proyecto?.fechaFin) return "—";
@@ -51,15 +56,40 @@ const ProyectosDetails = ({ proyecto, onClose, onEdit, onDelete }) => {
       .filter(Boolean);
   }, [detalles, empleados, proyecto]);
 
+  const avaluosAsociados = useMemo(() => {
+    if (!proyecto?.id) return [];
+
+    return avaluos.filter(
+      (a) => Number(a.proyectoId) === Number(proyecto.id)
+    );
+  }, [avaluos, proyecto]);
+
+  const montoEjecutadoTotal = useMemo(() => {
+    return avaluosAsociados.reduce(
+      (total, a) => total + Number(a.montoEjecutado ?? 0),
+      0
+    );
+  }, [avaluosAsociados]);
+
+  const presupuestoTotal = Number(proyecto?.presupuestoTotal ?? 0);
+
+  const porcentajePresupuestoUsado = useMemo(() => {
+    if (!presupuestoTotal || presupuestoTotal <= 0) return 0;
+
+    const porcentaje = (montoEjecutadoTotal / presupuestoTotal) * 100;
+
+    return Math.min(Number(porcentaje.toFixed(2)), 100);
+  }, [montoEjecutadoTotal, presupuestoTotal]);
+
+  const montoPendiente = Math.max(presupuestoTotal - montoEjecutadoTotal, 0);
+
   if (!proyecto) return null;
 
-  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
-
   const estadoClass = {
-    Activo: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    Activo: "border-blue-200 bg-blue-100 text-blue-800",
     Completado: "border-blue-200 bg-blue-100 text-blue-800",
     Cancelado: "border-red-200 bg-red-100 text-red-800",
-    "En Espera": "border-amber-200 bg-amber-100 text-amber-800",
+    "En Espera": "border-slate-300 bg-slate-100 text-slate-800",
   };
 
   return (
@@ -116,6 +146,12 @@ const ProyectosDetails = ({ proyecto, onClose, onEdit, onDelete }) => {
                 variant="green"
               />
 
+              <InfoBox
+                label="Monto Ejecutado"
+                value={`C$${money(montoEjecutadoTotal)}`}
+                variant="green"
+              />
+
               <div
                 className={`
                   rounded-2xl border p-4
@@ -150,11 +186,208 @@ const ProyectosDetails = ({ proyecto, onClose, onEdit, onDelete }) => {
               />
 
               <InfoBox
+                label="Avalúos Asociados"
+                value={avaluosAsociados.length}
+                variant="blue"
+              />
+
+              <InfoBox
+                label="Monto Pendiente"
+                value={`C$${money(montoPendiente)}`}
+                variant="green"
+              />
+
+              <InfoBox
+                label="Presupuesto Utilizado"
+                value={`${porcentajePresupuestoUsado}%`}
+                variant="blue"
+              />
+
+              <InfoBox
                 label="Descripción"
                 value={proyecto.descripcion || "—"}
                 className="xl:col-span-4"
               />
             </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
+            <div className="mb-5 flex flex-col gap-2 border-b border-slate-300 pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Seguimiento de avance financiero
+                </h3>
+
+                <p className="mt-1 text-sm text-slate-600">
+                  Porcentaje del presupuesto utilizado según los avalúos asociados.
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full border border-blue-200 bg-blue-100 px-4 py-2 text-sm font-bold text-blue-800">
+                {porcentajePresupuestoUsado}% utilizado
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+              <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4 text-slate-800">
+                <p className="text-sm font-semibold opacity-80">
+                  Presupuesto total
+                </p>
+                <p className="mt-1 text-lg font-black">
+                  C${money(presupuestoTotal)}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-100 p-4 text-emerald-800">
+                <p className="text-sm font-semibold opacity-80">
+                  Monto ejecutado
+                </p>
+                <p className="mt-1 text-lg font-black">
+                  C${money(montoEjecutadoTotal)}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4 text-slate-800">
+                <p className="text-sm font-semibold opacity-80">
+                  Monto pendiente
+                </p>
+                <p className="mt-1 text-lg font-black">
+                  C${money(montoPendiente)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-slate-300 bg-slate-100 p-4">
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-bold text-slate-900">
+                  Avance del presupuesto
+                </p>
+
+                <p className="text-sm font-bold text-slate-700">
+                  C${money(montoEjecutadoTotal)} / C${money(presupuestoTotal)}
+                </p>
+              </div>
+
+              <div className="h-4 overflow-hidden rounded-full bg-slate-300">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-blue-800 to-cyan-700 transition-all"
+                  style={{ width: `${porcentajePresupuestoUsado}%` }}
+                />
+              </div>
+
+              <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-semibold text-slate-600">
+                  Porcentaje utilizado:{" "}
+                  <span className="font-black text-slate-900">
+                    {porcentajePresupuestoUsado}%
+                  </span>
+                </p>
+
+                <p className="text-sm font-semibold text-slate-600">
+                  Avalúos registrados:{" "}
+                  <span className="font-black text-slate-900">
+                    {avaluosAsociados.length}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
+            <div className="mb-5 flex flex-col gap-2 border-b border-slate-300 pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Avalúos asociados
+                </h3>
+
+                <p className="mt-1 text-sm text-slate-600">
+                  Avalúos registrados para este proyecto y su monto ejecutado.
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full border border-emerald-200 bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-800">
+                Total: C${money(montoEjecutadoTotal)}
+              </span>
+            </div>
+
+            {avaluosAsociados.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4">
+                {avaluosAsociados.map((a, index) => {
+                  const porcentajeAvaluo =
+                    presupuestoTotal > 0
+                      ? Math.min(
+                          Number(
+                            (
+                              (Number(a.montoEjecutado ?? 0) /
+                                presupuestoTotal) *
+                              100
+                            ).toFixed(2)
+                          ),
+                          100
+                        )
+                      : 0;
+
+                  return (
+                    <div
+                      key={a.id}
+                      className="rounded-2xl border border-slate-300 bg-slate-100 p-4 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-slate-900">
+                            Avalúo #{index + 1} — ID {a.id}
+                          </p>
+
+                          <p className="mt-1 text-sm text-slate-600">
+                            {a.descripcion || "Sin descripción"}
+                          </p>
+
+                          <p className="mt-1 text-sm text-slate-500">
+                            {a.fechaInicio
+                              ? new Date(a.fechaInicio).toLocaleDateString()
+                              : "Sin fecha inicio"}{" "}
+                            -{" "}
+                            {a.fechaFin
+                              ? new Date(a.fechaFin).toLocaleDateString()
+                              : "Sin fecha fin"}
+                          </p>
+                        </div>
+
+                        <div className="shrink-0 rounded-2xl border border-emerald-200 bg-emerald-100 px-4 py-3 text-emerald-800">
+                          <p className="text-sm font-semibold opacity-80">
+                            Monto
+                          </p>
+                          <p className="text-sm font-black">
+                            C${money(a.montoEjecutado)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-slate-600">
+                            Aporte al presupuesto
+                          </p>
+
+                          <p className="text-sm font-bold text-slate-800">
+                            {porcentajeAvaluo}%
+                          </p>
+                        </div>
+
+                        <div className="h-3 overflow-hidden rounded-full bg-slate-300">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-800 to-cyan-700"
+                            style={{ width: `${porcentajeAvaluo}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyBox text="No hay avalúos asociados a este proyecto." />
+            )}
           </section>
 
           <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
@@ -251,8 +484,8 @@ const ProyectosDetails = ({ proyecto, onClose, onEdit, onDelete }) => {
 const InfoBox = ({ label, value, variant = "default", className = "" }) => {
   const styles = {
     default: "border-slate-300 bg-slate-100 text-slate-800",
-    green: "border-emerald-200 bg-emerald-100 text-emerald-800",
     blue: "border-blue-200 bg-blue-100 text-blue-800",
+    green: "border-emerald-200 bg-emerald-100 text-emerald-800",
   };
 
   return (

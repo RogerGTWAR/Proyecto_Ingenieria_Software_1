@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
@@ -8,7 +8,7 @@ import UsuariosTable from "../components/usuarios/UsuariosTable";
 import UsuariosDetails from "../components/usuarios/UsuariosDetails";
 import UsuariosForm from "../components/usuarios/UsuariosForm";
 
-import { useUsuarios } from "../hooks/useUsuarios";
+import { useAuth } from "../hooks/useAuth";
 import { useEmpleados } from "../hooks/useEmpleados";
 import useRoles from "../hooks/useRoles";
 
@@ -80,13 +80,13 @@ const flujoModulos = [
 
 function UsuariosPage() {
   const {
-    items: usuarios,
-    loading,
-    add,
-    edit,
-    remove,
-    reload: reloadUsuarios,
-  } = useUsuarios();
+    usuarios,
+    usuariosLoading: loading,
+    addUsuario,
+    editUsuario,
+    removeUsuario,
+    reloadUsuarios,
+  } = useAuth();
 
   const { reload: reloadEmpleados } = useEmpleados();
   const { reload: reloadRoles } = useRoles();
@@ -106,19 +106,45 @@ function UsuariosPage() {
   const [usuarioAEliminar, setUsuarioAEliminar] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [modalMensaje, setModalMensaje] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
   useEffect(() => {
+    reloadUsuarios();
     reloadEmpleados();
     reloadRoles();
   }, []);
 
+  const mostrarMensaje = (type, title, message) => {
+    setModalMensaje({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const cerrarMensaje = () => {
+    setModalMensaje({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+  };
+
   const usuariosFiltrados = (usuarios || []).filter((u) => {
-    const t = busqueda.toLowerCase();
+    const texto = busqueda.toLowerCase();
 
     return (
-      u.usuario?.toLowerCase().includes(t) ||
-      u.nombres?.toLowerCase().includes(t) ||
-      u.apellidos?.toLowerCase().includes(t) ||
-      u.cargo?.toLowerCase().includes(t)
+      u.usuario?.toLowerCase().includes(texto) ||
+      u.nombres?.toLowerCase().includes(texto) ||
+      u.apellidos?.toLowerCase().includes(texto) ||
+      u.cargo?.toLowerCase().includes(texto)
     );
   });
 
@@ -142,17 +168,35 @@ function UsuariosPage() {
   };
 
   const guardarUsuario = async (data) => {
-    if (modoEdicion) {
-      await edit(usuarioAEditar.usuario_id, data);
-    } else {
-      await add(data);
+    try {
+      if (modoEdicion && usuarioAEditar) {
+        await editUsuario(usuarioAEditar.usuario_id, data);
+
+        mostrarMensaje(
+          "success",
+          "Usuario actualizado",
+          "El usuario se actualizó correctamente."
+        );
+      } else {
+        await addUsuario(data);
+
+        mostrarMensaje(
+          "success",
+          "Usuario registrado",
+          "El usuario se registró correctamente."
+        );
+      }
+
+      await reloadUsuarios();
+      await reloadEmpleados();
+      await reloadRoles();
+
+      cerrarFormulario();
+
+      return true;
+    } catch (error) {
+      throw new Error(error.message || "No se pudo guardar el usuario.");
     }
-
-    await reloadUsuarios();
-    await reloadEmpleados();
-    await reloadRoles();
-
-    return true;
   };
 
   const verDetalles = (usuario) => {
@@ -176,17 +220,34 @@ function UsuariosPage() {
   };
 
   const eliminarUsuario = async () => {
+    if (!usuarioAEliminar) return;
+
     setIsDeleting(true);
 
-    await remove(usuarioAEliminar.usuario_id);
+    try {
+      await removeUsuario(usuarioAEliminar.usuario_id);
 
-    await reloadUsuarios();
-    await reloadEmpleados();
-    await reloadRoles();
+      await reloadUsuarios();
+      await reloadEmpleados();
+      await reloadRoles();
 
-    setIsDeleting(false);
-    cerrarEliminar();
-    setVistaDetalle(false);
+      mostrarMensaje(
+        "success",
+        "Usuario eliminado",
+        "El usuario se eliminó correctamente."
+      );
+
+      cerrarEliminar();
+      cerrarDetalles();
+    } catch (error) {
+      mostrarMensaje(
+        "error",
+        "Error al eliminar usuario",
+        error.message || "No se pudo eliminar el usuario."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const totalUsuarios = usuarios.length;
@@ -234,9 +295,7 @@ function UsuariosPage() {
 
               <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 xl:w-[520px]">
                 <HeaderBox label="Usuarios" value={totalUsuarios} />
-
                 <HeaderBox label="Con empleado" value={usuariosConEmpleado} />
-
                 <HeaderBox label="Resultados" value={totalResultados} />
               </div>
             </div>
@@ -436,6 +495,13 @@ function UsuariosPage() {
             loading={isDeleting}
           />
         )}
+
+        {modalMensaje.open && (
+          <MensajeModal
+            modalMensaje={modalMensaje}
+            cerrarMensaje={cerrarMensaje}
+          />
+        )}
       </div>
     </div>
   );
@@ -445,6 +511,65 @@ const HeaderBox = ({ label, value }) => (
   <div className="rounded-2xl border border-white/10 bg-slate-900/50 px-4 py-3 text-left shadow-sm backdrop-blur xl:text-right">
     <p className="text-sm font-medium text-cyan-100">{label}</p>
     <p className="mt-1 text-sm font-bold text-white">{value}</p>
+  </div>
+);
+
+const MensajeModal = ({ modalMensaje, cerrarMensaje }) => (
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+    <div
+      className={`
+        w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl
+        ${
+          modalMensaje.type === "error"
+            ? "border-red-200"
+            : "border-emerald-200"
+        }
+      `}
+    >
+      <div className="px-6 py-6">
+        <div className="flex items-start gap-4">
+          <div
+            className={`
+              flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black
+              ${
+                modalMensaje.type === "error"
+                  ? "bg-red-100 text-red-600"
+                  : "bg-emerald-100 text-emerald-600"
+              }
+            `}
+          >
+            {modalMensaje.type === "error" ? "!" : "✓"}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-black text-slate-900">
+              {modalMensaje.title}
+            </h3>
+
+            <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600">
+              {modalMensaje.message}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+        <button
+          type="button"
+          onClick={cerrarMensaje}
+          className={`
+            rounded-2xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition
+            ${
+              modalMensaje.type === "error"
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-emerald-600 hover:bg-emerald-700"
+            }
+          `}
+        >
+          Entendido
+        </button>
+      </div>
+    </div>
   </div>
 );
 

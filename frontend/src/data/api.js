@@ -2,7 +2,10 @@ import { showAppAlert } from "./appAlert";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-export async function api(path, { method = "GET", body, token } = {}) {
+export async function api(
+  path,
+  { method = "GET", body, token, showErrorAlert = true } = {}
+) {
   if (!BASE_URL) {
     throw new Error("No se ha configurado VITE_API_URL en el frontend.");
   }
@@ -41,11 +44,13 @@ export async function api(path, { method = "GET", body, token } = {}) {
         json.message ||
         `Ocurrió un error en la solicitud. Código: ${res.status}`;
 
-      showAppAlert({
-        type: "error",
-        title: "Error del sistema",
-        message: msg,
-      });
+      if (showErrorAlert) {
+        showAppAlert({
+          type: "error",
+          title: "Error del sistema",
+          message: msg,
+        });
+      }
 
       throw new Error(msg);
     }
@@ -55,23 +60,31 @@ export async function api(path, { method = "GET", body, token } = {}) {
     const mensaje = error.message || "";
 
     if (!navigator.onLine) {
-      showAppAlert({
-        type: "warning",
-        title: "Sin conexión",
-        message:
-          "No tienes conexión a internet. Verifica tu red e inténtalo nuevamente.",
-      });
+      const msg =
+        "No tienes conexión a internet. Verifica tu red e inténtalo nuevamente.";
+
+      if (showErrorAlert) {
+        showAppAlert({
+          type: "warning",
+          title: "Sin conexión",
+          message: msg,
+        });
+      }
 
       throw new Error("Sin conexión a internet.");
     }
 
     if (mensaje.includes("Failed to fetch")) {
-      showAppAlert({
-        type: "error",
-        title: "Error de conexión",
-        message:
-          "No fue posible conectar con el servidor. Verifica que el backend esté encendido.",
-      });
+      const msg =
+        "No fue posible conectar con el servidor. Verifica que el backend esté encendido.";
+
+      if (showErrorAlert) {
+        showAppAlert({
+          type: "error",
+          title: "Error de conexión",
+          message: msg,
+        });
+      }
 
       throw new Error("No fue posible conectar con el servidor.");
     }

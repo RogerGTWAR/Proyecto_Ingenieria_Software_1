@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { useServicios } from "../../hooks/useServicios";
 import { useDetallesAvaluos } from "../../hooks/useDetallesAvaluos";
+import { useAvaluos } from "../../hooks/useAvaluos";
+import { useProyectos } from "../../hooks/useProyectos";
 
 export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) {
-  const { items: servicios } = useServicios();
+  const { items: servicios, reload: reloadServicios } = useServicios();
+  const { items: avaluos, reload: reloadAvaluos } = useAvaluos();
+  const { items: proyectos, reload: reloadProyectos } = useProyectos();
 
   const {
     items: detalles,
@@ -23,6 +27,18 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     message: "",
   });
 
+  const [form, setForm] = useState({
+    id: "",
+    proyectoId: "",
+    descripcion: "",
+    fechaInicio: "",
+    fechaFin: "",
+  });
+
+  const [detallesAvaluos, setDetallesAvaluos] = useState([]);
+
+  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
+
   const mostrarError = (title, message) => {
     setModalError({
       open: true,
@@ -39,15 +55,16 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     });
   };
 
-  const [form, setForm] = useState({
-    id: "",
-    proyectoId: "",
-    descripcion: "",
-    fechaInicio: "",
-    fechaFin: "",
-  });
+  useEffect(() => {
+    const cargarDatos = async () => {
+      await reloadServicios();
+      await reloadProyectos();
+      await reloadAvaluos();
+      await reloadDetalles();
+    };
 
-  const [detallesAvaluos, setDetallesAvaluos] = useState([]);
+    cargarDatos();
+  }, []);
 
   useEffect(() => {
     if (initialData) {
@@ -69,11 +86,11 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
           servicioId: d.servicioId,
           actividad: d.actividad,
           unidadMedida: d.unidadMedida,
-          cantidad: Number(d.cantidad),
-          precioUnitario: Number(d.precioUnitario),
-          costoVenta: Number(d.costoVenta),
-          iva: Number(d.iva),
-          total: Number(d.totalCostoVenta),
+          cantidad: Number(d.cantidad ?? 0),
+          precioUnitario: Number(d.precioUnitario ?? 0),
+          costoVenta: Number(d.costoVenta ?? 0),
+          iva: Number(d.iva ?? 0),
+          total: Number(d.totalCostoVenta ?? 0),
         }));
 
       setDetallesAvaluos(relacionados);
@@ -90,14 +107,83 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     }
   }, [initialData, detalles]);
 
-  const money = (value) => Number(value ?? 0).toLocaleString("es-NI");
+  const totalGeneral = useMemo(() => {
+    return detallesAvaluos.reduce(
+      (acc, d) => acc + Number(d.total ?? 0),
+      0
+    );
+  }, [detallesAvaluos]);
 
-  const totalGeneral = detallesAvaluos.reduce(
-    (acc, d) => acc + Number(d.total ?? 0),
+  const totalServicios = detallesAvaluos.length;
+
+  const proyectoSeleccionado = useMemo(() => {
+    if (!form.proyectoId) return null;
+
+    return proyectos.find(
+      (p) => Number(p.id) === Number(form.proyectoId)
+    );
+  }, [proyectos, form.proyectoId]);
+
+  const presupuestoProyecto = Number(
+    proyectoSeleccionado?.presupuestoTotal ?? 0
+  );
+
+  const avaluosDelProyecto = useMemo(() => {
+    if (!form.proyectoId) return [];
+
+    return avaluos.filter(
+      (a) => Number(a.proyectoId) === Number(form.proyectoId)
+    );
+  }, [avaluos, form.proyectoId]);
+
+  const avaluosOtrosDelProyecto = useMemo(() => {
+    return avaluosDelProyecto.filter((a) => {
+      if (!isEdit) return true;
+
+      return Number(a.id) !== Number(initialData?.id);
+    });
+  }, [avaluosDelProyecto, isEdit, initialData?.id]);
+
+  const montoOtrosAvaluos = useMemo(() => {
+    return avaluosOtrosDelProyecto.reduce((acc, avaluo) => {
+      const detallesDelAvaluo = detalles.filter(
+        (d) => Number(d.avaluoId) === Number(avaluo.id)
+      );
+
+      if (detallesDelAvaluo.length > 0) {
+        const totalDetalles = detallesDelAvaluo.reduce(
+          (sum, d) => sum + Number(d.totalCostoVenta ?? 0),
+          0
+        );
+
+        return acc + totalDetalles;
+      }
+
+      return acc + Number(avaluo.montoEjecutado ?? 0);
+    }, 0);
+  }, [avaluosOtrosDelProyecto, detalles]);
+
+  const montoTotalConAvaluoActual = montoOtrosAvaluos + totalGeneral;
+
+  const montoDisponible = Math.max(
+    presupuestoProyecto - montoOtrosAvaluos,
     0
   );
 
-  const totalServicios = detallesAvaluos.length;
+  const excedePresupuesto =
+    Boolean(proyectoSeleccionado) &&
+    presupuestoProyecto > 0 &&
+    montoTotalConAvaluoActual > presupuestoProyecto;
+
+  const porcentajeUtilizado =
+    presupuestoProyecto > 0
+      ? Math.min(
+          Number(
+            ((montoTotalConAvaluoActual / presupuestoProyecto) * 100).toFixed(2)
+          ),
+          100
+        )
+      : 0;
 
   const inputClass =
     "w-full min-w-0 rounded-xl border border-slate-300 bg-slate-100 px-3 py-3 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-sm placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100 sm:px-4";
@@ -116,7 +202,24 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     setErrors((prev) => ({
       ...prev,
       [name]: "",
+      presupuesto: "",
     }));
+  };
+
+  const mostrarAdvertenciaPresupuesto = () => {
+    mostrarError(
+      "Presupuesto excedido",
+      `No se puede guardar este avalúo porque supera el presupuesto del proyecto.
+
+Proyecto: ${proyectoSeleccionado?.nombreProyecto || `ID ${form.proyectoId}`}
+Presupuesto del proyecto: C$${money(presupuestoProyecto)}
+Ejecutado anterior: C$${money(montoOtrosAvaluos)}
+Avalúo actual: C$${money(totalGeneral)}
+Total acumulado: C$${money(montoTotalConAvaluoActual)}
+Disponible: C$${money(montoDisponible)}
+
+Reduzca la cantidad de servicios o elimine servicios antes de guardar.`
+    );
   };
 
   const validate = () => {
@@ -130,6 +233,10 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
 
     if (!String(form.proyectoId).trim()) {
       newErrors.proyectoId = "Debe ingresar el ID del proyecto.";
+    }
+
+    if (form.proyectoId && !proyectoSeleccionado) {
+      newErrors.proyectoId = "El proyecto seleccionado no existe.";
     }
 
     if (!form.fechaInicio) {
@@ -154,6 +261,15 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
       newErrors.servicios = "Debe agregar al menos un servicio al avalúo.";
     }
 
+    if (proyectoSeleccionado && presupuestoProyecto <= 0) {
+      newErrors.presupuesto = "El proyecto no tiene un presupuesto válido.";
+    }
+
+    if (excedePresupuesto) {
+      newErrors.presupuesto =
+        "El monto del avalúo excede el presupuesto disponible del proyecto.";
+    }
+
     return newErrors;
   };
 
@@ -169,6 +285,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
         ...prev,
         servicios: "Este servicio ya está agregado.",
       }));
+
       return;
     }
 
@@ -194,6 +311,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
     setErrors((prev) => ({
       ...prev,
       servicios: "",
+      presupuesto: "",
     }));
   };
 
@@ -219,6 +337,11 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
 
       return copia;
     });
+
+    setErrors((prev) => ({
+      ...prev,
+      presupuesto: "",
+    }));
   };
 
   const quitarDetalle = async (detalle) => {
@@ -231,6 +354,11 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
       setDetallesAvaluos((prev) =>
         prev.filter((x) => Number(x.servicioId) !== Number(detalle.servicioId))
       );
+
+      setErrors((prev) => ({
+        ...prev,
+        presupuesto: "",
+      }));
     } catch (error) {
       mostrarError(
         "Error al quitar servicio",
@@ -244,15 +372,30 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
 
     if (guardando) return;
 
+    const newErrors = validate();
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+
+      if (newErrors.presupuesto) {
+        mostrarAdvertenciaPresupuesto();
+      } else {
+        mostrarError(
+          "Revise los datos del avalúo",
+          "Hay campos pendientes o valores inválidos. Revise el formulario antes de guardar."
+        );
+      }
+
+      return;
+    }
+
+    if (excedePresupuesto) {
+      mostrarAdvertenciaPresupuesto();
+      return;
+    }
+
     try {
       setGuardando(true);
-
-      const newErrors = validate();
-
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        return;
-      }
 
       if (isEdit && initialData?.id) {
         for (const detalle of detallesAvaluos) {
@@ -282,6 +425,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
         }
 
         await reloadDetalles();
+        await reloadAvaluos();
         onClose();
         return;
       }
@@ -313,6 +457,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
       }
 
       await reloadDetalles();
+      await reloadAvaluos();
       onClose();
     } catch (error) {
       mostrarError(
@@ -442,6 +587,104 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
             </div>
           </section>
 
+          {form.proyectoId && proyectoSeleccionado && (
+            <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
+              <div className="mb-5 flex flex-col gap-2 border-b border-slate-300 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Control de presupuesto
+                  </h3>
+
+                  <p className="mt-1 text-sm text-slate-600">
+                    Validación del monto acumulado de avalúos contra el
+                    presupuesto del proyecto.
+                  </p>
+                </div>
+
+                <span
+                  className={`
+                    w-fit rounded-full border px-4 py-2 text-sm font-bold
+                    ${
+                      excedePresupuesto
+                        ? "border-red-200 bg-red-100 text-red-700"
+                        : "border-blue-200 bg-blue-100 text-blue-800"
+                    }
+                  `}
+                >
+                  {porcentajeUtilizado}% utilizado
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+                <InfoBox
+                  label="Presupuesto del proyecto"
+                  value={`C$${money(presupuestoProyecto)}`}
+                  variant="green"
+                />
+
+                <InfoBox
+                  label="Ejecutado anterior"
+                  value={`C$${money(montoOtrosAvaluos)}`}
+                />
+
+                <InfoBox
+                  label="Avalúo actual"
+                  value={`C$${money(totalGeneral)}`}
+                  variant="blue"
+                />
+
+                <InfoBox
+                  label="Total acumulado"
+                  value={`C$${money(montoTotalConAvaluoActual)}`}
+                  variant={excedePresupuesto ? "red" : "green"}
+                />
+
+                <InfoBox
+                  label="Disponible"
+                  value={`C$${money(montoDisponible)}`}
+                  variant={excedePresupuesto ? "red" : "green"}
+                />
+
+                <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4 md:col-span-2 xl:col-span-5">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-sm font-bold text-slate-900">
+                      Avance del presupuesto
+                    </p>
+
+                    <p className="text-sm font-bold text-slate-700">
+                      {porcentajeUtilizado}%
+                    </p>
+                  </div>
+
+                  <div className="h-3 overflow-hidden rounded-full bg-slate-300">
+                    <div
+                      className={`
+                        h-full rounded-full transition-all
+                        ${
+                          excedePresupuesto
+                            ? "bg-red-600"
+                            : "bg-gradient-to-r from-blue-800 to-cyan-700"
+                        }
+                      `}
+                      style={{ width: `${porcentajeUtilizado}%` }}
+                    />
+                  </div>
+
+                  {excedePresupuesto && (
+                    <p className="mt-2 text-sm font-bold text-red-600">
+                      El avalúo actual supera el presupuesto disponible del
+                      proyecto.
+                    </p>
+                  )}
+
+                  {errors.presupuesto && (
+                    <p className={errorClass}>{errors.presupuesto}</p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
           <section className="rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm sm:p-6">
             <div className="mb-5 flex flex-col gap-4 border-b border-slate-300 pb-4 xl:flex-row xl:items-end xl:justify-between">
               <div>
@@ -555,7 +798,16 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
                             C${money(d.iva)}
                           </td>
 
-                          <td className="px-4 py-4 text-right font-bold text-emerald-700">
+                          <td
+                            className={`
+                              px-4 py-4 text-right font-bold
+                              ${
+                                excedePresupuesto
+                                  ? "text-red-700"
+                                  : "text-emerald-700"
+                              }
+                            `}
+                          >
                             C${money(d.total)}
                           </td>
 
@@ -578,7 +830,16 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
                       Total Avalúo
                     </p>
 
-                    <p className="text-sm font-bold text-emerald-800">
+                    <p
+                      className={`
+                        text-sm font-bold
+                        ${
+                          excedePresupuesto
+                            ? "text-red-700"
+                            : "text-emerald-800"
+                        }
+                      `}
+                    >
                       C${money(totalGeneral)}
                     </p>
                   </div>
@@ -634,14 +895,17 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
                           value={`C$${money(d.precioUnitario)}`}
                         />
 
-                        <MiniBox label="Costo" value={`C$${money(d.costoVenta)}`} />
+                        <MiniBox
+                          label="Costo"
+                          value={`C$${money(d.costoVenta)}`}
+                        />
 
                         <MiniBox label="IVA" value={`C$${money(d.iva)}`} />
 
                         <MiniBox
                           label="Total"
                           value={`C$${money(d.total)}`}
-                          variant="green"
+                          variant={excedePresupuesto ? "red" : "green"}
                         />
                       </div>
                     </div>
@@ -650,6 +914,7 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
                   <InfoTotal
                     label="Total Avalúo"
                     value={`C$${money(totalGeneral)}`}
+                    error={excedePresupuesto}
                   />
                 </div>
               </>
@@ -671,10 +936,20 @@ export default function AvaluosForm({ onSubmit, onClose, initialData, isEdit }) 
             <button
               type="submit"
               disabled={guardando}
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 sm:w-auto"
+              className={`
+                w-full rounded-2xl px-8 py-3 text-sm font-bold text-white shadow-lg transition
+                disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto
+                ${
+                  excedePresupuesto
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-gradient-to-r from-blue-800 to-cyan-700 hover:scale-[1.01] hover:shadow-xl disabled:hover:scale-100"
+                }
+              `}
             >
               {guardando
                 ? "Guardando..."
+                : excedePresupuesto
+                ? "Presupuesto excedido"
                 : isEdit
                 ? "Actualizar Avalúo"
                 : "Guardar Avalúo"}
@@ -727,22 +1002,52 @@ const SummaryBox = ({ label, value }) => (
   </div>
 );
 
-const MiniBox = ({ label, value, variant = "default" }) => {
+const InfoBox = ({ label, value, variant = "default" }) => {
   const styles = {
-    default: "border-slate-300 bg-slate-200 text-slate-800",
+    default: "border-slate-300 bg-slate-100 text-slate-800",
+    blue: "border-blue-200 bg-blue-100 text-blue-800",
     green: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    red: "border-red-200 bg-red-100 text-red-700",
   };
 
   return (
-    <div className={`rounded-xl border p-3 ${styles[variant]}`}>
+    <div
+      className={`rounded-2xl border p-4 ${styles[variant] || styles.default}`}
+    >
       <p className="text-sm font-semibold opacity-80">{label}</p>
       <p className="mt-1 text-sm font-bold">{value}</p>
     </div>
   );
 };
 
-const InfoTotal = ({ label, value }) => (
-  <div className="rounded-2xl border border-emerald-200 bg-emerald-100 px-5 py-4 text-right text-emerald-800">
+const MiniBox = ({ label, value, variant = "default" }) => {
+  const styles = {
+    default: "border-slate-300 bg-slate-200 text-slate-800",
+    green: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    red: "border-red-200 bg-red-100 text-red-700",
+  };
+
+  return (
+    <div
+      className={`rounded-xl border p-3 ${styles[variant] || styles.default}`}
+    >
+      <p className="text-sm font-semibold opacity-80">{label}</p>
+      <p className="mt-1 text-sm font-bold">{value}</p>
+    </div>
+  );
+};
+
+const InfoTotal = ({ label, value, error = false }) => (
+  <div
+    className={`
+      rounded-2xl border px-5 py-4 text-right
+      ${
+        error
+          ? "border-red-200 bg-red-100 text-red-700"
+          : "border-emerald-200 bg-emerald-100 text-emerald-800"
+      }
+    `}
+  >
     <p className="text-sm font-semibold">{label}</p>
     <p className="text-sm font-bold">{value}</p>
   </div>

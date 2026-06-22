@@ -9,6 +9,7 @@ import EmpleadosForm from "../components/empleados/EmpleadosForm";
 import DeleteConfirmationModal from "../components/ui/DeleteConfirmationModal";
 
 import { useEmpleados } from "../hooks/useEmpleados";
+import { useDetallesEmpleados } from "../hooks/useDetallesEmpleados";
 import useRoles from "../hooks/useRoles";
 
 const normalize = (s = "") =>
@@ -75,6 +76,12 @@ const flujoModulos = [
 
 function EmpleadosPage() {
   const { items: empleados, loading, add, edit, remove } = useEmpleados();
+
+  const {
+    items: detallesEmpleados,
+    reload: reloadDetallesEmpleados,
+  } = useDetallesEmpleados();
+
   const { items: roles } = useRoles();
 
   const rolNameById = useMemo(
@@ -236,6 +243,39 @@ function EmpleadosPage() {
     setIsDeleting(true);
 
     try {
+      const detallesActualizados = await reloadDetallesEmpleados();
+
+      const listaDetalles = Array.isArray(detallesActualizados)
+        ? detallesActualizados
+        : detallesEmpleados;
+
+      const proyectosAsociados = listaDetalles.filter(
+        (d) => Number(d.empleadoId) === Number(empleadoAEliminar.id)
+      );
+
+      if (proyectosAsociados.length > 0) {
+        const proyectosTexto = proyectosAsociados
+          .map((d) => d.proyectoNombre || `Proyecto ${d.proyectoId}`)
+          .filter(Boolean)
+          .slice(0, 5)
+          .join(", ");
+
+        setMostrarEliminar(false);
+        setEmpleadoAEliminar(null);
+
+        mostrarMensaje(
+          "error",
+          "No se puede eliminar el empleado",
+          `No se puede eliminar el empleado "${empleadoAEliminar.nombres} ${empleadoAEliminar.apellidos}" porque tiene ${proyectosAsociados.length} proyecto(s) asociado(s).
+
+Proyecto(s): ${proyectosTexto || "Proyecto asociado"}
+
+Primero quite al empleado de los proyectos relacionados y luego intente eliminarlo nuevamente.`
+        );
+
+        return;
+      }
+
       await remove(empleadoAEliminar.id);
 
       mostrarMensaje(
@@ -248,6 +288,9 @@ function EmpleadosPage() {
       setEmpleadoAEliminar(null);
       cerrarDetalles();
     } catch (error) {
+      setMostrarEliminar(false);
+      setEmpleadoAEliminar(null);
+
       mostrarMensaje(
         "error",
         "Error al eliminar empleado",
@@ -279,11 +322,6 @@ function EmpleadosPage() {
   };
 
   const totalEmpleados = empleados.length;
-
-  const empleadosActivos = empleados.filter(
-    (e) => (e.estado || "Activo") === "Activo"
-  ).length;
-
   const totalRoles = roles.length;
 
   if (loading) {
@@ -318,14 +356,17 @@ function EmpleadosPage() {
                 </h1>
 
                 <p className="mt-2 text-sm text-slate-300">
-                  Administración del personal, roles, datos laborales y estado de los empleados.
+                  Administración del personal, roles y datos laborales de los empleados.
                 </p>
               </div>
 
               <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 xl:w-[520px]">
                 <HeaderBox label="Empleados" value={totalEmpleados} />
-                <HeaderBox label="Activos" value={empleadosActivos} />
                 <HeaderBox label="Roles" value={totalRoles} />
+                <HeaderBox
+                  label="Resultados"
+                  value={empleadosFiltrados.length}
+                />
               </div>
             </div>
           </div>
@@ -377,24 +418,10 @@ function EmpleadosPage() {
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                   className="
-                    w-full
-                    rounded-xl
-                    border
-                    border-slate-300
-                    bg-slate-200
-                    px-4
-                    py-3
-                    text-sm
-                    text-slate-800
-                    shadow-sm
-                    outline-none
-                    transition
-                    placeholder:text-sm
-                    placeholder:text-slate-500
-                    focus:border-blue-600
-                    focus:bg-white
-                    focus:ring-4
-                    focus:ring-blue-100
+                    w-full rounded-xl border border-slate-300 bg-slate-200
+                    px-4 py-3 text-sm text-slate-800 shadow-sm outline-none
+                    transition placeholder:text-sm placeholder:text-slate-500
+                    focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100
                   "
                 />
               </div>
@@ -408,22 +435,9 @@ function EmpleadosPage() {
                   value={filtroRol}
                   onChange={(e) => setFiltroRol(e.target.value)}
                   className="
-                    w-full
-                    rounded-xl
-                    border
-                    border-slate-300
-                    bg-slate-200
-                    px-4
-                    py-3
-                    text-sm
-                    text-slate-800
-                    shadow-sm
-                    outline-none
-                    transition
-                    focus:border-blue-600
-                    focus:bg-white
-                    focus:ring-4
-                    focus:ring-blue-100
+                    w-full rounded-xl border border-slate-300 bg-slate-200
+                    px-4 py-3 text-sm text-slate-800 shadow-sm outline-none
+                    transition focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100
                   "
                 >
                   <option value="all">Todos los roles</option>
@@ -452,20 +466,9 @@ function EmpleadosPage() {
                 type="button"
                 onClick={() => setVistaTarjetas(!vistaTarjetas)}
                 className="
-                  w-full
-                  rounded-2xl
-                  border
-                  border-slate-400
-                  bg-slate-200
-                  px-5
-                  py-3
-                  text-sm
-                  font-bold
-                  text-slate-800
-                  shadow-sm
-                  transition
-                  hover:bg-slate-300
-                  sm:w-auto
+                  w-full rounded-2xl border border-slate-400 bg-slate-200
+                  px-5 py-3 text-sm font-bold text-slate-800 shadow-sm
+                  transition hover:bg-slate-300 sm:w-auto
                 "
               >
                 {vistaTarjetas ? "Ver como Tabla" : "Ver como Tarjetas"}
@@ -475,21 +478,9 @@ function EmpleadosPage() {
                 type="button"
                 onClick={abrirFormulario}
                 className="
-                  w-full
-                  rounded-2xl
-                  bg-gradient-to-r
-                  from-blue-800
-                  to-cyan-700
-                  px-5
-                  py-3
-                  text-sm
-                  font-bold
-                  text-white
-                  shadow-lg
-                  transition
-                  hover:scale-[1.01]
-                  hover:shadow-xl
-                  sm:w-auto
+                  w-full rounded-2xl bg-gradient-to-r from-blue-800 to-cyan-700
+                  px-5 py-3 text-sm font-bold text-white shadow-lg transition
+                  hover:scale-[1.01] hover:shadow-xl sm:w-auto
                 "
               >
                 Añadir Empleado
